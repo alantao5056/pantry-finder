@@ -1,0 +1,56 @@
+name: Deploy API to Ubuntu Server
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'apps/api/**'
+  workflow_dispatch: # Allows you to manually trigger the deployment from GitHub UI
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20' # Using standard LTS Node.js
+
+      - name: Install Dependencies and Build
+        working-directory: ./apps/api
+        run: |
+          npm install
+          npm run build
+
+      - name: Copy files to Ubuntu server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.REMOTE_HOST }}
+          username: ${{ secrets.REMOTE_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          # Copy the built output, package.json, and lockfile
+          source: "apps/api/dist,apps/api/package.json,apps/api/package-lock.json"
+          target: ${{ secrets.REMOTE_TARGET }}
+          # This removes the "apps/api/" portion of the path so files drop right into your target directory
+          strip_components: 2 
+
+      - name: Install Production Dependencies & Restart App
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.REMOTE_HOST }}
+          username: ${{ secrets.REMOTE_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd ${{ secrets.REMOTE_TARGET }}
+            
+            # Install only production dependencies on the server
+            npm install --production
+
+            # sudo systemctl restart pantry-api
+            
+            echo "Deployment files synced and dependencies installed."
