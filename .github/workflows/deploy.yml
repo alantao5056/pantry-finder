@@ -49,7 +49,7 @@ jobs:
             cd ${{ secrets.REMOTE_TARGET }}
             
             # Install only production dependencies on the server
-            npm install --production
+            npm install --omit=dev
 
             # sudo systemctl restart pantry-api
             
