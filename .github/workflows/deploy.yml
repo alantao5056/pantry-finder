@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - main
-    paths:
-      - 'apps/api/**'
   workflow_dispatch: # Allows you to manually trigger the deployment from GitHub UI
 
 jobs:
@@ -34,10 +32,8 @@ jobs:
           username: ${{ secrets.REMOTE_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           # Copy the built output, package.json, and lockfile
-          source: "apps/api/dist,apps/api/package.json,apps/api/package-lock.json"
+          source: "package.json,package-lock.json,apps/api/dist,apps/api/package.json,apps/api/package-lock.json"
           target: ${{ secrets.REMOTE_TARGET }}
-          # This removes the "apps/api/" portion of the path so files drop right into your target directory
-          strip_components: 2 
 
       - name: Install Production Dependencies & Restart App
         uses: appleboy/ssh-action@v1.0.3
@@ -46,13 +42,14 @@ jobs:
           username: ${{ secrets.REMOTE_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd ${{ secrets.REMOTE_TARGET }}
+            cd ${{ secrets.REMOTE_TARGET }}/apps/api
 
             cat > .env.production << 'EOF'
             FIREBASE_SERVICE_ACCOUNT_JSON=${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
             EOF
             
             # Install only production dependencies on the server
+            cd ${{ secrets.REMOTE_TARGET }}
             npm install --omit=dev
 
             # sudo systemctl restart pantry-api
