@@ -9,5 +9,8 @@
     "strict": true,
     "skipLibCheck": true
   },
+  "references": [
+    { "path": "../../packages/types" }
+  ],
   "include": ["src/**/*"]
 }
