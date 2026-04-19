@@ -10,6 +10,7 @@ export interface Schedule {
 export interface Service {
   name: string;
   category: string;
+  program?: string;
   description?: string;
   food: string[];
   notes?: string;
@@ -20,8 +21,9 @@ export interface Pantry {
   id: string;
   name: string;
   address: string;
-  latitude: string;
-  longitude: string;
+  latitude: number;
+  longitude: number;
+  distance?: number;
   phone?: string;
   about?: string;
   notes?: string;

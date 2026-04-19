@@ -22,7 +22,7 @@ jobs:
           node-version: '20' # Using standard LTS Node.js
 
       - name: Install Dependencies and Build
-        working-directory: ./apps/api
+        working-directory: .
         run: |
           npm install
           npm run build

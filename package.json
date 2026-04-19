@@ -4,5 +4,11 @@
   "workspaces": [
     "apps/*",
     "packages/*"
-  ]
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "build:types": "npm run build -w packages/types",
+    "build:api": "npm run build -w apps/api",
+    "dev:api": "npm run dev -w apps/api"
+  }
 }
