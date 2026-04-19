@@ -1,0 +1,8 @@
+{
+  "name": "pantry-finder",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ]
+}

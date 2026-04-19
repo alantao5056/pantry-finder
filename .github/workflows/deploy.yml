@@ -47,6 +47,10 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd ${{ secrets.REMOTE_TARGET }}
+
+            cat > .env.production << 'EOF'
+            FIREBASE_SERVICE_ACCOUNT_JSON=${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+            EOF
             
             # Install only production dependencies on the server
             npm install --omit=dev
