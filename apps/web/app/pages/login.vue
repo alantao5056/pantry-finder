@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const config = useRuntimeConfig()
-const username = ref('')
+const email = ref('')
 const password = ref('')
 const error = ref<string | null>(null)
 const submitting = ref(false)
@@ -11,7 +11,7 @@ async function onSubmit() {
   try {
     await $fetch(`${config.public.apiBase}/auth/login`, {
       method: 'POST',
-      body: { username: username.value, password: password.value },
+      body: { email: email.value, password: password.value },
       credentials: 'include',
     })
     await navigateTo('/')
@@ -28,11 +28,11 @@ async function onSubmit() {
     <h1 class="text-2xl font-bold text-gray-900 mb-6">Sign in</h1>
     <form class="space-y-4" @submit.prevent="onSubmit">
       <label class="block">
-        <span class="block text-sm font-medium text-gray-700 mb-1">Username</span>
+        <span class="block text-sm font-medium text-gray-700 mb-1">Email</span>
         <input
-          v-model="username"
+          v-model="email"
           type="text"
-          autocomplete="username"
+          autocomplete="email"
           required
           class="block w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         />

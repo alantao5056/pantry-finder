@@ -8,8 +8,6 @@ function required(name: string): string {
   return value;
 }
 
-export const AUTH_USERNAME = required('AUTH_USERNAME');
-export const AUTH_PASSWORD = required('AUTH_PASSWORD');
 export const JWT_SECRET = required('JWT_SECRET');
 export const JWT_EXPIRES_IN = '1h';
 export const COOKIE_NAME = 'session';

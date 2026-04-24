@@ -13,7 +13,28 @@ type CreateUserResult =
   | { success: true; user: UserDocument }
   | { success: false; error: 'EMAIL_TAKEN' };
 
+type VerifyUserResult =
+  | { success: true; user: UserDocument }
+  | { success: false };
+
 export class UserService {
+  public async verifyUser(email: string, password: string): Promise<VerifyUserResult> {
+    const doc = await db.collection(USERS_COLLECTION).doc(email).get();
+    if (!doc.exists) {
+      return { success: false };
+    }
+
+    const user = doc.data() as UserDocument;
+    const [salt, storedHex] = user.passwordHash.split(':');
+    const hash = await scryptAsync(password, salt, SCRYPT_KEYLEN);
+
+    if (hash.toString('hex') !== storedHex) {
+      return { success: false };
+    }
+
+    return { success: true, user };
+  }
+
   public async createUser(email: string, firstName: string, lastName: string, password: string): Promise<CreateUserResult> {
     const salt = randomBytes(16).toString('hex');
     const hash = await scryptAsync(password, salt, SCRYPT_KEYLEN);

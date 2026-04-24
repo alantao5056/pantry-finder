@@ -1,8 +1,6 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import {
-  AUTH_PASSWORD,
-  AUTH_USERNAME,
   COOKIE_NAME,
   JWT_EXPIRES_IN,
   JWT_SECRET,
@@ -11,7 +9,7 @@ import {
 import { UserService } from '../services/user.service';
 
 interface LoginBody {
-  username?: unknown;
+  email?: unknown;
   password?: unknown;
 }
 
@@ -54,19 +52,21 @@ export class AuthController {
 
 
   public async login(req: Request<{}, {}, LoginBody>, res: Response): Promise<void> {
-    const { username, password } = req.body ?? {};
+    const { email, password } = req.body ?? {};
 
-    if (typeof username !== 'string' || typeof password !== 'string') {
-      res.status(400).json({ error: 'Username and password are required.' });
+    if (typeof email !== 'string' || typeof password !== 'string') {
+      res.status(400).json({ error: 'Email and password are required.' });
       return;
     }
 
-    if (username !== AUTH_USERNAME || password !== AUTH_PASSWORD) {
+    const result = await this.userService.verifyUser(email, password);
+
+    if (!result.success) {
       res.status(401).json({ error: 'Invalid credentials' });
       return;
     }
 
-    const token = jwt.sign({ sub: username }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+    const token = jwt.sign({ sub: email }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
     res.cookie(COOKIE_NAME, token, cookieOptions());
     res.status(200).json({ ok: true });
   }
