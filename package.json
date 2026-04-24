@@ -11,6 +11,10 @@
     "build:api": "npm run build -w apps/api",
     "build:web": "npm run build -w apps/web",
     "dev:api": "npm run dev -w apps/api",
-    "dev:web": "npm run dev -w apps/web"
+    "dev:web": "npm run dev -w apps/web",
+    "dev": "concurrently -n api,web -c blue,green \"npm:dev:api\" \"npm:dev:web\""
+  },
+  "dependencies": {
+    "concurrently": "^9.2.1"
   }
 }
