@@ -1,0 +1,1337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PantryFinder — Find Food Pantries Near You</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body, #root { height: 100%; }
+    body { font-family: 'DM Sans', -apple-system, sans-serif; background: #F6F4EE; }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+    @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #D1D5DB; border-radius: 3px; }
+    .leaflet-container { font-family: 'DM Sans', sans-serif !important; }
+    select option { color: #1A1A1A; background: #fff; }
+  </style>
+</head>
+<body>
+  <div id="root"><div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:#6B7280;gap:12px"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#52B788" stroke-width="2"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z"/></svg>Loading PantryFinder…</div></div>
+  <script type="text/babel">
+const { useState, useEffect, useRef, useMemo } = React;
+
+// ══════════════════════════════════════════════════════════
+// SVG ICON COMPONENTS (all start uppercase for React)
+// ══════════════════════════════════════════════════════════
+const SvgI = ({size=16, color='currentColor', sw=2, style, children}) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" style={style}>{children}</svg>
+);
+const MapPin = p => <SvgI {...p}><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></SvgI>;
+const Heart = ({fill='none',...p}) => <SvgI {...p}><path fill={fill} d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></SvgI>;
+const Search = p => <SvgI {...p}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></SvgI>;
+const Clock = p => <SvgI {...p}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></SvgI>;
+const Phone = p => <SvgI {...p}><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.99 13 19.79 19.79 0 0 1 1.95 4.38 2 2 0 0 1 3.94 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></SvgI>;
+const X = p => <SvgI {...p}><path d="M18 6 6 18M6 6l12 12"/></SvgI>;
+const List = p => <SvgI {...p}><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></SvgI>;
+const MapIcon = p => <SvgI {...p}><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></SvgI>;
+const Bell = p => <SvgI {...p}><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></SvgI>;
+const BellOff = p => <SvgI {...p}><path d="M13.73 21a2 2 0 0 1-3.46 0"/><path d="M18.63 13A17.89 17.89 0 0 1 18 8"/><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"/><path d="M18 8a6 6 0 0 0-9.33-5"/><line x1="1" y1="1" x2="23" y2="23"/></SvgI>;
+const Flag = p => <SvgI {...p}><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></SvgI>;
+const User = p => <SvgI {...p}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></SvgI>;
+const LogOut = p => <SvgI {...p}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></SvgI>;
+const ChevronDown = p => <SvgI {...p}><polyline points="6 9 12 15 18 9"/></SvgI>;
+const ChevronRight = p => <SvgI {...p}><polyline points="9 18 15 12 9 6"/></SvgI>;
+const Check = p => <SvgI {...p}><polyline points="20 6 9 16 4 11"/></SvgI>;
+const AlertCircle = p => <SvgI {...p}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></SvgI>;
+const Info = p => <SvgI {...p}><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></SvgI>;
+const Calendar = p => <SvgI {...p}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></SvgI>;
+const SlidersHorizontal = p => <SvgI {...p}><line x1="21" y1="4" x2="14" y2="4"/><line x1="10" y1="4" x2="3" y2="4"/><line x1="21" y1="12" x2="12" y2="12"/><line x1="8" y1="12" x2="3" y2="12"/><line x1="21" y1="20" x2="16" y2="20"/><line x1="12" y1="20" x2="3" y2="20"/><line x1="14" y1="2" x2="14" y2="6"/><line x1="8" y1="10" x2="8" y2="14"/><line x1="16" y1="18" x2="16" y2="22"/></SvgI>;
+const Leaf = p => <SvgI {...p}><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></SvgI>;
+const ArrowLeft = p => <SvgI {...p}><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></SvgI>;
+const Mail = p => <SvgI {...p}><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></SvgI>;
+const Lock = p => <SvgI {...p}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></SvgI>;
+const Eye = p => <SvgI {...p}><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></SvgI>;
+const EyeOff = p => <SvgI {...p}><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></SvgI>;
+const ExternalLink = p => <SvgI {...p}><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></SvgI>;
+const Star = p => <SvgI {...p}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></SvgI>;
+
+// Error Boundary
+class ErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { error: null }; }
+  static getDerivedStateFromError(e) { return { error: e }; }
+  render() {
+    if (this.state.error) {
+      return (
+        <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',minHeight:'60vh',padding:40,fontFamily:'DM Sans,sans-serif',gap:16}}>
+          <div style={{fontSize:48}}>⚠️</div>
+          <h2 style={{fontFamily:'Playfair Display,serif',color:'#1C4532'}}>Something went wrong</h2>
+          <pre style={{background:'#FEE2E2',color:'#991B1B',padding:16,borderRadius:10,fontSize:12,maxWidth:600,overflow:'auto',whiteSpace:'pre-wrap'}}>{this.state.error.toString()}</pre>
+          <button onClick={()=>this.setState({error:null})} style={{background:'#1C4532',color:'#fff',border:'none',borderRadius:10,padding:'10px 24px',cursor:'pointer'}}>Try Again</button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// DATA
+// ══════════════════════════════════════════════════════════
+const PANTRIES_DATA = [
+  {
+    id: "O5Fyb4ZkN9EqUhksQZyl", name: "Newton Food Pantry",
+    address: "1000 Commonwealth Avenue, Newton, MA 02459",
+    latitude: 42.3374309, longitude: -71.2088565, phone: "617-796-1233",
+    about: "Serving the Newton community with fresh food distributions and appointment-based services.",
+    schedules: [
+      { weekDay: "Wednesday", start: "12:00 PM", end: "7:00 PM", notes: "12–3pm appointment only; 3–7pm walk-in" },
+      { weekDay: "Thursday", start: "10:00 AM", end: "1:00 PM", notes: "By appointment only" }
+    ],
+    services: [{
+      name: "Pantry Program", category: "Food Program", program: "Food Distribution",
+      food: ["Dairy", "Meat"],
+      schedules: [
+        { weekDay: "Wednesday", start: "12:00 PM", end: "3:00 PM" },
+        { weekDay: "Wednesday", start: "3:00 PM", end: "7:00 PM" },
+        { weekDay: "Thursday", start: "10:00 AM", end: "1:00 PM", notes: "By appointment only" }
+      ]
+    }],
+    loves: 47, followers: 23
+  },
+  {
+    id: "yoP10WZfa0WLj3WmBKb8", name: "Centre Street Food Pantry",
+    address: "11 Homer Street, Newton, MA 02459",
+    latitude: 42.3349884, longitude: -71.194005, phone: "617-340-9554",
+    about: "Located at Trinity Episcopal Church. Curbside pickup of groceries at the side annex on Furber Lane.",
+    schedules: [
+      { weekDay: "Tuesday", start: "1:00 PM", end: "2:00 PM", notes: "Seniors only; no appointment required" },
+      { weekDay: "Tuesday", start: "2:00 PM", end: "5:45 PM", notes: "Appointments required" },
+      { weekDay: "Saturday", start: "10:00 AM", end: "12:00 PM", notes: "No appointments required" }
+    ],
+    services: [{
+      name: "Pantry Program", category: "Food Program", program: "Food Distribution",
+      food: ["Dairy", "Diapers", "Eggs", "Fruits & Vegetables", "Household Products", "Meat", "Pet Food / Supplies", "Shelf Stable/Non-Perishable Goods", "Toiletries / Hygiene Products"],
+      schedules: [
+        { weekDay: "Tuesday", start: "1:00 PM", end: "2:00 PM", notes: "Seniors only" },
+        { weekDay: "Tuesday", start: "2:00 PM", end: "5:45 PM", notes: "Appointments required" },
+        { weekDay: "Saturday", start: "10:00 AM", end: "12:00 PM" }
+      ]
+    }],
+    loves: 82, followers: 41
+  },
+  {
+    id: "Dn8lbl7RYacLyrYofQ07", name: "Watertown Food Pantry",
+    address: "80 Mt. Auburn St., Watertown, MA 02472",
+    latitude: 42.3672148, longitude: -71.1811997, phone: "617-972-6490",
+    schedules: [{ weekDay: "Tuesday", start: "10:00 AM", end: "2:00 PM" }],
+    services: [{
+      name: "Pantry Program", category: "Food Program", program: "Food Distribution",
+      food: [],
+      schedules: [{ weekDay: "Tuesday", start: "10:00 AM", end: "11:30 AM" }]
+    }],
+    loves: 31, followers: 14
+  },
+  {
+    id: "bUFzah7ZiDIw0LPEdvRf", name: "Salvation Army / Waltham Pantry & Meals",
+    address: "33 Myrtle Street, Waltham, MA 02453",
+    latitude: 42.3658786, longitude: -71.2364257, phone: "781-894-0413",
+    about: "This location is a Healthy Pantry participant offering food, meals, and support services.",
+    schedules: [],
+    services: [
+      { name: "Pantry Program", category: "Food Program", program: "Food Distribution", food: ["Dairy", "Meat"], schedules: [
+        { weekDay: "Tuesday", start: "10:00 AM", end: "12:00 PM" },
+        { weekDay: "Wednesday", start: "10:00 AM", end: "12:00 PM" },
+        { weekDay: "Thursday", start: "10:00 AM", end: "12:00 PM" }
+      ]},
+      { name: "Meal Program", category: "Food Program", program: "Hot/Cold Meal Program", food: ["Dairy", "Meat"], schedules: [
+        { weekDay: "Monday", start: "10:00 AM", end: "12:00 PM" },
+        { weekDay: "Tuesday", start: "10:00 AM", end: "12:00 PM" },
+        { weekDay: "Wednesday", start: "10:00 AM", end: "12:00 PM" },
+        { weekDay: "Thursday", start: "10:00 AM", end: "12:00 PM" },
+        { weekDay: "Friday", start: "10:00 AM", end: "12:00 PM" }
+      ]},
+      { name: "Healthcare Screenings/Referrals", category: "Healthcare Screenings/Referrals", food: [], schedules: [] },
+      { name: "Housing Assistance", category: "Housing Assistance", food: [], schedules: [] },
+      { name: "Tax/Financial Support", category: "Tax/Financial Support", food: [], schedules: [] },
+      { name: "SNAP Assistance", category: "Other", food: [], schedules: [] }
+    ],
+    loves: 56, followers: 29
+  },
+  {
+    id: "I6PLOBWLqlgWHTYU7qvI", name: "ABCD / Allston Brighton",
+    address: "640 Washington St, #202, Brighton, MA 02135",
+    latitude: 42.3506927, longitude: -71.1692242,
+    about: "Community action agency providing food assistance and supportive services for Allston-Brighton residents.",
+    schedules: [
+      { weekDay: "Wednesday", start: "10:00 AM", end: "4:00 PM" },
+      { weekDay: "Thursday", start: "10:00 AM", end: "1:00 PM" },
+      { weekDay: "Friday", start: "10:00 AM", end: "4:00 PM" }
+    ],
+    services: [{
+      name: "Food Assistance", category: "Food Program", program: "Food Distribution",
+      food: ["Fruits & Vegetables", "Shelf Stable/Non-Perishable Goods", "Other"],
+      schedules: [
+        { weekDay: "Wednesday", start: "10:00 AM", end: "4:00 PM" },
+        { weekDay: "Thursday", start: "10:00 AM", end: "1:00 PM" },
+        { weekDay: "Friday", start: "10:00 AM", end: "4:00 PM" }
+      ]
+    }],
+    loves: 38, followers: 17
+  },
+  {
+    id: "ULR0oVfS1wUA3ELunCcd", name: "Haitian Baptist Church",
+    address: "9 Russel Avenue, Watertown, MA 02472",
+    latitude: 42.3687748, longitude: -71.1759967, phone: "978-663-1808",
+    about: "Call for schedule information. The church provides food distribution to community members.",
+    schedules: [],
+    services: [{
+      name: "Food Program", category: "Food Program", program: "Food Distribution",
+      food: [],
+      schedules: [{ weekDay: "", start: "", end: "", notes: "Call for Information" }]
+    }],
+    loves: 19, followers: 8
+  },
+  {
+    id: "W6V2sb9A9l04WvrEl0DX", name: "Healthy Waltham Mobile Pantry",
+    address: "5 Cherry Street, Waltham, MA 02453",
+    latitude: 42.3672878, longitude: -71.2421776, phone: "781-314-5647",
+    about: "A mobile pantry service bringing food directly to the community by appointment and walk-in.",
+    schedules: [
+      { weekDay: "Thursday", start: "1:30 PM", end: "4:15 PM", notes: "By Appointment" },
+      { weekDay: "Thursday", start: "4:30 PM", end: "5:00 PM", notes: "Walk-ins" }
+    ],
+    services: [{
+      name: "Mobile Market Location", category: "Food Program", program: "Pop-Up/Mobile Resource",
+      food: ["Fruits & Vegetables", "Shelf Stable/Non-Perishable Goods"],
+      schedules: [
+        { weekDay: "Thursday", start: "1:30 PM", end: "4:15 PM", notes: "By Appointment" },
+        { weekDay: "Thursday", start: "4:30 PM", end: "5:00 PM", notes: "Walk-ins" }
+      ]
+    }],
+    loves: 44, followers: 21
+  },
+  {
+    id: "2TCjponDbsAIbSdzjn2j", name: "MHSA / Bristol Lodge Pantry",
+    address: "750 Main Street, Waltham, MA 02451",
+    latitude: 42.3758904, longitude: -71.2403251, phone: "781-899-2099",
+    schedules: [{ weekDay: "Wednesday", start: "9:00 AM", end: "12:00 PM" }],
+    services: [{
+      name: "Pantry Program", category: "Food Program", program: "Food Distribution",
+      food: [],
+      schedules: [{ weekDay: "Wednesday", start: "9:00 AM", end: "12:00 PM" }]
+    }],
+    loves: 27, followers: 11
+  },
+  {
+    id: "PzLEpSFwJ4ivFKa2FZ05", name: "MACCMS / Allston-Brighton Food Pantry",
+    address: "404 Washington Street, Brighton, MA 02135",
+    latitude: 42.3487592, longitude: -71.1552075, phone: "617-254-4046",
+    about: "Serving Allston-Brighton since 1985. Special priority hours for seniors, veterans, and disabled individuals.",
+    schedules: [
+      { weekDay: "Wednesday", start: "3:30 PM", end: "6:00 PM", notes: "3:30–4:30 Seniors, Veterans, Disabled only" },
+      { weekDay: "Saturday", start: "10:00 AM", end: "1:00 PM", notes: "Saturday Food Pantry" }
+    ],
+    services: [
+      { name: "Pantry Program", category: "Food Program", program: "Food Distribution", food: [], schedules: [
+        { weekDay: "Saturday", start: "10:00 AM", end: "1:00 PM" }
+      ]},
+      { name: "Meal Program", category: "Food Program", program: "Hot/Cold Meal Program", food: [], schedules: [
+        { weekDay: "Wednesday", start: "4:30 PM", end: "6:00 PM" }
+      ]}
+    ],
+    loves: 61, followers: 33
+  },
+  {
+    id: "8i7sDLbrIvJugX7mjJMw", name: "Belmont Church of God Food Pantry",
+    address: "25 Marlboro Street, Belmont, MA 02478",
+    latitude: 42.3767119, longitude: -71.1567912, phone: "617-816-7419",
+    schedules: [
+      { weekDay: "Friday", start: "10:00 AM", end: "10:30 AM" },
+      { weekDay: "Saturday", start: "10:30 AM", end: "12:00 PM", notes: "1st and 3rd Saturday of the month" }
+    ],
+    services: [{
+      name: "Pantry Program", category: "Food Program", program: "Food Distribution",
+      food: [],
+      schedules: [{ weekDay: "Saturday", start: "10:30 AM", end: "12:00 PM", notes: "1st and 3rd Saturdays" }]
+    }],
+    loves: 22, followers: 9
+  }
+];
+
+const ALL_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+const ALL_FOOD_TYPES = [
+  "Dairy", "Eggs", "Fruits & Vegetables", "Meat", "Shelf Stable/Non-Perishable Goods",
+  "Prepared Food / Grab and Go", "Household Products", "Toiletries / Hygiene Products",
+  "Pet Food / Supplies", "Diapers", "Other"
+];
+
+// ══════════════════════════════════════════════════════════
+// UTILITIES
+// ══════════════════════════════════════════════════════════
+function haversineDistance(lat1, lon1, lat2, lon2) {
+  const R = 3959;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLon/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function parseTime(t) {
+  if (!t) return 0;
+  const [time, period] = t.split(' ');
+  let [h, m] = time.split(':').map(Number);
+  if (period === 'PM' && h !== 12) h += 12;
+  if (period === 'AM' && h === 12) h = 0;
+  return h * 60 + m;
+}
+
+function isOpenNow(schedules) {
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const today = days[new Date().getDay()];
+  const now = new Date().getHours() * 60 + new Date().getMinutes();
+  return schedules.some(s => s.weekDay === today && s.start && now >= parseTime(s.start) && now <= parseTime(s.end));
+}
+
+function isOpenToday(schedules) {
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const today = days[new Date().getDay()];
+  return schedules.some(s => s.weekDay === today && s.start);
+}
+
+function getUniqueFoods(services) {
+  const foods = new Set();
+  services.forEach(s => s.food.forEach(f => foods.add(f)));
+  return [...foods];
+}
+
+function getScheduleDays(schedules) {
+  const seen = new Set();
+  return schedules.filter(s => s.weekDay && s.start && !seen.has(s.weekDay) && seen.add(s.weekDay));
+}
+
+// ══════════════════════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════════════════════
+function ToastContainer({ toasts, onRemove }) {
+  return (
+    <div style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 9999, display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {toasts.map(t => (
+        <div key={t.id} style={{
+          background: t.type === 'error' ? '#FEE2E2' : '#DCFCE7',
+          border: `1px solid ${t.type === 'error' ? '#FCA5A5' : '#86EFAC'}`,
+          color: t.type === 'error' ? '#991B1B' : '#14532D',
+          padding: '12px 16px', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 10,
+          boxShadow: '0 4px 16px rgba(0,0,0,0.1)', fontSize: 14, fontWeight: 500,
+          animation: 'slideUp 0.3s ease', minWidth: 280, maxWidth: 360
+        }}>
+          {t.type === 'error' ? <AlertCircle size={16} /> : <Check size={16} />}
+          <span style={{ flex: 1 }}>{t.message}</span>
+          <button onClick={() => onRemove(t.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', opacity: 0.6, padding: 2 }}><X size={14} /></button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════
+// NAVBAR
+// ══════════════════════════════════════════════════════════
+function Navbar({ page, user, onNavigate, onAuthOpen, onLogout }) {
+  const [scrolled, setScrolled] = useState(false);
+  const isLanding = page === 'landing';
+
+  useEffect(() => {
+    const handler = () => setScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', handler);
+    return () => window.removeEventListener('scroll', handler);
+  }, []);
+
+  const nb = {
+    position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1000,
+    transition: 'all 0.3s ease',
+    background: scrolled || !isLanding ? 'rgba(255,255,255,0.96)' : 'transparent',
+    backdropFilter: scrolled || !isLanding ? 'blur(12px)' : 'none',
+    boxShadow: scrolled || !isLanding ? '0 1px 0 rgba(0,0,0,0.08)' : 'none',
+    padding: '0 32px',
+  };
+  const inner = { maxWidth: 1200, margin: '0 auto', height: 64, display: 'flex', alignItems: 'center', gap: 32 };
+  const textColor = scrolled || !isLanding ? '#1C4532' : '#fff';
+  const mutedColor = scrolled || !isLanding ? '#6B7280' : 'rgba(255,255,255,0.8)';
+
+  return (
+    <nav style={nb}>
+      <div style={inner}>
+        <button onClick={() => onNavigate('landing')} style={{ background: 'none', border: 'none', display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+          <div style={{ width: 32, height: 32, background: 'linear-gradient(135deg,#2D6A4F,#52B788)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Leaf size={16} color="#fff" />
+          </div>
+          <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 700, color: textColor, letterSpacing: '-0.3px' }}>PantryFinder</span>
+        </button>
+        <div style={{ flex: 1 }} />
+        <button onClick={() => onNavigate('search')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 500, color: mutedColor, padding: '6px 4px' }}>
+          Find Pantries
+        </button>
+        <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 500, color: mutedColor, padding: '6px 4px' }}>About</button>
+        <div style={{ width: 1, height: 20, background: scrolled || !isLanding ? '#E5E7EB' : 'rgba(255,255,255,0.3)' }} />
+        {user ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#1C4532', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 600 }}>
+              {user.name.charAt(0)}
+            </div>
+            <span style={{ fontSize: 14, fontWeight: 500, color: textColor }}>{user.name}</span>
+            <button onClick={onLogout} style={{ background: 'none', border: 'none', cursor: 'pointer', color: mutedColor, display: 'flex', alignItems: 'center', gap: 4, fontSize: 14 }}>
+              <LogOut size={14} /> Sign out
+            </button>
+          </div>
+        ) : (
+          <>
+            <button onClick={() => onAuthOpen('login')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 500, color: textColor, padding: '6px 4px' }}>Sign In</button>
+            <button onClick={() => onAuthOpen('register')} style={{
+              background: scrolled || !isLanding ? '#1C4532' : 'rgba(255,255,255,0.15)',
+              border: scrolled || !isLanding ? 'none' : '1.5px solid rgba(255,255,255,0.5)',
+              color: '#fff', borderRadius: 8, padding: '7px 16px', fontSize: 14, fontWeight: 500, cursor: 'pointer',
+              backdropFilter: scrolled || !isLanding ? 'none' : 'blur(8px)',
+              transition: 'all 0.2s'
+            }}>Register</button>
+          </>
+        )}
+      </div>
+    </nav>
+  );
+}
+
+// ══════════════════════════════════════════════════════════
+// LANDING PAGE
+// ══════════════════════════════════════════════════════════
+function LandingPage({ onSearch }) {
+  const [address, setAddress] = useState('Newton, MA');
+  const [radius, setRadius] = useState('10');
+
+  const handleSearch = () => { if (address.trim()) onSearch(address, radius); };
+
+  return (
+    <div style={{ fontFamily: "'DM Sans', sans-serif" }}>
+      {/* Hero */}
+      <div style={{
+        minHeight: '100vh', position: 'relative', overflow: 'hidden',
+        background: 'linear-gradient(160deg, #0B3D26 0%, #1C4532 40%, #2D6A4F 70%, #52B788 100%)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center'
+      }}>
+        {/* Decorative orbs */}
+        {[{t:'15%',l:'8%',s:300,o:0.06},{t:'60%',r:'5%',s:400,o:0.05},{t:'5%',r:'20%',s:200,o:0.08}].map((o,i)=>(
+          <div key={i} style={{ position:'absolute', top:o.t, left:o.l, right:o.r, width:o.s, height:o.s, borderRadius:'50%', background:`rgba(82,183,136,${o.o})`, filter:'blur(60px)', animation:`float ${4+i}s ease-in-out infinite`, animationDelay:`${i*1.2}s` }} />
+        ))}
+        {/* Dot pattern */}
+        <div style={{ position:'absolute', inset:0, backgroundImage:'radial-gradient(circle, rgba(255,255,255,0.08) 1px, transparent 1px)', backgroundSize:'32px 32px', opacity:0.5 }} />
+
+        <div style={{ position:'relative', textAlign:'center', padding:'100px 24px 60px', maxWidth:760, width:'100%', animation:'slideUp 0.8s ease' }}>
+          <div style={{ display:'inline-flex', alignItems:'center', gap:8, background:'rgba(255,255,255,0.1)', backdropFilter:'blur(8px)', border:'1px solid rgba(255,255,255,0.2)', borderRadius:100, padding:'6px 16px', marginBottom:28 }}>
+            <Leaf size={14} color="#74C69D" />
+            <span style={{ color:'#D8F3DC', fontSize:13, fontWeight:500, letterSpacing:'0.5px' }}>Free • Community-Powered • Always Up-to-Date</span>
+          </div>
+
+          <h1 style={{ fontFamily:"'Playfair Display', serif", fontSize:'clamp(38px,6vw,68px)', fontWeight:700, color:'#fff', lineHeight:1.1, marginBottom:20, letterSpacing:'-1px' }}>
+            Find Food Pantries<br />
+            <span style={{ fontStyle:'italic', color:'#74C69D' }}>Near You</span>
+          </h1>
+          <p style={{ fontSize:'clamp(16px,2.5vw,20px)', color:'rgba(255,255,255,0.75)', marginBottom:40, lineHeight:1.6, maxWidth:520, margin:'0 auto 40px' }}>
+            Connecting communities with nutritious food — discover pantries, check hours, and get help when you need it most.
+          </p>
+
+          {/* Search bar */}
+          <div style={{ background:'rgba(255,255,255,0.08)', backdropFilter:'blur(16px)', border:'1px solid rgba(255,255,255,0.2)', borderRadius:18, padding:8, display:'flex', gap:8, maxWidth:640, margin:'0 auto', boxShadow:'0 20px 60px rgba(0,0,0,0.2)' }}>
+            <div style={{ flex:1, display:'flex', alignItems:'center', gap:10, background:'rgba(255,255,255,0.12)', borderRadius:12, padding:'0 16px' }}>
+              <MapPin size={18} color="#74C69D" />
+              <input
+                value={address} onChange={e => setAddress(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleSearch()}
+                placeholder="Enter address or city..."
+                style={{ flex:1, background:'none', border:'none', outline:'none', color:'#fff', fontSize:15, padding:'14px 0' }}
+              />
+            </div>
+            <select value={radius} onChange={e => setRadius(e.target.value)} style={{
+              background:'rgba(255,255,255,0.12)', border:'none', borderRadius:12, color:'#fff', fontSize:14,
+              padding:'0 16px', cursor:'pointer', outline:'none', appearance:'none', minWidth:100
+            }}>
+              {['2','5','10','25','50'].map(r => <option key={r} value={r} style={{ background:'#1C4532' }}>{r} miles</option>)}
+            </select>
+            <button onClick={handleSearch} style={{
+              background:'linear-gradient(135deg, #52B788, #2D6A4F)', border:'none', borderRadius:12,
+              color:'#fff', padding:'14px 24px', fontSize:15, fontWeight:600, cursor:'pointer',
+              display:'flex', alignItems:'center', gap:8, whiteSpace:'nowrap', transition:'opacity 0.2s'
+            }}>
+              <Search size={18} /> Search
+            </button>
+          </div>
+        </div>
+
+        {/* Wave divider */}
+        <div style={{ position:'absolute', bottom:-1, left:0, right:0 }}>
+          <svg viewBox="0 0 1440 80" preserveAspectRatio="none" style={{ width:'100%', height:80, display:'block' }}>
+            <path d="M0,40 C360,80 1080,0 1440,40 L1440,80 L0,80 Z" fill="#F6F4EE" />
+          </svg>
+        </div>
+      </div>
+
+      {/* Stats bar */}
+      <div style={{ background:'#fff', borderBottom:'1px solid #E8E4DC', padding:'20px 24px' }}>
+        <div style={{ maxWidth:1200, margin:'0 auto', display:'flex', justifyContent:'center', gap:'48px', flexWrap:'wrap' }}>
+          {[['10+', 'Pantries Listed'], ['5', 'Cities Covered'], ['Free', 'Always & Forever'], ['Updated', 'Community-Sourced']].map(([num, lbl]) => (
+            <div key={lbl} style={{ textAlign:'center' }}>
+              <div style={{ fontFamily:"'Playfair Display', serif", fontSize:28, fontWeight:700, color:'#1C4532' }}>{num}</div>
+              <div style={{ fontSize:13, color:'#6B7280', fontWeight:500 }}>{lbl}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* How it works */}
+      <div style={{ padding:'80px 24px', background:'#F6F4EE' }}>
+        <div style={{ maxWidth:1100, margin:'0 auto' }}>
+          <div style={{ textAlign:'center', marginBottom:56 }}>
+            <h2 style={{ fontFamily:"'Playfair Display', serif", fontSize:'clamp(28px,4vw,42px)', color:'#1C4532', marginBottom:12 }}>How PantryFinder Works</h2>
+            <p style={{ color:'#6B7280', fontSize:16, maxWidth:480, margin:'0 auto' }}>Three simple steps to find the food support you need</p>
+          </div>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(280px, 1fr))', gap:28 }}>
+            {[
+              { n:'01', icon:<Search size={24} color="#1C4532" />, title:'Search Your Area', desc:'Enter your address or city and set a search radius to find pantries near you.' },
+              { n:'02', icon:<Clock size={24} color="#1C4532" />, title:'Check Hours & Details', desc:'View open schedules, food types available, and contact info for each pantry.' },
+              { n:'03', icon:<Heart size={24} color="#1C4532" />, title:'Connect & Follow', desc:'Love a pantry, follow for updates, and help keep information accurate for everyone.' }
+            ].map(step => (
+              <div key={step.n} style={{ background:'#fff', borderRadius:20, padding:32, boxShadow:'0 4px 20px rgba(28,69,50,0.07)', border:'1px solid #EEE9E0', position:'relative', overflow:'hidden' }}>
+                <div style={{ position:'absolute', top:20, right:20, fontFamily:"'Playfair Display', serif", fontSize:48, fontWeight:700, color:'rgba(28,69,50,0.05)' }}>{step.n}</div>
+                <div style={{ width:52, height:52, background:'#E8F5EC', borderRadius:14, display:'flex', alignItems:'center', justifyContent:'center', marginBottom:20 }}>
+                  {step.icon}
+                </div>
+                <h3 style={{ fontFamily:"'Playfair Display', serif", fontSize:20, color:'#1A1A1A', marginBottom:10 }}>{step.title}</h3>
+                <p style={{ color:'#6B7280', fontSize:15, lineHeight:1.6 }}>{step.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Featured pantries preview */}
+      <div style={{ padding:'80px 24px', background:'#fff' }}>
+        <div style={{ maxWidth:1100, margin:'0 auto' }}>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:40, flexWrap:'wrap', gap:12 }}>
+            <h2 style={{ fontFamily:"'Playfair Display', serif", fontSize:'clamp(24px,3.5vw,38px)', color:'#1C4532' }}>Featured Pantries</h2>
+            <button onClick={() => onSearch('Newton, MA', '10')} style={{
+              background:'none', border:'1.5px solid #1C4532', color:'#1C4532', borderRadius:10, padding:'8px 20px', fontSize:14, fontWeight:500, cursor:'pointer', display:'flex', alignItems:'center', gap:6
+            }}>View All <ChevronRight size={16} /></button>
+          </div>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(300px, 1fr))', gap:20 }}>
+            {PANTRIES_DATA.slice(0,3).map(p => (
+              <div key={p.id} style={{ background:'#F6F4EE', borderRadius:16, padding:24, border:'1px solid #EEE9E0' }}>
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:12 }}>
+                  <h3 style={{ fontFamily:"'Playfair Display', serif", fontSize:17, color:'#1A1A1A', flex:1, marginRight:8 }}>{p.name}</h3>
+                  {isOpenToday(p.schedules) && (
+                    <span style={{ background:'#DCFCE7', color:'#14532D', fontSize:11, fontWeight:600, padding:'3px 8px', borderRadius:100, whiteSpace:'nowrap' }}>Open Today</span>
+                  )}
+                </div>
+                <div style={{ display:'flex', alignItems:'center', gap:6, color:'#6B7280', fontSize:13, marginBottom:16 }}>
+                  <MapPin size={13} />{p.address}
+                </div>
+                <button onClick={() => onSearch('Newton, MA', '10')} style={{
+                  background:'#1C4532', color:'#fff', border:'none', borderRadius:8, padding:'8px 16px', fontSize:13, fontWeight:500, cursor:'pointer', width:'100%'
+                }}>View Details</button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* CTA */}
+      <div style={{ background:'linear-gradient(135deg, #1C4532, #2D6A4F)', padding:'80px 24px', textAlign:'center' }}>
+        <h2 style={{ fontFamily:"'Playfair Display', serif", fontSize:'clamp(28px,4vw,44px)', color:'#fff', marginBottom:16 }}>
+          Know a pantry we're missing?
+        </h2>
+        <p style={{ color:'rgba(255,255,255,0.75)', fontSize:16, marginBottom:32, maxWidth:500, margin:'0 auto 32px' }}>
+          Help us keep PantryFinder accurate and complete for everyone in the community.
+        </p>
+        <button style={{ background:'rgba(255,255,255,0.15)', border:'1.5px solid rgba(255,255,255,0.4)', color:'#fff', borderRadius:12, padding:'14px 32px', fontSize:16, fontWeight:500, cursor:'pointer', backdropFilter:'blur(8px)' }}>
+          Submit a Pantry
+        </button>
+      </div>
+
+      {/* Footer */}
+      <div style={{ background:'#0B3D26', padding:'40px 24px' }}>
+        <div style={{ maxWidth:1200, margin:'0 auto', display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:20 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+            <div style={{ width:28, height:28, background:'rgba(255,255,255,0.1)', borderRadius:6, display:'flex', alignItems:'center', justifyContent:'center' }}>
+              <Leaf size={14} color="#74C69D" />
+            </div>
+            <span style={{ fontFamily:"'Playfair Display', serif", color:'#74C69D', fontWeight:700 }}>PantryFinder</span>
+          </div>
+          <span style={{ color:'rgba(255,255,255,0.4)', fontSize:13 }}>© 2025 PantryFinder. Built for communities.</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════
+// PANTRY CARD
+// ══════════════════════════════════════════════════════════
+function PantryCard({ pantry, loved, followed, user, loveCounts, onLove, onFollow, onSelect, onFeedback, distance }) {
+  const openNow = isOpenNow(pantry.schedules);
+  const openToday = isOpenToday(pantry.schedules);
+  const foods = getUniqueFoods(pantry.services).slice(0,4);
+  const days = getScheduleDays(pantry.schedules);
+
+  return (
+    <div style={{
+      background:'#fff', borderRadius:18, border:'1px solid #EEE9E0',
+      boxShadow:'0 2px 12px rgba(28,69,50,0.06)', overflow:'hidden',
+      transition:'box-shadow 0.2s, transform 0.2s', cursor:'pointer',
+    }}
+      onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 8px 32px rgba(28,69,50,0.12)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+      onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 2px 12px rgba(28,69,50,0.06)'; e.currentTarget.style.transform = 'none'; }}
+      onClick={() => onSelect(pantry)}
+    >
+      {/* Color accent bar */}
+      <div style={{ height:4, background:'linear-gradient(90deg, #1C4532, #52B788)' }} />
+
+      <div style={{ padding:'20px 22px 16px' }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:12, marginBottom:10 }}>
+          <h3 style={{ fontFamily:"'Playfair Display', serif", fontSize:18, color:'#1A1A1A', lineHeight:1.3, flex:1 }}>{pantry.name}</h3>
+          <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:4, flexShrink:0 }}>
+            {openNow && <span style={{ background:'#DCFCE7', color:'#14532D', fontSize:11, fontWeight:700, padding:'3px 9px', borderRadius:100, letterSpacing:'0.3px' }}>OPEN NOW</span>}
+            {!openNow && openToday && <span style={{ background:'#FEF9C3', color:'#854D0E', fontSize:11, fontWeight:700, padding:'3px 9px', borderRadius:100 }}>OPEN TODAY</span>}
+            {!openToday && pantry.schedules.length > 0 && <span style={{ background:'#F3F4F6', color:'#6B7280', fontSize:11, fontWeight:600, padding:'3px 9px', borderRadius:100 }}>CLOSED TODAY</span>}
+          </div>
+        </div>
+
+        <div style={{ display:'flex', alignItems:'flex-start', gap:6, color:'#6B7280', fontSize:13, marginBottom:distance ? 4 : 12 }}>
+          <MapPin size={13} style={{ flexShrink:0, marginTop:2 }} /><span>{pantry.address}</span>
+        </div>
+
+        {distance !== undefined && (
+          <div style={{ fontSize:12, color:'#52B788', fontWeight:600, marginBottom:10 }}>📍 {distance.toFixed(1)} miles away</div>
+        )}
+
+        {days.length > 0 && (
+          <div style={{ display:'flex', alignItems:'flex-start', gap:6, fontSize:13, color:'#4B5563', marginBottom:12 }}>
+            <Clock size={13} style={{ flexShrink:0, marginTop:2 }} />
+            <div>
+              {days.slice(0,2).map((s,i) => (
+                <span key={i}>{i > 0 && ' • '}{s.weekDay.slice(0,3)} {s.start}–{s.end}</span>
+              ))}
+              {days.length > 2 && <span style={{ color:'#9CA3AF' }}> +{days.length-2} more</span>}
+            </div>
+          </div>
+        )}
+
+        {pantry.phone && (
+          <div style={{ display:'flex', alignItems:'center', gap:6, fontSize:13, color:'#4B5563', marginBottom:12 }}>
+            <Phone size={13} />{pantry.phone}
+          </div>
+        )}
+
+        {foods.length > 0 && (
+          <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom:16 }}>
+            {foods.map(f => (
+              <span key={f} style={{ background:'#E8F5EC', color:'#1C4532', fontSize:11, fontWeight:500, padding:'3px 9px', borderRadius:100 }}>{f}</span>
+            ))}
+            {getUniqueFoods(pantry.services).length > 4 && (
+              <span style={{ background:'#F3F4F6', color:'#6B7280', fontSize:11, padding:'3px 9px', borderRadius:100 }}>+{getUniqueFoods(pantry.services).length - 4} more</span>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Action bar */}
+      <div style={{ borderTop:'1px solid #F3F0EA', padding:'12px 22px', display:'flex', gap:8, alignItems:'center' }}
+        onClick={e => e.stopPropagation()}>
+        <button
+          onClick={() => onLove(pantry.id)}
+          style={{ display:'flex', alignItems:'center', gap:5, padding:'7px 13px', borderRadius:8, border:`1.5px solid ${loved ? '#FCA5A5' : '#E5E7EB'}`, background: loved ? '#FFF1F2' : '#fff', color: loved ? '#E11D48' : '#6B7280', fontSize:13, fontWeight:500, cursor:'pointer', transition:'all 0.15s' }}
+        >
+          <Heart size={14} fill={loved ? '#E11D48' : 'none'} color={loved ? '#E11D48' : 'currentColor'} />
+          {(loveCounts[pantry.id] ?? pantry.loves) + (loved ? 0 : 0)}
+        </button>
+        <button
+          onClick={() => onFollow(pantry.id)}
+          style={{ display:'flex', alignItems:'center', gap:5, padding:'7px 13px', borderRadius:8, border:`1.5px solid ${followed ? '#86EFAC' : '#E5E7EB'}`, background: followed ? '#F0FDF4' : '#fff', color: followed ? '#15803D' : '#6B7280', fontSize:13, fontWeight:500, cursor:'pointer', transition:'all 0.15s' }}
+        >
+          {followed ? <BellOff size={14} /> : <Bell size={14} />}
+          {followed ? 'Following' : 'Follow'}
+        </button>
+        <button
+          onClick={() => onFeedback(pantry)}
+          style={{ display:'flex', alignItems:'center', gap:5, padding:'7px 13px', borderRadius:8, border:'1.5px solid #E5E7EB', background:'#fff', color:'#6B7280', fontSize:13, fontWeight:500, cursor:'pointer' }}
+        >
+          <Flag size={14} />
+        </button>
+        <div style={{ flex:1 }} />
+        <button
+          onClick={() => onSelect(pantry)}
+          style={{ display:'flex', alignItems:'center', gap:5, padding:'7px 16px', borderRadius:8, background:'#1C4532', color:'#fff', fontSize:13, fontWeight:500, cursor:'pointer', border:'none' }}
+        >
+          Details <ChevronRight size={14} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════
+// MAP VIEW
+// ══════════════════════════════════════════════════════════
+function MapView({ pantries, lovedPantries, onSelectPantry }) {
+  const containerRef = useRef(null);
+  const mapRef = useRef(null);
+
+  useEffect(() => {
+    const initMap = () => {
+      if (!containerRef.current) return;
+      if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; }
+      const L = window.L;
+      const map = L.map(containerRef.current, { center: [42.36, -71.2], zoom: 12 });
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+      }).addTo(map);
+      pantries.forEach(pantry => {
+        const isLoved = lovedPantries.has(pantry.id);
+        const openNow = isOpenNow(pantry.schedules);
+        const color = isLoved ? '#E11D48' : openNow ? '#1C4532' : '#6B7280';
+        const icon = L.divIcon({
+          className: '',
+          html: `<div style="background:${color};color:white;border-radius:50% 50% 50% 0;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-family:Playfair Display,serif;font-size:15px;font-weight:700;box-shadow:0 3px 10px rgba(0,0,0,0.25);cursor:pointer;border:2.5px solid white;transform:rotate(-45deg)"><span style="transform:rotate(45deg)">${pantry.name.charAt(0)}</span></div>`,
+          iconSize: [36, 36], iconAnchor: [18, 36],
+        });
+        const marker = L.marker([pantry.latitude, pantry.longitude], { icon }).addTo(map);
+        marker.bindPopup(`<div style="font-family:DM Sans,sans-serif;min-width:180px"><strong style="font-family:Playfair Display,serif;font-size:14px">${pantry.name}</strong><br><small style="color:#6B7280">${pantry.address}</small><br><br><button onclick="window.selectPantryFromMap('${pantry.id}')" style="background:#1C4532;color:white;border:none;border-radius:6px;padding:5px 12px;font-size:12px;cursor:pointer;width:100%">View Details</button></div>`);
+        marker.on('click', () => onSelectPantry(pantry));
+      });
+      window.selectPantryFromMap = (id) => {
+        const p = pantries.find(x => x.id === id);
+        if (p) onSelectPantry(p);
+      };
+      mapRef.current = map;
+    };
+
+    const loadLeaflet = () => {
+      if (!document.getElementById('leaflet-css')) {
+        const css = document.createElement('link');
+        css.id = 'leaflet-css'; css.rel = 'stylesheet';
+        css.href = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css';
+        document.head.appendChild(css);
+      }
+      if (window.L) { initMap(); return; }
+      if (document.getElementById('leaflet-js')) {
+        const poll = setInterval(() => { if (window.L) { clearInterval(poll); initMap(); } }, 80);
+        return;
+      }
+      const js = document.createElement('script');
+      js.id = 'leaflet-js';
+      js.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';
+      js.onload = initMap; document.head.appendChild(js);
+    };
+    loadLeaflet();
+    return () => { if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; } };
+  }, [pantries, lovedPantries]);
+
+  return <div ref={containerRef} style={{ width:'100%', height:'100%', borderRadius:16, overflow:'hidden' }} />;
+}
+
+// ══════════════════════════════════════════════════════════
+// PANTRY DETAIL MODAL
+// ══════════════════════════════════════════════════════════
+function PantryDetailModal({ pantry, loved, followed, loveCounts, user, onLove, onFollow, onFeedback, onClose }) {
+  if (!pantry) return null;
+  const openNow = isOpenNow(pantry.schedules);
+  const allFoods = getUniqueFoods(pantry.services);
+
+  return (
+    <div style={{ position:'fixed', inset:0, zIndex:2000, display:'flex', alignItems:'flex-start', justifyContent:'center', background:'rgba(0,0,0,0.5)', backdropFilter:'blur(4px)', overflowY:'auto', padding:'24px 16px' }}
+      onClick={e => e.target === e.currentTarget && onClose()}>
+      <div style={{ background:'#fff', borderRadius:24, width:'100%', maxWidth:720, boxShadow:'0 24px 80px rgba(0,0,0,0.2)', animation:'slideUp 0.35s ease', overflow:'hidden', marginTop:48 }}>
+        {/* Header */}
+        <div style={{ background:'linear-gradient(135deg, #1C4532, #2D6A4F)', padding:'32px 32px 28px', position:'relative' }}>
+          <button onClick={onClose} style={{ position:'absolute', top:20, right:20, background:'rgba(255,255,255,0.15)', border:'none', borderRadius:'50%', width:36, height:36, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', color:'#fff' }}>
+            <X size={18} />
+          </button>
+          <div style={{ display:'flex', alignItems:'flex-start', gap:16 }}>
+            <div style={{ width:56, height:56, background:'rgba(255,255,255,0.15)', borderRadius:16, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:"'Playfair Display', serif", fontSize:24, fontWeight:700, color:'#fff', flexShrink:0 }}>
+              {pantry.name.charAt(0)}
+            </div>
+            <div>
+              <h2 style={{ fontFamily:"'Playfair Display', serif", fontSize:'clamp(20px,3vw,26px)', color:'#fff', marginBottom:8, lineHeight:1.2 }}>{pantry.name}</h2>
+              <div style={{ display:'flex', alignItems:'center', gap:6, color:'rgba(255,255,255,0.8)', fontSize:14 }}>
+                <MapPin size={14} />{pantry.address}
+              </div>
+            </div>
+          </div>
+          {openNow && (
+            <div style={{ marginTop:14, display:'inline-flex', alignItems:'center', gap:6, background:'rgba(220,252,231,0.2)', border:'1px solid rgba(134,239,172,0.4)', borderRadius:100, padding:'5px 14px' }}>
+              <div style={{ width:7, height:7, borderRadius:'50%', background:'#4ADE80', animation:'pulse 2s infinite' }} />
+              <span style={{ color:'#DCFCE7', fontSize:13, fontWeight:600 }}>Open Right Now</span>
+            </div>
+          )}
+        </div>
+
+        {/* Action buttons */}
+        <div style={{ display:'flex', gap:10, padding:'20px 32px', borderBottom:'1px solid #EEE9E0', flexWrap:'wrap' }}>
+          <button onClick={() => onLove(pantry.id)} style={{ display:'flex', alignItems:'center', gap:7, padding:'9px 18px', borderRadius:10, border:`1.5px solid ${loved ? '#FCA5A5' : '#E5E7EB'}`, background: loved ? '#FFF1F2' : '#fff', color: loved ? '#E11D48' : '#374151', fontSize:14, fontWeight:500, cursor:'pointer', transition:'all 0.15s' }}>
+            <Heart size={16} fill={loved ? '#E11D48' : 'none'} color={loved ? '#E11D48' : 'currentColor'} />
+            {loved ? 'Loved' : 'Love'} · {loveCounts[pantry.id] ?? pantry.loves}
+          </button>
+          <button onClick={() => onFollow(pantry.id)} style={{ display:'flex', alignItems:'center', gap:7, padding:'9px 18px', borderRadius:10, border:`1.5px solid ${followed ? '#86EFAC' : '#E5E7EB'}`, background: followed ? '#F0FDF4' : '#fff', color: followed ? '#15803D' : '#374151', fontSize:14, fontWeight:500, cursor:'pointer', transition:'all 0.15s' }}>
+            {followed ? <BellOff size={16} /> : <Bell size={16} />}
+            {followed ? 'Unfollow' : 'Follow Updates'}
+          </button>
+          <button onClick={() => onFeedback(pantry)} style={{ display:'flex', alignItems:'center', gap:7, padding:'9px 18px', borderRadius:10, border:'1.5px solid #E5E7EB', background:'#fff', color:'#374151', fontSize:14, fontWeight:500, cursor:'pointer' }}>
+            <Flag size={16} /> Report Issue
+          </button>
+          {pantry.phone && (
+            <a href={`tel:${pantry.phone}`} style={{ display:'flex', alignItems:'center', gap:7, padding:'9px 18px', borderRadius:10, background:'#1C4532', color:'#fff', fontSize:14, fontWeight:500, textDecoration:'none' }}>
+              <Phone size={16} /> {pantry.phone}
+            </a>
+          )}
+        </div>
+
+        <div style={{ padding:'24px 32px', display:'grid', gridTemplateColumns:'1fr 1fr', gap:24 }}>
+          {/* About */}
+          {pantry.about && (
+            <div style={{ gridColumn:'1/-1', background:'#F6F4EE', borderRadius:14, padding:20 }}>
+              <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:10, color:'#1C4532', fontWeight:600, fontSize:14 }}>
+                <Info size={15} /> About
+              </div>
+              <p style={{ color:'#4B5563', fontSize:14, lineHeight:1.7 }}>{pantry.about}</p>
+            </div>
+          )}
+
+          {/* Schedules */}
+          <div>
+            <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:16, color:'#1C4532', fontWeight:600, fontSize:14 }}>
+              <Calendar size={15} /> Hours & Schedule
+            </div>
+            {pantry.schedules.length > 0 ? (
+              <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+                {getScheduleDays(pantry.schedules).map((s, i) => (
+                  <div key={i} style={{ background:'#F6F4EE', borderRadius:10, padding:'12px 16px' }}>
+                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:s.notes ? 4 : 0 }}>
+                      <span style={{ fontWeight:600, fontSize:14, color:'#1A1A1A' }}>{s.weekDay}</span>
+                      <span style={{ fontSize:13, color:'#52B788', fontWeight:500 }}>{s.start} – {s.end}</span>
+                    </div>
+                    {s.notes && <div style={{ fontSize:12, color:'#6B7280' }}>{s.notes}</div>}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ color:'#9CA3AF', fontSize:13, padding:'12px 16px', background:'#F6F4EE', borderRadius:10 }}>
+                Call for schedule information: {pantry.phone || 'no phone listed'}
+              </div>
+            )}
+          </div>
+
+          {/* Food Types */}
+          <div>
+            <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:16, color:'#1C4532', fontWeight:600, fontSize:14 }}>
+              <Leaf size={15} /> Available Food Types
+            </div>
+            {allFoods.length > 0 ? (
+              <div style={{ display:'flex', flexWrap:'wrap', gap:7 }}>
+                {allFoods.map(f => (
+                  <span key={f} style={{ background:'#E8F5EC', color:'#1C4532', fontSize:12, fontWeight:500, padding:'5px 12px', borderRadius:100, border:'1px solid #BBF0CC' }}>{f}</span>
+                ))}
+              </div>
+            ) : (
+              <div style={{ color:'#9CA3AF', fontSize:13 }}>Contact for food availability details</div>
+            )}
+          </div>
+
+          {/* Services */}
+          <div style={{ gridColumn:'1/-1' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:16, color:'#1C4532', fontWeight:600, fontSize:14 }}>
+              <Star size={15} /> Services Offered
+            </div>
+            <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+              {pantry.services.map((svc, i) => (
+                <div key={i} style={{ background:'#F6F4EE', borderRadius:12, padding:'14px 18px', display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:8 }}>
+                  <div>
+                    <div style={{ fontWeight:600, fontSize:14, color:'#1A1A1A', marginBottom:2 }}>{svc.name}</div>
+                    <div style={{ fontSize:12, color:'#6B7280' }}>{svc.category}{svc.program && svc.program !== svc.category ? ` · ${svc.program}` : ''}</div>
+                  </div>
+                  <span style={{ background:'#fff', border:'1px solid #E5E7EB', color:'#374151', fontSize:11, padding:'3px 10px', borderRadius:100 }}>
+                    {svc.schedules.filter(s=>s.weekDay).length} sessions/wk
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════
+// AUTH MODAL
+// ══════════════════════════════════════════════════════════
+function AuthModal({ mode, onClose, onAuth }) {
+  const [tab, setTab] = useState(mode);
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPw, setShowPw] = useState(false);
+
+  const handleSubmit = () => {
+    if (!email || !password) return;
+    if (tab === 'register' && !name) return;
+    onAuth({ name: tab === 'register' ? name : email.split('@')[0], email });
+  };
+
+  return (
+    <div style={{ position:'fixed', inset:0, zIndex:3000, display:'flex', alignItems:'center', justifyContent:'center', background:'rgba(0,0,0,0.5)', backdropFilter:'blur(4px)', padding:16 }}
+      onClick={e => e.target === e.currentTarget && onClose()}>
+      <div style={{ background:'#fff', borderRadius:22, width:'100%', maxWidth:440, boxShadow:'0 20px 60px rgba(0,0,0,0.2)', animation:'slideUp 0.3s ease', overflow:'hidden' }}>
+        <div style={{ background:'linear-gradient(135deg, #1C4532, #2D6A4F)', padding:'28px 32px 24px', position:'relative' }}>
+          <button onClick={onClose} style={{ position:'absolute', top:16, right:16, background:'rgba(255,255,255,0.15)', border:'none', borderRadius:'50%', width:32, height:32, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', color:'#fff' }}>
+            <X size={16} />
+          </button>
+          <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:16 }}>
+            <div style={{ width:36, height:36, background:'rgba(255,255,255,0.15)', borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center' }}>
+              <Leaf size={18} color="#74C69D" />
+            </div>
+            <span style={{ fontFamily:"'Playfair Display', serif", color:'#fff', fontSize:20, fontWeight:700 }}>PantryFinder</span>
+          </div>
+          <div style={{ display:'flex', gap:4, background:'rgba(255,255,255,0.1)', borderRadius:10, padding:4 }}>
+            {['login', 'register'].map(t => (
+              <button key={t} onClick={() => setTab(t)} style={{
+                flex:1, padding:'8px', borderRadius:7, border:'none', cursor:'pointer', fontSize:14, fontWeight:500,
+                background: tab === t ? 'rgba(255,255,255,0.2)' : 'transparent',
+                color: tab === t ? '#fff' : 'rgba(255,255,255,0.7)', transition:'all 0.2s'
+              }}>{t === 'login' ? 'Sign In' : 'Register'}</button>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ padding:'28px 32px 32px', display:'flex', flexDirection:'column', gap:16 }}>
+          {tab === 'register' && (
+            <div>
+              <label style={{ display:'block', fontSize:13, fontWeight:600, color:'#374151', marginBottom:6 }}>Your Name</label>
+              <div style={{ display:'flex', alignItems:'center', gap:10, background:'#F6F4EE', borderRadius:10, padding:'0 14px', border:'1.5px solid #E8E4DC' }}>
+                <User size={16} color="#9CA3AF" />
+                <input value={name} onChange={e=>setName(e.target.value)} placeholder="Jane Smith"
+                  style={{ flex:1, background:'none', border:'none', outline:'none', fontSize:14, padding:'12px 0', color:'#1A1A1A' }} />
+              </div>
+            </div>
+          )}
+          <div>
+            <label style={{ display:'block', fontSize:13, fontWeight:600, color:'#374151', marginBottom:6 }}>Email Address</label>
+            <div style={{ display:'flex', alignItems:'center', gap:10, background:'#F6F4EE', borderRadius:10, padding:'0 14px', border:'1.5px solid #E8E4DC' }}>
+              <Mail size={16} color="#9CA3AF" />
+              <input value={email} onChange={e=>setEmail(e.target.value)} type="email" placeholder="you@example.com"
+                style={{ flex:1, background:'none', border:'none', outline:'none', fontSize:14, padding:'12px 0', color:'#1A1A1A' }} />
+            </div>
+          </div>
+          <div>
+            <label style={{ display:'block', fontSize:13, fontWeight:600, color:'#374151', marginBottom:6 }}>Password</label>
+            <div style={{ display:'flex', alignItems:'center', gap:10, background:'#F6F4EE', borderRadius:10, padding:'0 14px', border:'1.5px solid #E8E4DC' }}>
+              <Lock size={16} color="#9CA3AF" />
+              <input value={password} onChange={e=>setPassword(e.target.value)} type={showPw ? 'text' : 'password'} placeholder="••••••••"
+                style={{ flex:1, background:'none', border:'none', outline:'none', fontSize:14, padding:'12px 0', color:'#1A1A1A' }} />
+              <button onClick={() => setShowPw(!showPw)} style={{ background:'none', border:'none', cursor:'pointer', color:'#9CA3AF' }}>
+                {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+          </div>
+          <button onClick={handleSubmit} style={{
+            background:'linear-gradient(135deg, #1C4532, #2D6A4F)', color:'#fff', border:'none', borderRadius:12,
+            padding:'14px', fontSize:15, fontWeight:600, cursor:'pointer', marginTop:4
+          }}>
+            {tab === 'login' ? 'Sign In' : 'Create Account'}
+          </button>
+          <p style={{ textAlign:'center', fontSize:13, color:'#9CA3AF' }}>
+            {tab === 'login' ? "Don't have an account? " : "Already have an account? "}
+            <button onClick={() => setTab(tab === 'login' ? 'register' : 'login')} style={{ background:'none', border:'none', color:'#1C4532', fontWeight:600, cursor:'pointer', fontSize:13 }}>
+              {tab === 'login' ? 'Register' : 'Sign In'}
+            </button>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════
+// FEEDBACK MODAL
+// ══════════════════════════════════════════════════════════
+function FeedbackModal({ pantry, onClose, onSubmit }) {
+  const [issues, setIssues] = useState(new Set());
+  const [notes, setNotes] = useState('');
+  const issueOptions = ['Incorrect address','Wrong phone number','Schedule outdated','Pantry permanently closed','Missing food types','Other information incorrect'];
+
+  const toggle = (item) => {
+    const next = new Set(issues);
+    next.has(item) ? next.delete(item) : next.add(item);
+    setIssues(next);
+  };
+
+  return (
+    <div style={{ position:'fixed', inset:0, zIndex:3000, display:'flex', alignItems:'center', justifyContent:'center', background:'rgba(0,0,0,0.5)', backdropFilter:'blur(4px)', padding:16 }}
+      onClick={e => e.target === e.currentTarget && onClose()}>
+      <div style={{ background:'#fff', borderRadius:22, width:'100%', maxWidth:480, boxShadow:'0 20px 60px rgba(0,0,0,0.2)', animation:'slideUp 0.3s ease', overflow:'hidden' }}>
+        <div style={{ background:'#FFF7ED', borderBottom:'1px solid #FED7AA', padding:'24px 28px', display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
+          <div>
+            <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:4 }}>
+              <Flag size={18} color="#EA580C" />
+              <span style={{ fontWeight:700, fontSize:16, color:'#9A3412' }}>Report an Issue</span>
+            </div>
+            <p style={{ fontSize:13, color:'#C2410C' }}>{pantry?.name}</p>
+          </div>
+          <button onClick={onClose} style={{ background:'rgba(0,0,0,0.06)', border:'none', borderRadius:'50%', width:32, height:32, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer' }}>
+            <X size={16} color="#6B7280" />
+          </button>
+        </div>
+        <div style={{ padding:'24px 28px', display:'flex', flexDirection:'column', gap:16 }}>
+          <div>
+            <p style={{ fontSize:14, fontWeight:600, color:'#374151', marginBottom:12 }}>What's incorrect? (select all that apply)</p>
+            <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+              {issueOptions.map(opt => (
+                <button key={opt} onClick={() => toggle(opt)} style={{
+                  display:'flex', alignItems:'center', gap:10, padding:'10px 14px', borderRadius:10, border:`1.5px solid ${issues.has(opt) ? '#FED7AA' : '#E5E7EB'}`,
+                  background: issues.has(opt) ? '#FFF7ED' : '#fff', cursor:'pointer', textAlign:'left', transition:'all 0.15s'
+                }}>
+                  <div style={{ width:18, height:18, borderRadius:5, border:`2px solid ${issues.has(opt) ? '#EA580C' : '#D1D5DB'}`, background: issues.has(opt) ? '#EA580C' : 'transparent', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                    {issues.has(opt) && <Check size={11} color="#fff" />}
+                  </div>
+                  <span style={{ fontSize:13, color: issues.has(opt) ? '#9A3412' : '#374151', fontWeight: issues.has(opt) ? 500 : 400 }}>{opt}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label style={{ display:'block', fontSize:13, fontWeight:600, color:'#374151', marginBottom:8 }}>Additional Details</label>
+            <textarea value={notes} onChange={e=>setNotes(e.target.value)} placeholder="Please describe what information needs to be corrected..."
+              style={{ width:'100%', borderRadius:10, border:'1.5px solid #E5E7EB', background:'#F6F4EE', padding:'12px 14px', fontSize:13, color:'#1A1A1A', outline:'none', resize:'vertical', minHeight:80, fontFamily:'inherit', lineHeight:1.6 }} />
+          </div>
+          <div style={{ display:'flex', gap:10 }}>
+            <button onClick={onClose} style={{ flex:1, padding:'12px', borderRadius:10, border:'1.5px solid #E5E7EB', background:'#fff', color:'#374151', fontSize:14, fontWeight:500, cursor:'pointer' }}>
+              Cancel
+            </button>
+            <button onClick={() => onSubmit(issues, notes)} disabled={issues.size === 0 && !notes}
+              style={{ flex:2, padding:'12px', borderRadius:10, background: issues.size > 0 || notes ? '#EA580C' : '#E5E7EB', color: issues.size > 0 || notes ? '#fff' : '#9CA3AF', border:'none', fontSize:14, fontWeight:600, cursor: issues.size > 0 || notes ? 'pointer' : 'not-allowed', transition:'all 0.2s' }}>
+              Submit Feedback
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════
+// SEARCH PAGE
+// ══════════════════════════════════════════════════════════
+function SearchPage({ initAddress, initRadius, user, lovedPantries, followedPantries, loveCounts, onLove, onFollow, onFeedback, onSelect, onAuthOpen }) {
+  const [address, setAddress] = useState(initAddress || 'Newton, MA');
+  const [radius, setRadius] = useState(initRadius || '10');
+  const [viewMode, setViewMode] = useState('list');
+  const [filters, setFilters] = useState({ day: '', foodType: '', openNow: false });
+  const [showFilters, setShowFilters] = useState(true);
+
+  const CENTER = { lat: 42.3601, lon: -71.2088 };
+
+  const filteredPantries = useMemo(() => {
+    let r = PANTRIES_DATA;
+    if (filters.day) r = r.filter(p => p.schedules.some(s => s.weekDay === filters.day && s.start));
+    if (filters.foodType) r = r.filter(p => p.services.some(s => s.food.includes(filters.foodType)));
+    if (filters.openNow) r = r.filter(p => isOpenNow(p.schedules));
+    return r.map(p => ({ ...p, distance: haversineDistance(CENTER.lat, CENTER.lon, p.latitude, p.longitude) }))
+             .filter(p => p.distance <= parseFloat(radius))
+             .sort((a, b) => a.distance - b.distance);
+  }, [filters, radius]);
+
+  const activeFiltersCount = [filters.day, filters.foodType, filters.openNow].filter(Boolean).length;
+
+  return (
+    <div style={{ display:'flex', flexDirection:'column', height:'100vh', background:'#F6F4EE', fontFamily:"'DM Sans', sans-serif" }}>
+      {/* Top search bar */}
+      <div style={{ background:'#fff', borderBottom:'1px solid #E8E4DC', padding:'12px 24px', marginTop:64 }}>
+        <div style={{ maxWidth:1200, margin:'0 auto', display:'flex', gap:10, alignItems:'center' }}>
+          <div style={{ flex:1, display:'flex', alignItems:'center', gap:10, background:'#F6F4EE', borderRadius:10, padding:'0 14px', border:'1.5px solid #E8E4DC' }}>
+            <MapPin size={16} color="#52B788" />
+            <input value={address} onChange={e=>setAddress(e.target.value)}
+              placeholder="Address or city..."
+              style={{ flex:1, background:'none', border:'none', outline:'none', fontSize:14, padding:'10px 0', color:'#1A1A1A' }} />
+          </div>
+          <select value={radius} onChange={e=>setRadius(e.target.value)} style={{
+            background:'#F6F4EE', border:'1.5px solid #E8E4DC', borderRadius:10, color:'#1A1A1A', fontSize:14, padding:'10px 14px', cursor:'pointer', outline:'none'
+          }}>
+            {['2','5','10','25','50'].map(r=><option key={r} value={r}>{r} miles</option>)}
+          </select>
+          <button style={{ background:'#1C4532', color:'#fff', border:'none', borderRadius:10, padding:'11px 20px', fontSize:14, fontWeight:500, cursor:'pointer', display:'flex', alignItems:'center', gap:7 }}>
+            <Search size={15} /> Search
+          </button>
+          <div style={{ width:1, height:32, background:'#E5E7EB' }} />
+          <button onClick={() => setViewMode('list')} style={{ padding:'9px 16px', borderRadius:9, border:`1.5px solid ${viewMode==='list'?'#1C4532':'#E5E7EB'}`, background: viewMode==='list'?'#1C4532':'#fff', color: viewMode==='list'?'#fff':'#6B7280', fontSize:13, fontWeight:500, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
+            <List size={15} /> List
+          </button>
+          <button onClick={() => setViewMode('map')} style={{ padding:'9px 16px', borderRadius:9, border:`1.5px solid ${viewMode==='map'?'#1C4532':'#E5E7EB'}`, background: viewMode==='map'?'#1C4532':'#fff', color: viewMode==='map'?'#fff':'#6B7280', fontSize:13, fontWeight:500, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
+            <MapIcon size={15} /> Map
+          </button>
+        </div>
+      </div>
+
+      {/* Main content */}
+      <div style={{ flex:1, display:'flex', overflow:'hidden', maxWidth:'100%' }}>
+        {/* Filters sidebar */}
+        <div style={{
+          width: showFilters ? 272 : 0, flexShrink:0, background:'#fff', borderRight:'1px solid #E8E4DC',
+          overflow:'hidden', transition:'width 0.3s ease'
+        }}>
+          <div style={{ width:272, padding:'20px', overflowY:'auto', height:'100%' }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20 }}>
+              <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                <SlidersHorizontal size={15} color="#1C4532" />
+                <span style={{ fontWeight:700, fontSize:14, color:'#1C4532' }}>Filters</span>
+                {activeFiltersCount > 0 && <span style={{ background:'#1C4532', color:'#fff', borderRadius:100, fontSize:11, padding:'1px 7px', fontWeight:600 }}>{activeFiltersCount}</span>}
+              </div>
+              {activeFiltersCount > 0 && (
+                <button onClick={()=>setFilters({day:'',foodType:'',openNow:false})} style={{ background:'none', border:'none', color:'#D97706', fontSize:12, fontWeight:600, cursor:'pointer' }}>Clear all</button>
+              )}
+            </div>
+
+            {/* Open now toggle */}
+            <div style={{ marginBottom:20, padding:'14px 16px', background:'#F6F4EE', borderRadius:12 }}>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                <span style={{ fontSize:14, fontWeight:500, color:'#1A1A1A' }}>Open Right Now</span>
+                <button onClick={()=>setFilters(f=>({...f,openNow:!f.openNow}))} style={{
+                  width:42, height:24, borderRadius:100, border:'none', cursor:'pointer', position:'relative', transition:'background 0.2s',
+                  background: filters.openNow ? '#1C4532' : '#D1D5DB'
+                }}>
+                  <div style={{ position:'absolute', top:2, left: filters.openNow ? 18 : 2, width:20, height:20, borderRadius:'50%', background:'#fff', transition:'left 0.2s', boxShadow:'0 1px 3px rgba(0,0,0,0.2)' }} />
+                </button>
+              </div>
+            </div>
+
+            {/* Day filter */}
+            <div style={{ marginBottom:20 }}>
+              <label style={{ display:'block', fontSize:13, fontWeight:600, color:'#374151', marginBottom:10 }}>Open Day</label>
+              <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                <button onClick={()=>setFilters(f=>({...f,day:''}))} style={{ padding:'8px 12px', borderRadius:8, border:`1.5px solid ${!filters.day?'#1C4532':'#E5E7EB'}`, background: !filters.day?'#E8F5EC':'#fff', color: !filters.day?'#1C4532':'#6B7280', fontSize:13, fontWeight:!filters.day?600:400, cursor:'pointer', textAlign:'left' }}>Any day</button>
+                {ALL_DAYS.map(d => (
+                  <button key={d} onClick={()=>setFilters(f=>({...f,day:f.day===d?'':d}))} style={{ padding:'8px 12px', borderRadius:8, border:`1.5px solid ${filters.day===d?'#1C4532':'#E5E7EB'}`, background: filters.day===d?'#E8F5EC':'#fff', color: filters.day===d?'#1C4532':'#374151', fontSize:13, fontWeight:filters.day===d?600:400, cursor:'pointer', textAlign:'left', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                    {d} {filters.day===d && <Check size={14} color="#1C4532" />}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Food type filter */}
+            <div>
+              <label style={{ display:'block', fontSize:13, fontWeight:600, color:'#374151', marginBottom:10 }}>Food Type</label>
+              <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                <button onClick={()=>setFilters(f=>({...f,foodType:''}))} style={{ padding:'8px 12px', borderRadius:8, border:`1.5px solid ${!filters.foodType?'#1C4532':'#E5E7EB'}`, background: !filters.foodType?'#E8F5EC':'#fff', color: !filters.foodType?'#1C4532':'#6B7280', fontSize:13, cursor:'pointer', textAlign:'left' }}>All types</button>
+                {ALL_FOOD_TYPES.map(f => (
+                  <button key={f} onClick={()=>setFilters(fi=>({...fi,foodType:fi.foodType===f?'':f}))} style={{ padding:'8px 12px', borderRadius:8, border:`1.5px solid ${filters.foodType===f?'#1C4532':'#E5E7EB'}`, background: filters.foodType===f?'#E8F5EC':'#fff', color: filters.foodType===f?'#1C4532':'#374151', fontSize:12, cursor:'pointer', textAlign:'left', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                    {f} {filters.foodType===f && <Check size={13} color="#1C4532" />}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Content area */}
+        <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden' }}>
+          {/* Results header */}
+          <div style={{ padding:'14px 24px', display:'flex', alignItems:'center', gap:12, borderBottom:'1px solid #E8E4DC', background:'#fff' }}>
+            <button onClick={()=>setShowFilters(!showFilters)} style={{ display:'flex', alignItems:'center', gap:7, padding:'7px 14px', borderRadius:8, border:'1.5px solid #E5E7EB', background:'#fff', color:'#374151', fontSize:13, fontWeight:500, cursor:'pointer' }}>
+              <SlidersHorizontal size={14} /> {showFilters ? 'Hide' : 'Show'} Filters
+            </button>
+            <span style={{ fontSize:14, color:'#6B7280' }}>
+              <span style={{ fontWeight:700, color:'#1A1A1A' }}>{filteredPantries.length}</span> pantries found within <span style={{ fontWeight:600, color:'#1C4532' }}>{radius} miles</span>
+            </span>
+          </div>
+
+          {/* Results */}
+          {viewMode === 'list' ? (
+            <div style={{ flex:1, overflowY:'auto', padding:'20px 24px' }}>
+              {filteredPantries.length === 0 ? (
+                <div style={{ textAlign:'center', padding:'60px 20px' }}>
+                  <div style={{ width:64, height:64, background:'#E8F5EC', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 16px' }}>
+                    <Search size={28} color="#52B788" />
+                  </div>
+                  <h3 style={{ fontFamily:"'Playfair Display', serif", fontSize:22, color:'#1A1A1A', marginBottom:8 }}>No pantries found</h3>
+                  <p style={{ color:'#6B7280', fontSize:15 }}>Try adjusting your filters or increasing the search radius.</p>
+                </div>
+              ) : (
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(320px, 1fr))', gap:18 }}>
+                  {filteredPantries.map(p => (
+                    <PantryCard key={p.id} pantry={p} loved={lovedPantries.has(p.id)} followed={followedPantries.has(p.id)} user={user} loveCounts={loveCounts}
+                      onLove={onLove} onFollow={onFollow} onSelect={onSelect} onFeedback={onFeedback} distance={p.distance} />
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div style={{ flex:1, padding:'20px 24px', display:'flex', gap:18, overflow:'hidden' }}>
+              <div style={{ flex:1, borderRadius:16, overflow:'hidden', boxShadow:'0 4px 20px rgba(28,69,50,0.1)' }}>
+                <MapView pantries={filteredPantries} lovedPantries={lovedPantries} onSelectPantry={onSelect} />
+              </div>
+              <div style={{ width:300, flexShrink:0, overflowY:'auto', display:'flex', flexDirection:'column', gap:12 }}>
+                <div style={{ fontSize:13, fontWeight:600, color:'#6B7280', padding:'4px 0' }}>{filteredPantries.length} LOCATIONS</div>
+                {filteredPantries.map(p => (
+                  <div key={p.id} onClick={() => onSelect(p)} style={{ background:'#fff', borderRadius:12, padding:'14px 16px', cursor:'pointer', border:'1.5px solid #EEE9E0', transition:'all 0.2s' }}
+                    onMouseEnter={e => e.currentTarget.style.borderColor = '#1C4532'}
+                    onMouseLeave={e => e.currentTarget.style.borderColor = '#EEE9E0'}>
+                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:8, marginBottom:6 }}>
+                      <div style={{ fontWeight:600, fontSize:14, color:'#1A1A1A', lineHeight:1.3 }}>{p.name}</div>
+                      {isOpenToday(p.schedules) && <span style={{ background:'#DCFCE7', color:'#14532D', fontSize:10, fontWeight:700, padding:'2px 6px', borderRadius:100, flexShrink:0 }}>OPEN</span>}
+                    </div>
+                    <div style={{ fontSize:12, color:'#6B7280', marginBottom:4 }}>{p.address}</div>
+                    <div style={{ fontSize:12, color:'#52B788', fontWeight:600 }}>📍 {p.distance.toFixed(1)} mi</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════
+// MAIN APP
+// ══════════════════════════════════════════════════════════
+function App() {
+  const [page, setPage] = useState('landing');
+  const [searchParams, setSearchParams] = useState({ address: 'Newton, MA', radius: '10' });
+  const [user, setUser] = useState(null);
+  const [lovedPantries, setLovedPantries] = useState(new Set());
+  const [followedPantries, setFollowedPantries] = useState(new Set());
+  const [loveCounts, setLoveCounts] = useState({});
+  const [selectedPantry, setSelectedPantry] = useState(null);
+  const [showAuth, setShowAuth] = useState(false);
+  const [authMode, setAuthMode] = useState('login');
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [feedbackPantry, setFeedbackPantry] = useState(null);
+  const [toasts, setToasts] = useState([]);
+
+
+
+  const addToast = (message, type = 'success') => {
+    const id = Date.now();
+    setToasts(t => [...t, { id, message, type }]);
+    setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 4000);
+  };
+
+  const handleLove = (pantryId) => {
+    if (!user) { setAuthMode('login'); setShowAuth(true); addToast('Sign in to love pantries', 'error'); return; }
+    const isLoved = lovedPantries.has(pantryId);
+    const next = new Set(lovedPantries);
+    isLoved ? next.delete(pantryId) : next.add(pantryId);
+    setLovedPantries(next);
+    setLoveCounts(c => ({ ...c, [pantryId]: (PANTRIES_DATA.find(p=>p.id===pantryId)?.loves || 0) + (isLoved ? 0 : 1) }));
+    addToast(isLoved ? 'Removed from loved pantries' : '❤️ Added to loved pantries!');
+  };
+
+  const handleFollow = (pantryId) => {
+    if (!user) { setAuthMode('login'); setShowAuth(true); addToast('Sign in to follow pantries', 'error'); return; }
+    const isFollowed = followedPantries.has(pantryId);
+    const next = new Set(followedPantries);
+    isFollowed ? next.delete(pantryId) : next.add(pantryId);
+    setFollowedPantries(next);
+    const name = PANTRIES_DATA.find(p=>p.id===pantryId)?.name || 'pantry';
+    addToast(isFollowed ? `Unfollowed ${name}` : `🔔 Now following ${name}!`);
+  };
+
+  const handleFeedback = (pantry) => {
+    setFeedbackPantry(pantry);
+    setShowFeedback(true);
+  };
+
+  const handleFeedbackSubmit = (issues, notes) => {
+    setShowFeedback(false);
+    addToast('✅ Thank you! Your feedback helps keep pantry info accurate.');
+  };
+
+  const handleSearch = (address, radius) => {
+    setSearchParams({ address, radius });
+    setPage('search');
+  };
+
+  const handleAuth = (userData) => {
+    setUser(userData);
+    setShowAuth(false);
+    addToast(`🌿 Welcome${userData.name ? ', ' + userData.name : ''}!`);
+  };
+
+  return (
+    <div style={{ fontFamily:"'DM Sans', sans-serif", minHeight:'100vh', background:'#F6F4EE' }}>
+      <Navbar
+        page={page}
+        user={user}
+        onNavigate={setPage}
+        onAuthOpen={(mode) => { setAuthMode(mode); setShowAuth(true); }}
+        onLogout={() => { setUser(null); setLovedPantries(new Set()); setFollowedPantries(new Set()); addToast('Signed out successfully'); }}
+      />
+
+      {page === 'landing' && (
+        <LandingPage onSearch={handleSearch} />
+      )}
+
+      {page === 'search' && (
+        <SearchPage
+          initAddress={searchParams.address}
+          initRadius={searchParams.radius}
+          user={user}
+          lovedPantries={lovedPantries}
+          followedPantries={followedPantries}
+          loveCounts={loveCounts}
+          onLove={handleLove}
+          onFollow={handleFollow}
+          onFeedback={handleFeedback}
+          onSelect={setSelectedPantry}
+          onAuthOpen={(mode) => { setAuthMode(mode); setShowAuth(true); }}
+        />
+      )}
+
+      {selectedPantry && (
+        <PantryDetailModal
+          pantry={selectedPantry}
+          loved={lovedPantries.has(selectedPantry.id)}
+          followed={followedPantries.has(selectedPantry.id)}
+          loveCounts={loveCounts}
+          user={user}
+          onLove={handleLove}
+          onFollow={handleFollow}
+          onFeedback={handleFeedback}
+          onClose={() => setSelectedPantry(null)}
+        />
+      )}
+
+      {showAuth && (
+        <AuthModal mode={authMode} onClose={() => setShowAuth(false)} onAuth={handleAuth} />
+      )}
+
+      {showFeedback && feedbackPantry && (
+        <FeedbackModal pantry={feedbackPantry} onClose={() => setShowFeedback(false)} onSubmit={handleFeedbackSubmit} />
+      )}
+
+      <ToastContainer toasts={toasts} onRemove={id => setToasts(t => t.filter(x => x.id !== id))} />
+    </div>
+  );
+}
+
+
+    ReactDOM.createRoot(document.getElementById('root')).render(
+      <ErrorBoundary><App /></ErrorBoundary>
+    );
+  </script>
+</body>
+</html>

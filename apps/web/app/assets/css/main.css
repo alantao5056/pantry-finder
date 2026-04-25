@@ -1,2 +1,49 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
+
+@theme {
+  --font-sans: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-serif: 'Playfair Display', Georgia, serif;
+
+  /* Forest green scale */
+  --color-forest-50:  #E8F5EC;
+  --color-forest-100: #D8F3DC;
+  --color-forest-200: #B7E4C7;
+  --color-forest-300: #74C69D;
+  --color-forest-400: #52B788;
+  --color-forest-500: #40916C;
+  --color-forest-600: #2D6A4F;
+  --color-forest-700: #1C4532;
+  --color-forest-800: #0B3D26;
+
+  /* Warm cream palette */
+  --color-cream:        #F6F4EE;
+  --color-cream-muted:  #EEE9E0;
+  --color-cream-dark:   #E8E4DC;
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-12px); }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.8s ease both;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: #F6F4EE;
+}
+
+::-webkit-scrollbar       { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #D1D5DB; border-radius: 3px; }
