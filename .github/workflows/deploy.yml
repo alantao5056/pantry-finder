@@ -32,10 +32,10 @@ jobs:
           username: ${{ secrets.REMOTE_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           # Copy the built output, package.json, and lockfile
-          source: "package.json,package-lock.json,apps/api/dist,apps/api/package.json,apps/api/package-lock.json"
+          source: "package.json,package-lock.json,apps/api/dist,apps/api/package.json,apps/api/package-lock.json,apps/web/.output,apps/web/package.json,apps/web/package-lock.json"
           target: ${{ secrets.REMOTE_TARGET }}
 
-      - name: Install Production Dependencies & Restart App
+      - name: Install Production Dependencies & Restart REST API and Web App
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.REMOTE_HOST }}
@@ -47,11 +47,18 @@ jobs:
             cat > .env.production << 'EOF'
             FIREBASE_SERVICE_ACCOUNT_JSON=${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
             EOF
+
+            cd ${{ secrets.REMOTE_TARGET }}/apps/web
+
+            cat > .env.production << 'EOF'
+            REST_API_URL=${{ secrets.REST_API_URL }}
+            EOF
             
             # Install only production dependencies on the server
             cd ${{ secrets.REMOTE_TARGET }}
             npm install --omit=dev
 
             # sudo systemctl restart pantry-api
+            # sudo systemctl restart pantry-web
             
             echo "Deployment files synced and dependencies installed."
