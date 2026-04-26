@@ -51,7 +51,7 @@ jobs:
             cd ${{ secrets.REMOTE_TARGET }}/apps/web
 
             cat > .env.production << 'EOF'
-            REST_API_URL=${{ secrets.REST_API_URL }}
+            NUXT_PUBLIC_API_BASE=${{ secrets.NUXT_PUBLIC_API_BASE }}
             EOF
             
             # Install only production dependencies on the server
