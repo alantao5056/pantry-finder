@@ -46,6 +46,7 @@ jobs:
 
             cat > .env.production << 'EOF'
             FIREBASE_SERVICE_ACCOUNT_JSON=${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
             EOF
 
             cd ${{ secrets.REMOTE_TARGET }}/apps/web
@@ -58,7 +59,7 @@ jobs:
             cd ${{ secrets.REMOTE_TARGET }}
             npm install --omit=dev
 
-            # sudo systemctl restart pantry-api
-            # sudo systemctl restart pantry-web
+            sudo systemctl restart pantry-api
+            sudo systemctl restart pantry-web
             
             echo "Deployment files synced and dependencies installed."
