@@ -2,6 +2,7 @@
 const route = useRoute()
 const scrolled = ref(false)
 const { show } = useAuthModal()
+const { isLoggedIn, initials, logout } = useAuth()
 
 const isLanding = computed(() => route.path === '/')
 const opaque = computed(() => scrolled.value || !isLanding.value)
@@ -9,6 +10,8 @@ const opaque = computed(() => scrolled.value || !isLanding.value)
 const updateScroll = () => {
   scrolled.value = window.scrollY > 20
 }
+
+const onLogout = () => logout()
 
 onMounted(() => {
   updateScroll()
@@ -53,19 +56,40 @@ watch(() => route.path, () => nextTick(updateScroll))
 
       <div class="w-px h-5 transition-colors" :class="opaque ? 'bg-gray-200' : 'bg-white/30'" />
 
-      <button
-        class="text-sm font-medium px-1 transition-colors"
-        :class="opaque ? 'text-forest-700 hover:text-forest-800' : 'text-white hover:text-white/90'"
-        @click="show('login')"
-      >Sign In</button>
+      <template v-if="isLoggedIn">
+        <button
+          type="button"
+          aria-label="Account menu"
+          class="w-8 h-8 rounded-full flex items-center justify-center text-[13px] font-semibold transition-colors duration-300"
+          :class="opaque ? 'bg-forest-700 text-white' : 'bg-white text-forest-700'"
+        >{{ initials }}</button>
 
-      <button
-        class="text-sm font-medium rounded-lg px-4 py-[7px] transition-all text-white"
-        :class="opaque
-          ? 'bg-forest-700 hover:bg-forest-800'
-          : 'bg-white/15 border border-white/50 backdrop-blur-sm hover:bg-white/25'"
-        @click="show('register')"
-      >Register</button>
+        <button
+          type="button"
+          class="text-sm font-medium px-1 transition-colors flex items-center gap-1"
+          :class="opaque ? 'text-gray-500 hover:text-gray-700' : 'text-white/80 hover:text-white'"
+          @click="onLogout"
+        >
+          <UIcon name="i-lucide-log-out" class="size-[14px]" />
+          Sign out
+        </button>
+      </template>
+
+      <template v-else>
+        <button
+          class="text-sm font-medium px-1 transition-colors"
+          :class="opaque ? 'text-forest-700 hover:text-forest-800' : 'text-white hover:text-white/90'"
+          @click="show('login')"
+        >Sign In</button>
+
+        <button
+          class="text-sm font-medium rounded-lg px-4 py-[7px] transition-all text-white"
+          :class="opaque
+            ? 'bg-forest-700 hover:bg-forest-800'
+            : 'bg-white/15 border border-white/50 backdrop-blur-sm hover:bg-white/25'"
+          @click="show('register')"
+        >Register</button>
+      </template>
 
     </div>
   </nav>

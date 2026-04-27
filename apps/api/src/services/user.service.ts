@@ -17,14 +17,31 @@ type VerifyUserResult =
   | { success: true; user: UserDocument }
   | { success: false };
 
+export interface UserProfile {
+  email: string;
+  firstName: string;
+  lastName: string;
+}
+
 export class UserService {
-  public async verifyUser(email: string, password: string): Promise<VerifyUserResult> {
+  private async getUserByEmail(email: string): Promise<UserDocument | null> {
     const doc = await db.collection(USERS_COLLECTION).doc(email).get();
-    if (!doc.exists) {
+    if (!doc.exists) return null;
+    return doc.data() as UserDocument;
+  }
+
+  public async getUserProfile(email: string): Promise<UserProfile | null> {
+    const user = await this.getUserByEmail(email);
+    if (!user) return null;
+    return { email: user.email, firstName: user.firstName, lastName: user.lastName };
+  }
+
+  public async verifyUser(email: string, password: string): Promise<VerifyUserResult> {
+    const user = await this.getUserByEmail(email);
+    if (!user) {
       return { success: false };
     }
 
-    const user = doc.data() as UserDocument;
     const [salt, storedHex] = user.passwordHash.split(':');
     const hash = await scryptAsync(password, salt, SCRYPT_KEYLEN);
 

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const config = useRuntimeConfig()
 const { open, tab, hide } = useAuthModal()
+const { fetchMe } = useAuth()
 
 const email = ref('')
 const password = ref('')
@@ -68,7 +69,7 @@ async function onSubmit() {
         credentials: 'include',
       })
       close()
-      await refreshNuxtData()
+      await fetchMe()
     } else {
       await $fetch(`${config.public.apiBase}/auth/register`, {
         method: 'POST',
@@ -86,7 +87,7 @@ async function onSubmit() {
         credentials: 'include',
       })
       close()
-      await refreshNuxtData()
+      await fetchMe()
     }
   } catch (err: any) {
     error.value = err?.data?.error ?? (tab.value === 'login' ? 'Login failed' : 'Registration failed')

@@ -7,6 +7,8 @@ import {
   cookieOptions,
 } from '../config/auth';
 import { UserService } from '../services/user.service';
+import { CachedUserService } from '../services/cached-user.service';
+import { AuthedRequest } from '../middleware/auth.middleware';
 
 interface LoginBody {
   email?: unknown;
@@ -21,7 +23,7 @@ interface RegisterBody {
 }
 
 export class AuthController {
-  private readonly userService = new UserService();
+  private readonly userService = new CachedUserService(new UserService());
 
   public async register(req: Request<{}, {}, RegisterBody>, res: Response): Promise<void> {
     const { email, firstName, lastName, password } = req.body ?? {};
@@ -74,5 +76,21 @@ export class AuthController {
   public async logout(_req: Request, res: Response): Promise<void> {
     res.clearCookie(COOKIE_NAME, cookieOptions());
     res.status(200).json({ ok: true });
+  }
+
+  public async me(req: AuthedRequest, res: Response): Promise<void> {
+    const email = req.user?.sub;
+    if (!email) {
+      res.status(401).json({ error: 'Not authenticated' });
+      return;
+    }
+
+    const profile = await this.userService.getUserProfile(email);
+    if (!profile) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+
+    res.status(200).json(profile);
   }
 }
