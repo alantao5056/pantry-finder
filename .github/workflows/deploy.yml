@@ -59,7 +59,7 @@ jobs:
             cd ${{ secrets.REMOTE_TARGET }}
             npm install --omit=dev
 
-            sudo systemctl restart pantry-api
-            sudo systemctl restart pantry-web
+            sudo systemctl restart pantry-finder-api
+            sudo systemctl restart pantry-finder-web
             
             echo "Deployment files synced and dependencies installed."
