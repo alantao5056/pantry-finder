@@ -53,6 +53,7 @@ jobs:
 
             cat > .env.production << 'EOF'
             NUXT_PUBLIC_API_BASE=${{ secrets.NUXT_PUBLIC_API_BASE }}
+            COOKIE_DOMAIN=pantryfinder.org
             EOF
             
             # Install only production dependencies on the server
