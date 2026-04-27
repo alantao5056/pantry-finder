@@ -47,13 +47,13 @@ jobs:
             cat > .env.production << 'EOF'
             FIREBASE_SERVICE_ACCOUNT_JSON=${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
             JWT_SECRET=${{ secrets.JWT_SECRET }}
+            COOKIE_DOMAIN=pantryfinder.org
             EOF
 
             cd ${{ secrets.REMOTE_TARGET }}/apps/web
 
             cat > .env.production << 'EOF'
             NUXT_PUBLIC_API_BASE=${{ secrets.NUXT_PUBLIC_API_BASE }}
-            COOKIE_DOMAIN=pantryfinder.org
             EOF
             
             # Install only production dependencies on the server
