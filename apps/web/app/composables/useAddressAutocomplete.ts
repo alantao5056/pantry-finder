@@ -30,10 +30,10 @@ interface PhotonResponse {
 const MIN_QUERY_LENGTH = 3
 const DEBOUNCE_MS = 250
 
-export const useAddressAutocomplete = () => {
+export const useAddressAutocomplete = (initialValue = '') => {
   const config = useRuntimeConfig()
 
-  const query = ref('')
+  const query = ref(initialValue)
   const suggestions = ref<AddressSuggestion[]>([])
   const isLoading = ref(false)
   const isOpen = ref(false)
