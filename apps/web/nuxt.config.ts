@@ -8,6 +8,7 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:8080',
+      photonBase: process.env.NUXT_PUBLIC_PHOTON_BASE || 'https://photon.komoot.io',
     },
   },
   app: {
