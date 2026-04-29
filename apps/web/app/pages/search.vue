@@ -33,6 +33,8 @@ const { data, pending, error, refresh } = await useFetch<PantriesResponse>(
     })),
     immediate: !!route.query.address,
     watch: [() => route.query.address, () => route.query.radius],
+    lazy: true,
+    server: false,
   }
 )
 
