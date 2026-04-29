@@ -42,6 +42,7 @@ export const useAddressAutocomplete = () => {
   let debounceTimer: ReturnType<typeof setTimeout> | null = null
   let abortController: AbortController | null = null
   let suppressNextWatch = false
+  let justSelected = false
 
   const toSuggestion = (f: PhotonFeature): AddressSuggestion => {
     const p = f.properties
@@ -83,6 +84,7 @@ export const useAddressAutocomplete = () => {
       suppressNextWatch = false
       return
     }
+    justSelected = false
     if (debounceTimer) clearTimeout(debounceTimer)
     const trimmed = val.trim()
     if (trimmed.length < MIN_QUERY_LENGTH) {
@@ -91,10 +93,12 @@ export const useAddressAutocomplete = () => {
       if (abortController) abortController.abort()
       return
     }
+    isOpen.value = true
     debounceTimer = setTimeout(() => fetchSuggestions(trimmed), DEBOUNCE_MS)
   })
 
   const open = () => {
+    if (justSelected) return
     isOpen.value = true
   }
 
@@ -105,6 +109,7 @@ export const useAddressAutocomplete = () => {
 
   const select = (s: AddressSuggestion) => {
     suppressNextWatch = true
+    justSelected = true
     query.value = s.secondary ? `${s.primary}, ${s.secondary}` : s.primary
     suggestions.value = []
     close()
