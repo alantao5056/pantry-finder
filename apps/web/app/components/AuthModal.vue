@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const config = useRuntimeConfig()
+const api = useApi()
 const { open, tab, hide } = useAuthModal()
 const { fetchMe } = useAuth()
 
@@ -63,15 +63,14 @@ async function onSubmit() {
   submitting.value = true
   try {
     if (tab.value === 'login') {
-      await $fetch(`${config.public.apiBase}/auth/login`, {
+      await api('/auth/login', {
         method: 'POST',
         body: { email: email.value, password: password.value },
-        credentials: 'include',
       })
       close()
       await fetchMe()
     } else {
-      await $fetch(`${config.public.apiBase}/auth/register`, {
+      await api('/auth/register', {
         method: 'POST',
         body: {
           email: email.value,
@@ -79,12 +78,10 @@ async function onSubmit() {
           lastName: lastName.value,
           password: password.value,
         },
-        credentials: 'include',
       })
-      await $fetch(`${config.public.apiBase}/auth/login`, {
+      await api('/auth/login', {
         method: 'POST',
         body: { email: email.value, password: password.value },
-        credentials: 'include',
       })
       close()
       await fetchMe()

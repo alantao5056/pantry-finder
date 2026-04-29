@@ -18,14 +18,15 @@ interface ApiError {
 
 const route = useRoute()
 const router = useRouter()
-const config = useRuntimeConfig()
+const api = useApi()
 
 const initialAddress = String(route.query.address ?? '')
 const initialRadius = String(route.query.radius ?? '5')
 
 const { data, pending, error, refresh } = await useFetch<PantriesResponse>(
-  () => `${config.public.apiBase}/pantries`,
+  '/pantries',
   {
+    $fetch: api,
     query: computed(() => ({
       address: route.query.address as string | undefined,
       radius: route.query.radius as string | undefined,

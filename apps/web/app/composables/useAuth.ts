@@ -5,16 +5,12 @@ export interface AuthUser {
 }
 
 export const useAuth = () => {
-  const config = useRuntimeConfig()
+  const api = useApi()
   const user = useState<AuthUser | null>('auth-user', () => null)
 
   const fetchMe = async () => {
-    const headers = import.meta.server ? useRequestHeaders(['cookie']) : undefined
     try {
-      user.value = await $fetch<AuthUser>(`${config.public.apiBase}/auth/me`, {
-        headers,
-        credentials: 'include',
-      })
+      user.value = await api<AuthUser>('/auth/me')
     } catch {
       user.value = null
     }
@@ -22,10 +18,7 @@ export const useAuth = () => {
 
   const logout = async () => {
     try {
-      await $fetch(`${config.public.apiBase}/auth/logout`, {
-        method: 'POST',
-        credentials: 'include',
-      })
+      await api('/auth/logout', { method: 'POST' })
     } finally {
       user.value = null
     }
