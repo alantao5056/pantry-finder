@@ -31,7 +31,6 @@ export interface PantryDocument {
   website?: string;
   aboutUs?: string;
   contactName?: string;
-  distance?: number;
   notes?: string;
   schedules: ScheduleSchema[];
   services: ServiceSchema[];

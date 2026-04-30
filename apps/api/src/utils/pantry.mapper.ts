@@ -2,7 +2,11 @@ import { Pantry, Schedule, Service } from '@pantry-finder/types';
 import { PantryDocument, ScheduleSchema, ServiceSchema } from '../models/pantry.schema';
 import { kilometersToMiles } from '../utils/distance.util';
 
-export function mapPantryDocumentToDto(doc: PantryDocument, id: string): Pantry {
+export function mapPantryDocumentToDto(
+  doc: PantryDocument,
+  id: string,
+  distanceKm?: number
+): Pantry {
   const addressParts = [
     doc.address1,
     doc.address2,
@@ -19,7 +23,7 @@ export function mapPantryDocumentToDto(doc: PantryDocument, id: string): Pantry 
     address: address,
     latitude: doc.coordinates.latitude,
     longitude: doc.coordinates.longitude,
-    distance: doc.distance? kilometersToMiles(doc.distance) : undefined,
+    distance: distanceKm !== undefined ? Math.round(kilometersToMiles(distanceKm) * 100) / 100 : undefined,
     phone: doc.phone || undefined,
     about: doc.aboutUs || undefined,
     notes: doc.notes || undefined,

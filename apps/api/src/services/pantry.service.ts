@@ -57,7 +57,8 @@ export class PantryService {
     
     const paginatedPantries: Pantry[] = paginatedDocs.map((doc) => {
       const data = doc.data() as unknown as PantryDocument;
-      return mapPantryDocumentToDto(data, doc.id);
+      const distanceKm = (doc as any).distance as number | undefined;
+      return mapPantryDocumentToDto(data, doc.id, distanceKm);
     });
 
     return {
