@@ -42,7 +42,7 @@ export const useAddressAutocomplete = (initialValue = '') => {
   let debounceTimer: ReturnType<typeof setTimeout> | null = null
   let abortController: AbortController | null = null
   let suppressNextWatch = false
-  let justSelected = false
+  let committed = initialValue.trim().length > 0
 
   const toSuggestion = (f: PhotonFeature): AddressSuggestion => {
     const p = f.properties
@@ -84,7 +84,7 @@ export const useAddressAutocomplete = (initialValue = '') => {
       suppressNextWatch = false
       return
     }
-    justSelected = false
+    committed = false
     if (debounceTimer) clearTimeout(debounceTimer)
     const trimmed = val.trim()
     if (trimmed.length < MIN_QUERY_LENGTH) {
@@ -98,7 +98,7 @@ export const useAddressAutocomplete = (initialValue = '') => {
   })
 
   const open = () => {
-    if (justSelected) return
+    if (committed) return
     isOpen.value = true
   }
 
@@ -109,8 +109,14 @@ export const useAddressAutocomplete = (initialValue = '') => {
 
   const select = (s: AddressSuggestion) => {
     suppressNextWatch = true
-    justSelected = true
+    committed = true
     query.value = s.secondary ? `${s.primary}, ${s.secondary}` : s.primary
+    suggestions.value = []
+    close()
+  }
+
+  const markCommitted = () => {
+    committed = true
     suggestions.value = []
     close()
   }
@@ -149,6 +155,7 @@ export const useAddressAutocomplete = (initialValue = '') => {
     open,
     close,
     select,
+    markCommitted,
     onKeydown,
   }
 }

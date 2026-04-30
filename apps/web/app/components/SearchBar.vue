@@ -22,6 +22,7 @@ const {
   open,
   close,
   select,
+  markCommitted,
   onKeydown,
 } = useAddressAutocomplete(props.initialAddress)
 
@@ -42,6 +43,7 @@ const onFocus = () => {
 const onSubmit = () => {
   const a = query.value.trim()
   if (!a) return
+  markCommitted()
   emit('submit', a, radius.value)
 }
 

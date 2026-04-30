@@ -32,7 +32,7 @@ watch(() => route.path, () => nextTick(updateScroll))
     <div class="max-w-[1200px] mx-auto h-16 flex items-center gap-8">
 
       <!-- Logo -->
-      <button class="flex items-center gap-2 cursor-pointer">
+      <NuxtLink to="/" class="flex items-center gap-2 cursor-pointer">
         <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-gradient-to-br from-forest-600 to-forest-400">
           <UIcon name="i-lucide-leaf" class="size-4 text-white" />
         </div>
@@ -40,14 +40,14 @@ watch(() => route.path, () => nextTick(updateScroll))
           class="font-serif text-xl font-bold tracking-tight transition-colors"
           :class="opaque ? 'text-forest-700' : 'text-white'"
         >PantryFinder</span>
-      </button>
+      </NuxtLink>
 
       <div class="flex-1" />
 
-      <button
+      <NuxtLink to="/search"
         class="text-sm font-medium px-1 transition-colors"
         :class="opaque ? 'text-gray-500 hover:text-gray-700' : 'text-white/80 hover:text-white'"
-      >Find Pantries</button>
+      >Find Pantries</NuxtLink>
 
       <button
         class="text-sm font-medium px-1 transition-colors"
