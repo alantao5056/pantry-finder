@@ -51,3 +51,40 @@ export function getScheduleDays(schedules: Schedule[]): Schedule[] {
   }
   return out
 }
+
+export function getUniqueServices(services: Service[]): Service[] {
+  const seen = new Set<string>()
+  const out: Service[] = []
+  for (const s of services) {
+    if (s.name && !seen.has(s.name)) {
+      seen.add(s.name)
+      out.push(s)
+    }
+  }
+  return out
+}
+
+export function serviceColorClasses(category: string): string {
+  if (category === 'Food Program') return 'bg-green-50 text-green-800 border-green-200'
+  if (category === 'Healthcare Screenings/Referrals') return 'bg-blue-50 text-blue-700 border-blue-200'
+  if (category === 'Housing Assistance') return 'bg-orange-50 text-orange-700 border-orange-200'
+  return 'bg-violet-50 text-violet-700 border-violet-200'
+}
+
+const FOOD_EMOJI: Record<string, string> = {
+  'Dairy': '🥛',
+  'Eggs': '🥚',
+  'Fruits & Vegetables': '🥦',
+  'Meat': '🥩',
+  'Shelf Stable/Non-Perishable Goods': '🥫',
+  'Prepared Food / Grab and Go': '🍱',
+  'Household Products': '🧹',
+  'Toiletries / Hygiene Products': '🧴',
+  'Pet Food / Supplies': '🐾',
+  'Diapers': '👶',
+  'Other': '📦',
+}
+
+export function foodEmoji(food: string): string {
+  return FOOD_EMOJI[food] ?? '🍽️'
+}
