@@ -1,5 +1,11 @@
 <script setup lang="ts">
 import type { Pantry } from '@pantry-finder/types'
+import {
+  countActiveFilters,
+  getAllFoodTypes,
+  pantryMatchesFilters,
+  type PantryFilters,
+} from '~/utils/pantry'
 
 interface PantriesResponse {
   pantries: Pantry[]
@@ -16,6 +22,9 @@ interface ApiError {
   statusCode?: number
 }
 
+// Auto-load more pages while filtered results stay below this threshold.
+const MIN_FILTERED_RESULTS = 10
+
 const route = useRoute()
 const router = useRouter()
 const api = useApi()
@@ -23,37 +32,143 @@ const api = useApi()
 const initialAddress = String(route.query.address ?? '')
 const initialRadius = String(route.query.radius ?? '5')
 
-const { data, pending, error, refresh } = await useFetch<PantriesResponse>(
-  '/pantries',
-  {
-    $fetch: api,
-    query: computed(() => ({
-      address: route.query.address as string | undefined,
-      radius: route.query.radius as string | undefined,
-    })),
-    immediate: !!route.query.address,
-    watch: [() => route.query.address, () => route.query.radius],
-    lazy: true,
-    server: false,
+const loadedPantries = ref<Pantry[]>([])
+const currentPage = ref(0)
+const hasMorePages = ref(false)
+const pending = ref(false)
+const error = ref<unknown>(null)
+const addressNotFound = ref(false)
+
+// Each runSearch call gets a fresh token. Older in-flight requests check
+// against the latest token and abort their writes if they're stale.
+let searchToken = 0
+
+const filters = computed<PantryFilters>(() => ({
+  day: String(route.query.day ?? ''),
+  foodType: String(route.query.foodType ?? ''),
+  openNow: route.query.openNow === 'true',
+}))
+
+const onUpdateFilters = (next: PantryFilters) => {
+  const q: Record<string, string> = {}
+  for (const [k, v] of Object.entries(route.query)) {
+    if (typeof v === 'string') q[k] = v
   }
+  if (next.day) q.day = next.day
+  else delete q.day
+  if (next.foodType) q.foodType = next.foodType
+  else delete q.foodType
+  if (next.openNow) q.openNow = 'true'
+  else delete q.openNow
+  router.replace({ path: '/search', query: q })
+}
+
+const filteredPantries = computed(() =>
+  loadedPantries.value.filter(p => pantryMatchesFilters(p, filters.value)),
+)
+const activeFilterCount = computed(() => countActiveFilters(filters.value))
+
+// Derive available food types from loaded pages so the filter list always
+// reflects real data. Keep the active selection visible even if no loaded
+// pantry currently includes it (so the user can still unselect it).
+const allFoodTypes = computed(() => {
+  const types = getAllFoodTypes(loadedPantries.value)
+  if (filters.value.foodType && !types.includes(filters.value.foodType)) {
+    return [...types, filters.value.foodType].sort()
+  }
+  return types
+})
+
+const showFilters = ref(true)
+
+const radiusValue = computed(() => String(route.query.radius ?? initialRadius))
+
+const fetchPage = async (
+  page: number,
+  token: number,
+): Promise<PantriesResponse | null> => {
+  const address = String(route.query.address ?? '')
+  if (!address) return null
+  try {
+    const res = await api<PantriesResponse>('/pantries', {
+      query: {
+        address,
+        radius: String(route.query.radius ?? '5'),
+        page: String(page),
+      },
+    })
+    if (token !== searchToken) return null
+    return res
+  } catch (e) {
+    if (token !== searchToken) return null
+    const err = e as ApiError
+    if (err.statusCode === 404) addressNotFound.value = true
+    else error.value = e
+    return null
+  }
+}
+
+const runSearch = async () => {
+  const token = ++searchToken
+  loadedPantries.value = []
+  currentPage.value = 0
+  hasMorePages.value = false
+  error.value = null
+  addressNotFound.value = false
+
+  if (!route.query.address) return
+
+  pending.value = true
+  const first = await fetchPage(1, token)
+  if (token !== searchToken) return
+
+  if (first) {
+    loadedPantries.value = first.pantries
+    currentPage.value = first.pagination.page
+    hasMorePages.value = first.pagination.hasNextPage
+
+    while (
+      token === searchToken
+      && hasMorePages.value
+      && filteredPantries.value.length < MIN_FILTERED_RESULTS
+    ) {
+      const next = await fetchPage(currentPage.value + 1, token)
+      if (token !== searchToken) return
+      if (!next) break
+      loadedPantries.value = [...loadedPantries.value, ...next.pantries]
+      currentPage.value = next.pagination.page
+      hasMorePages.value = next.pagination.hasNextPage
+    }
+  }
+  if (token === searchToken) pending.value = false
+}
+
+onMounted(() => {
+  // Collapse the filters sidebar by default on mobile (drawer would otherwise
+  // cover the content on initial load).
+  if (window.matchMedia('(max-width: 767px)').matches) {
+    showFilters.value = false
+  }
+  runSearch()
+})
+watch(
+  [() => route.query.address, () => route.query.radius],
+  () => { runSearch() },
 )
 
 const onSearch = (address: string, radius: string) => {
-  router.replace({ path: '/search', query: { address, radius } })
+  router.replace({ path: '/search', query: { ...route.query, address, radius } })
 }
 
-const isAddressNotFound = computed(() => {
-  const e = error.value as ApiError | null
-  return e?.statusCode === 404
-})
+const refresh = () => runSearch()
 
-const radiusValue = computed(() => String(route.query.radius ?? initialRadius))
+const isAddressNotFound = computed(() => addressNotFound.value)
 </script>
 
 <template>
-  <div class="min-h-screen bg-cream font-sans flex flex-col">
-    <!-- Top search bar (sits below the fixed Navbar) -->
-    <div class="bg-white border-b border-cream-dark pt-20 pb-4 px-6">
+  <div class="h-screen pt-16 flex flex-col bg-cream font-sans overflow-hidden">
+    <!-- Top search bar -->
+    <div class="bg-white border-b border-cream-dark px-6 py-3 flex-shrink-0">
       <div class="max-w-[1200px] mx-auto">
         <SearchBar
           variant="light"
@@ -64,128 +179,179 @@ const radiusValue = computed(() => String(route.query.radius ?? initialRadius))
       </div>
     </div>
 
-    <!-- Results header -->
-    <ClientOnly>
-      <div
-        v-if="route.query.address"
-        class="bg-white border-b border-cream-dark px-6 py-3.5"
-      >
-        <div class="max-w-[1200px] mx-auto text-[14px] text-gray-500">
-          <template v-if="pending && !data">
-            Searching for pantries…
-          </template>
-          <template v-else-if="error">
-            <span class="text-red-700">Could not load pantries.</span>
-          </template>
-          <template v-else-if="data">
-            <span class="font-bold text-gray-900">{{ data.pantries.length }}</span>
-            {{ data.pantries.length === 1 ? 'pantry' : 'pantries' }} found within
-            <span class="font-semibold text-forest-700">{{ radiusValue }} miles</span>
-          </template>
-        </div>
-      </div>
-      <template #fallback>
+    <!-- Main row: full-width sidebar + content, each scrolling on its own -->
+    <div class="flex-1 flex relative min-h-0 overflow-hidden">
+      <ClientOnly>
+        <!-- Mobile backdrop -->
         <div
+          v-if="route.query.address && showFilters"
+          class="md:hidden absolute inset-0 bg-black/40 z-30"
+          aria-hidden="true"
+          @click="showFilters = false"
+        />
+        <FiltersSidebar
           v-if="route.query.address"
-          class="bg-white border-b border-cream-dark px-6 py-3.5"
-        >
-          <div class="max-w-[1200px] mx-auto text-[14px] text-gray-500">
-            Searching for pantries…
-          </div>
-        </div>
-      </template>
-    </ClientOnly>
-
-    <!-- Content -->
-    <div class="max-w-[1200px] w-full mx-auto px-6 py-6 flex-1">
-      <!-- No address yet -->
-      <div
-        v-if="!route.query.address"
-        class="text-center py-16"
-      >
-        <div
-          class="w-16 h-16 bg-forest-50 rounded-full flex items-center justify-center mx-auto mb-4"
-        >
-          <UIcon name="i-lucide-search" class="size-7 text-forest-400" />
-        </div>
-        <h3 class="font-serif text-[22px] text-gray-900 mb-2">Enter an address to begin</h3>
-        <p class="text-gray-500 text-[15px]">Type a city, address, or ZIP code above to find pantries near you.</p>
-      </div>
-
-      <ClientOnly v-else>
-        <!-- Loading -->
-        <div
-          v-if="pending && !data"
-          class="flex items-center justify-center py-20 text-gray-500 gap-3"
-        >
-          <UIcon name="i-lucide-loader-2" class="size-6 animate-spin text-forest-500" />
-          <span class="text-[15px]">Loading pantries…</span>
-        </div>
-
-        <!-- Error: address not geocoded -->
-        <div
-          v-else-if="isAddressNotFound"
-          class="text-center py-16"
-        >
-          <div
-            class="w-16 h-16 bg-yellow-50 rounded-full flex items-center justify-center mx-auto mb-4"
-          >
-            <UIcon name="i-lucide-map-pin-off" class="size-7 text-yellow-500" />
-          </div>
-          <h3 class="font-serif text-[22px] text-gray-900 mb-2">We couldn't find that address</h3>
-          <p class="text-gray-500 text-[15px]">Try entering a city, ZIP code, or a more complete street address.</p>
-        </div>
-
-        <!-- Error: other -->
-        <div
-          v-else-if="error"
-          class="text-center py-16"
-        >
-          <div
-            class="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4"
-          >
-            <UIcon name="i-lucide-alert-circle" class="size-7 text-red-500" />
-          </div>
-          <h3 class="font-serif text-[22px] text-gray-900 mb-2">Something went wrong</h3>
-          <p class="text-gray-500 text-[15px] mb-5">We hit an error fetching pantries. Please try again.</p>
-          <button
-            class="bg-forest-700 hover:bg-forest-800 text-white rounded-lg px-5 py-2 text-[14px] font-medium transition-colors"
-            @click="refresh()"
-          >Retry</button>
-        </div>
-
-        <!-- Empty -->
-        <div
-          v-else-if="data && data.pantries.length === 0"
-          class="text-center py-16"
-        >
-          <div
-            class="w-16 h-16 bg-forest-50 rounded-full flex items-center justify-center mx-auto mb-4"
-          >
-            <UIcon name="i-lucide-search" class="size-7 text-forest-400" />
-          </div>
-          <h3 class="font-serif text-[22px] text-gray-900 mb-2">No pantries found</h3>
-          <p class="text-gray-500 text-[15px]">Try increasing the search radius or entering a different location.</p>
-        </div>
-
-        <!-- Results grid -->
-        <div
-          v-else-if="data"
-          class="grid gap-[18px]"
-          style="grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));"
-        >
-          <PantryCard v-for="p in data.pantries" :key="p.id" :pantry="p" />
-        </div>
-
-        <template #fallback>
-          <div class="flex items-center justify-center py-20 text-gray-500 gap-3">
-            <UIcon name="i-lucide-loader-2" class="size-6 animate-spin text-forest-500" />
-            <span class="text-[15px]">Loading pantries…</span>
-          </div>
-        </template>
+          :model-value="filters"
+          :open="showFilters"
+          :food-types="allFoodTypes"
+          @update:model-value="onUpdateFilters"
+          @close="showFilters = false"
+        />
       </ClientOnly>
-    </div>
 
-    <Footer />
+      <!-- Content column -->
+      <div class="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden">
+        <!-- Results header (only spans content area width, per design) -->
+        <ClientOnly>
+          <div
+            v-if="route.query.address"
+            class="bg-white border-b border-cream-dark px-6 py-3.5 flex items-center gap-3 flex-wrap flex-shrink-0"
+          >
+            <button
+              type="button"
+              class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border-[1.5px] border-gray-200 bg-white text-gray-700 text-[13px] font-medium hover:border-gray-300 transition-colors"
+              @click="showFilters = !showFilters"
+            >
+              <UIcon name="i-lucide-sliders-horizontal" class="size-[14px]" />
+              {{ showFilters ? 'Hide' : 'Show' }} Filters
+              <span
+                v-if="activeFilterCount > 0"
+                class="ml-1 bg-forest-700 text-white rounded-full text-[11px] font-semibold px-1.5"
+              >{{ activeFilterCount }}</span>
+            </button>
+            <span class="text-[14px] text-gray-500">
+              <template v-if="pending && loadedPantries.length === 0">
+                Searching for pantries…
+              </template>
+              <template v-else-if="error && loadedPantries.length === 0">
+                <span class="text-red-700">Could not load pantries.</span>
+              </template>
+              <template v-else>
+                <span class="font-bold text-gray-900">{{ filteredPantries.length }}</span>
+                {{ filteredPantries.length === 1 ? 'pantry' : 'pantries' }} found within
+                <span class="font-semibold text-forest-700">{{ radiusValue }} miles</span>
+              </template>
+            </span>
+          </div>
+          <template #fallback>
+            <div
+              v-if="route.query.address"
+              class="bg-white border-b border-cream-dark px-6 py-3.5 text-[14px] text-gray-500 flex-shrink-0"
+            >
+              Searching for pantries…
+            </div>
+          </template>
+        </ClientOnly>
+
+        <!-- Scrollable list area -->
+        <div class="flex-1 overflow-y-auto">
+          <!-- No address yet -->
+          <div
+            v-if="!route.query.address"
+            class="text-center px-6 h-full flex flex-col items-center justify-center"
+          >
+            <div class="w-16 h-16 bg-forest-50 rounded-full flex items-center justify-center mb-4">
+              <UIcon name="i-lucide-search" class="size-7 text-forest-400" />
+            </div>
+            <h3 class="font-serif text-[22px] text-gray-900 mb-2">Enter an address to begin</h3>
+            <p class="text-gray-500 text-[15px]">Type a city, address, or ZIP code above to find pantries near you.</p>
+          </div>
+
+          <ClientOnly v-else>
+            <!-- Loading -->
+            <div
+              v-if="pending && loadedPantries.length === 0"
+              class="flex items-center justify-center py-20 text-gray-500 gap-3"
+            >
+              <UIcon name="i-lucide-loader-2" class="size-6 animate-spin text-forest-500" />
+              <span class="text-[15px]">Loading pantries…</span>
+            </div>
+
+            <!-- Error: address not geocoded -->
+            <div
+              v-else-if="isAddressNotFound"
+              class="text-center py-16 px-6"
+            >
+              <div class="w-16 h-16 bg-yellow-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                <UIcon name="i-lucide-map-pin-off" class="size-7 text-yellow-500" />
+              </div>
+              <h3 class="font-serif text-[22px] text-gray-900 mb-2">We couldn't find that address</h3>
+              <p class="text-gray-500 text-[15px]">Try entering a city, ZIP code, or a more complete street address.</p>
+            </div>
+
+            <!-- Error: other -->
+            <div
+              v-else-if="error && loadedPantries.length === 0"
+              class="text-center py-16 px-6"
+            >
+              <div class="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                <UIcon name="i-lucide-alert-circle" class="size-7 text-red-500" />
+              </div>
+              <h3 class="font-serif text-[22px] text-gray-900 mb-2">Something went wrong</h3>
+              <p class="text-gray-500 text-[15px] mb-5">We hit an error fetching pantries. Please try again.</p>
+              <button
+                class="bg-forest-700 hover:bg-forest-800 text-white rounded-lg px-5 py-2 text-[14px] font-medium transition-colors"
+                @click="refresh()"
+              >Retry</button>
+            </div>
+
+            <!-- Empty: no pantries within radius -->
+            <div
+              v-else-if="loadedPantries.length === 0"
+              class="text-center py-16 px-6"
+            >
+              <div class="w-16 h-16 bg-forest-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                <UIcon name="i-lucide-search" class="size-7 text-forest-400" />
+              </div>
+              <h3 class="font-serif text-[22px] text-gray-900 mb-2">No pantries found</h3>
+              <p class="text-gray-500 text-[15px]">Try increasing the search radius or entering a different location.</p>
+            </div>
+
+            <!-- Empty: filters too restrictive -->
+            <div
+              v-else-if="filteredPantries.length === 0"
+              class="text-center py-16 px-6"
+            >
+              <div class="w-16 h-16 bg-forest-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                <UIcon name="i-lucide-search" class="size-7 text-forest-400" />
+              </div>
+              <h3 class="font-serif text-[22px] text-gray-900 mb-2">No pantries match your filters</h3>
+              <p class="text-gray-500 text-[15px]">Try adjusting your filters or increasing the search radius.</p>
+            </div>
+
+            <!-- Results grid -->
+            <div
+              v-else
+              class="px-6 py-5"
+            >
+              <div
+                class="grid gap-[18px]"
+                style="grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));"
+              >
+                <PantryCard
+                  v-for="p in filteredPantries"
+                  :key="p.id"
+                  :pantry="p"
+                />
+              </div>
+              <div
+                v-if="pending"
+                class="flex items-center justify-center py-6 text-gray-500 gap-2 text-[13px]"
+              >
+                <UIcon name="i-lucide-loader-2" class="size-4 animate-spin text-forest-500" />
+                <span>Loading more pantries…</span>
+              </div>
+            </div>
+
+            <template #fallback>
+              <div class="flex items-center justify-center py-20 text-gray-500 gap-3">
+                <UIcon name="i-lucide-loader-2" class="size-6 animate-spin text-forest-500" />
+                <span class="text-[15px]">Loading pantries…</span>
+              </div>
+            </template>
+          </ClientOnly>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
