@@ -15,8 +15,7 @@ export const COOKIE_NAME = 'session';
 export const cookieOptions = (): CookieOptions => ({
   httpOnly: true,
   secure: process.env.NODE_ENV === 'production',
-  // sameSite: 'lax',
-  sameSite: 'none',
+  sameSite: 'lax',
   path: '/',
   domain: process.env.COOKIE_DOMAIN || undefined,
 });

@@ -8,11 +8,11 @@ import authRoutes from './routes/auth.routes';
 const app = express();
 const port = process.env.PORT || 8080;
 
-// const webOrigin = process.env.NODE_ENV === 'production'
-//   ? 'https://pantryfinder.org'
-//   : 'http://localhost:3000';
+const webOrigin = process.env.NODE_ENV === 'production'
+  ? 'https://pantryfinder.org'
+  : 'http://localhost:3000';
 
-app.use(cors({ origin: true, credentials: true }));
+app.use(cors({ origin: webOrigin, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
 
