@@ -53,8 +53,7 @@ const navLinks = [
           >{{ initials }}</div>
           <button
             type="button"
-            class="bg-transparent border-none text-sm"
-            style="color: var(--text-soft);"
+            class="btn-ghost btn--sm"
             @click="onLogout"
           >Sign out</button>
         </template>
@@ -62,16 +61,12 @@ const navLinks = [
         <template v-else>
           <button
             type="button"
-            class="bg-transparent border-none text-sm font-medium px-3.5 py-2"
-            style="color: var(--text-mid);"
+            class="btn-ghost btn--sm"
             @click="show('login')"
           >Sign in</button>
           <button
             type="button"
-            class="border-none text-sm font-semibold text-white rounded-[10px] px-5 py-[9px] transition-colors"
-            style="background: var(--green-dark);"
-            @mouseenter="(e) => ((e.currentTarget as HTMLElement).style.background = '#1a6038')"
-            @mouseleave="(e) => ((e.currentTarget as HTMLElement).style.background = '#1e7a47')"
+            class="btn-primary btn--sm"
             @click="show('register')"
           >Register free</button>
         </template>

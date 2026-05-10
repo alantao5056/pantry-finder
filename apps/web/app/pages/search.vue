@@ -208,7 +208,7 @@ const isAddressNotFound = computed(() => addressNotFound.value)
           >
             <button
               type="button"
-              class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border-[1.5px] border-gray-200 bg-white text-gray-700 text-[13px] font-medium hover:border-gray-300 transition-colors"
+              class="btn-secondary btn--sm gap-1.5"
               @click="showFilters = !showFilters"
             >
               <UIcon name="i-lucide-sliders-horizontal" class="size-[14px]" />

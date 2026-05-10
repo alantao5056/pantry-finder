@@ -97,10 +97,7 @@ const onInputKeydown = (e: KeyboardEvent) => {
       <!-- Search button -->
       <button
         type="button"
-        class="border-none text-white font-semibold text-[15px] px-7 whitespace-nowrap font-sans transition-colors"
-        style="background: #1e7a47;"
-        @mouseenter="(e) => ((e.currentTarget as HTMLElement).style.background = '#1a6038')"
-        @mouseleave="(e) => ((e.currentTarget as HTMLElement).style.background = '#1e7a47')"
+        class="btn-primary rounded-none"
         @click="onSubmit"
       >
         Search Pantries

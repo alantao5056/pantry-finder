@@ -113,8 +113,7 @@ async function onSubmit() {
         <button
           type="button"
           aria-label="Close"
-          class="absolute top-4 right-4 bg-transparent border-none text-[22px] leading-none"
-          style="color: var(--text-soft);"
+          class="btn-icon absolute top-4 right-4 text-[22px] leading-none"
           @click="close"
         >×</button>
 
@@ -186,8 +185,7 @@ async function onSubmit() {
                 :aria-label="showPassword ? 'Hide password' : 'Show password'"
                 :aria-pressed="showPassword"
                 tabindex="-1"
-                class="absolute inset-y-0 right-0 flex items-center px-3 bg-transparent border-none cursor-pointer"
-                style="color: var(--text-soft);"
+                class="btn-icon absolute inset-y-0 right-0 px-3"
                 @click="showPassword = !showPassword"
               >
                 <UIcon :name="showPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'" class="size-[18px]" />
@@ -203,8 +201,7 @@ async function onSubmit() {
             <button
               type="submit"
               :disabled="submitting"
-              class="w-full mt-1 py-3 rounded-[12px] text-white text-[14px] font-semibold border-none disabled:opacity-50 disabled:cursor-not-allowed"
-              style="background: var(--green-dark);"
+              class="btn-primary w-full mt-1 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <template v-if="tab === 'login'">{{ submitting ? 'Signing in…' : 'Sign In' }}</template>
               <template v-else>{{ submitting ? 'Creating account…' : 'Create Account' }}</template>
@@ -214,11 +211,11 @@ async function onSubmit() {
           <p class="text-center text-[13px] mt-5" style="color: var(--text-soft);">
             <template v-if="tab === 'login'">
               No account?
-              <a href="#" class="font-semibold no-underline" style="color: var(--green-dark);" @click.prevent="switchTab('register')">Create one free →</a>
+              <a href="#" class="btn-link-accent" @click.prevent="switchTab('register')">Create one free →</a>
             </template>
             <template v-else>
               Already have an account?
-              <a href="#" class="font-semibold no-underline" style="color: var(--green-dark);" @click.prevent="switchTab('login')">Sign in →</a>
+              <a href="#" class="btn-link-accent" @click.prevent="switchTab('login')">Sign in →</a>
             </template>
           </p>
         </div>

@@ -136,10 +136,7 @@ onUnmounted(() => {
               v-for="t in QUICK_TAGS"
               :key="t"
               type="button"
-              class="bg-white border-[1.5px] rounded-[100px] px-3.5 py-1 text-[13px] font-sans transition-colors"
-              style="border-color: var(--border-input); color: var(--text-mid);"
-              @mouseenter="(e) => { const el = e.currentTarget as HTMLElement; el.style.borderColor = '#82d4a7'; el.style.color = '#1e7a47'; el.style.background = '#f0faf4'; }"
-              @mouseleave="(e) => { const el = e.currentTarget as HTMLElement; el.style.borderColor = '#dde8e2'; el.style.color = '#4a6355'; el.style.background = 'white'; }"
+              class="btn-pill"
               @click="onTagClick(t)"
             >{{ t }}</button>
           </div>
@@ -243,8 +240,7 @@ onUnmounted(() => {
             </p>
             <NuxtLink
               to="/search"
-              class="reveal inline-block border-none text-white font-semibold text-[14px] rounded-[12px] px-7 py-3 no-underline"
-              style="background: var(--green-dark);"
+              class="reveal btn-primary"
             >Search All Pantries →</NuxtLink>
           </div>
 
@@ -330,13 +326,11 @@ onUnmounted(() => {
             <div class="reveal flex gap-3 mt-8">
               <button
                 type="button"
-                class="border-none text-white font-semibold text-[14px] rounded-[12px] px-7 py-3"
-                style="background: var(--green-dark);"
+                class="btn-primary"
               >Add Your Pantry →</button>
               <button
                 type="button"
-                class="bg-transparent border-[1.5px] font-medium text-[14px] rounded-[12px] px-6 py-3"
-                style="border-color: var(--border-input); color: var(--text-mid);"
+                class="btn-secondary"
               >Learn More</button>
             </div>
           </div>
@@ -375,13 +369,11 @@ onUnmounted(() => {
         <div class="reveal flex gap-3 justify-center flex-wrap">
           <NuxtLink
             to="/search"
-            class="bg-white border-none font-medium text-[15px] rounded-[14px] px-8 py-3.5 no-underline"
-            style="color: var(--green-dark);"
+            class="btn-on-dark btn--lg"
           >Find a Pantry Near Me</NuxtLink>
           <button
             type="button"
-            class="border-[1.5px] text-white font-medium text-[15px] rounded-[14px] px-7 py-3.5"
-            style="background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.3);"
+            class="btn-on-dark-outline btn--lg"
             @click="show('register')"
           >Create Free Account</button>
         </div>

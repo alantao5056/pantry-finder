@@ -88,6 +88,133 @@
 }
 .nav-link:hover::after { width: 100%; }
 
+/* ──────────────────────────────────────────────────────────
+   Buttons & link-buttons
+
+   Composition: family class (.btn-primary / .btn-secondary /
+   .btn-on-dark / .btn-on-dark-outline / .btn-ghost / .btn-pill /
+   .btn-icon / .btn-link-accent / .footer-link) provides role
+   (color, hover) + a default size. Size modifiers (.btn--sm,
+   .btn--lg) compose with any family class.
+
+   Wrapped in @layer components so Tailwind utility classes
+   (e.g. rounded-none, w-full) declared in @layer utilities
+   reliably override per-property defaults at call sites.
+   ────────────────────────────────────────────────────────── */
+
+@layer components {
+  .btn-primary,
+  .btn-secondary,
+  .btn-on-dark,
+  .btn-on-dark-outline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 28px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 10px;
+    text-decoration: none;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  }
+
+  .btn-primary { background: var(--green-dark); color: white; border: none; }
+  .btn-primary:hover { background: #1a6038; }
+
+  .btn-secondary {
+    background: transparent;
+    border: 1.5px solid var(--border-input);
+    color: var(--text-mid);
+  }
+  .btn-secondary:hover { border-color: #c4d4cb; background: #f6faf7; color: var(--text-dark); }
+
+  .btn-on-dark { background: white; color: var(--green-dark); border: none; }
+  .btn-on-dark:hover { background: var(--green-light); }
+
+  .btn-on-dark-outline {
+    background: rgba(255, 255, 255, 0.12);
+    border: 1.5px solid rgba(255, 255, 255, 0.3);
+    color: white;
+  }
+  .btn-on-dark-outline:hover { background: rgba(255, 255, 255, 0.2); border-color: rgba(255, 255, 255, 0.5); }
+
+  .btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 14px;
+    background: transparent;
+    border: none;
+    color: var(--text-mid);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: color 0.2s ease, background-color 0.2s ease;
+  }
+  .btn-ghost:hover { color: var(--text-dark); background: rgba(0, 0, 0, 0.04); }
+
+  .btn-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 14px;
+    background: white;
+    border: 1.5px solid var(--border-input);
+    border-radius: 100px;
+    font-family: inherit;
+    font-size: 13px;
+    color: var(--text-mid);
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  }
+  .btn-pill:hover { border-color: #82d4a7; color: var(--green-dark); background: var(--green-light); }
+
+  .btn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: var(--text-soft);
+    cursor: pointer;
+    transition: color 0.2s ease;
+  }
+  .btn-icon:hover { color: var(--text-dark); }
+
+  .btn-link-accent {
+    color: var(--green-dark);
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: color 0.2s ease;
+  }
+  .btn-link-accent:hover { color: #1a6038; }
+
+  .footer-link {
+    font-size: 14px;
+    text-decoration: none;
+    color: rgba(255, 255, 255, 0.55);
+    transition: color 0.2s ease;
+  }
+  .footer-link:hover { color: white; }
+
+  /* Size modifiers — override family-default padding / font-size / radius. */
+  .btn--sm {
+    padding: 8px 18px;
+    font-size: 13px;
+    border-radius: 8px;
+  }
+  .btn--lg {
+    padding: 14px 32px;
+    font-size: 15px;
+    border-radius: 12px;
+  }
+}
+
 /* Tag pill (section eyebrows) */
 .tag-pill {
   display: inline-block; padding: 4px 14px; border-radius: 100px;

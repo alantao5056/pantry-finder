@@ -55,18 +55,12 @@ const columns = [
               <NuxtLink
                 v-if="link.type === 'route'"
                 :to="link.to"
-                class="text-[14px] no-underline transition-colors"
-                style="color: rgba(255,255,255,0.55);"
-                @mouseenter="(e) => ((e.currentTarget as HTMLElement).style.color = 'white')"
-                @mouseleave="(e) => ((e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.55)')"
+                class="footer-link"
               >{{ link.label }}</NuxtLink>
               <a
                 v-else
                 :href="link.to"
-                class="text-[14px] no-underline transition-colors"
-                style="color: rgba(255,255,255,0.55);"
-                @mouseenter="(e) => ((e.currentTarget as HTMLElement).style.color = 'white')"
-                @mouseleave="(e) => ((e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.55)')"
+                class="footer-link"
               >{{ link.label }}</a>
             </li>
           </ul>
