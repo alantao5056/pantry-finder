@@ -1,96 +1,81 @@
 <script setup lang="ts">
-const route = useRoute()
-const scrolled = ref(false)
 const { show } = useAuthModal()
 const { isLoggedIn, initials, logout } = useAuth()
 
-const isLanding = computed(() => route.path === '/')
-const opaque = computed(() => scrolled.value || !isLanding.value)
-
-const updateScroll = () => {
-  scrolled.value = window.scrollY > 20
-}
-
 const onLogout = () => logout()
 
-onMounted(() => {
-  updateScroll()
-  window.addEventListener('scroll', updateScroll, { passive: true })
-  onUnmounted(() => window.removeEventListener('scroll', updateScroll))
-})
-
-watch(() => route.path, () => nextTick(updateScroll))
+const navLinks = [
+  { label: 'Find Pantries', href: '/search', type: 'route' as const },
+  { label: 'How It Works',  href: '/#how-it-works', type: 'route' as const },
+  { label: 'Add a Pantry',  href: '#', type: 'anchor' as const },
+  { label: 'Volunteer',     href: '#', type: 'anchor' as const },
+]
 </script>
 
 <template>
-  <nav
-    class="fixed top-0 inset-x-0 z-50 px-8 transition-all duration-300"
-    :class="opaque
-      ? 'bg-white/[0.96] backdrop-blur-md shadow-[0_1px_0_rgba(0,0,0,0.08)]'
-      : 'bg-transparent'"
+  <header
+    class="sticky top-0 z-50 border-b"
+    style="background: rgba(253,251,247,0.88); backdrop-filter: blur(12px); border-color: var(--border-soft);"
   >
-    <div class="max-w-[1200px] mx-auto h-16 flex items-center gap-8">
+    <div class="max-w-[1120px] mx-auto px-6 h-16 flex items-center justify-between">
 
       <!-- Logo -->
-      <NuxtLink to="/" class="flex items-center gap-2 cursor-pointer">
-        <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-gradient-to-br from-forest-600 to-forest-400">
-          <UIcon name="i-lucide-leaf" class="size-4 text-white" />
-        </div>
-        <span
-          class="font-serif text-xl font-bold tracking-tight transition-colors"
-          :class="opaque ? 'text-forest-700' : 'text-white'"
-        >PantryFinder</span>
+      <NuxtLink to="/" class="flex items-center gap-2 no-underline">
+        <span class="text-[24px]">🌿</span>
+        <span class="font-serif font-semibold text-[20px]" style="color: var(--text-dark);">PantryFinder</span>
       </NuxtLink>
 
-      <div class="flex-1" />
+      <!-- Nav -->
+      <nav class="hidden md:flex items-center gap-8">
+        <template v-for="link in navLinks" :key="link.label">
+          <NuxtLink
+            v-if="link.type === 'route'"
+            :to="link.href"
+            class="nav-link text-sm font-medium no-underline"
+            style="color: var(--text-mid);"
+          >{{ link.label }}</NuxtLink>
+          <a
+            v-else
+            :href="link.href"
+            class="nav-link text-sm font-medium no-underline"
+            style="color: var(--text-mid);"
+          >{{ link.label }}</a>
+        </template>
+      </nav>
 
-      <NuxtLink to="/search"
-        class="text-sm font-medium px-1 transition-colors"
-        :class="opaque ? 'text-gray-500 hover:text-gray-700' : 'text-white/80 hover:text-white'"
-      >Find Pantries</NuxtLink>
+      <!-- Auth -->
+      <div class="flex items-center gap-2">
+        <template v-if="isLoggedIn">
+          <div
+            class="w-[34px] h-[34px] rounded-full flex items-center justify-center text-[12px] font-semibold"
+            style="background: #dcf4e6; color: var(--green-dark);"
+            aria-label="Account"
+          >{{ initials }}</div>
+          <button
+            type="button"
+            class="bg-transparent border-none text-sm"
+            style="color: var(--text-soft);"
+            @click="onLogout"
+          >Sign out</button>
+        </template>
 
-      <button
-        class="text-sm font-medium px-1 transition-colors"
-        :class="opaque ? 'text-gray-500 hover:text-gray-700' : 'text-white/80 hover:text-white'"
-      >About</button>
-
-      <div class="w-px h-5 transition-colors" :class="opaque ? 'bg-gray-200' : 'bg-white/30'" />
-
-      <template v-if="isLoggedIn">
-        <button
-          type="button"
-          aria-label="Account menu"
-          class="w-8 h-8 rounded-full flex items-center justify-center text-[13px] font-semibold transition-colors duration-300"
-          :class="opaque ? 'bg-forest-700 text-white' : 'bg-white text-forest-700'"
-        >{{ initials }}</button>
-
-        <button
-          type="button"
-          class="text-sm font-medium px-1 transition-colors flex items-center gap-1"
-          :class="opaque ? 'text-gray-500 hover:text-gray-700' : 'text-white/80 hover:text-white'"
-          @click="onLogout"
-        >
-          <UIcon name="i-lucide-log-out" class="size-[14px]" />
-          Sign out
-        </button>
-      </template>
-
-      <template v-else>
-        <button
-          class="text-sm font-medium px-1 transition-colors"
-          :class="opaque ? 'text-forest-700 hover:text-forest-800' : 'text-white hover:text-white/90'"
-          @click="show('login')"
-        >Sign In</button>
-
-        <button
-          class="text-sm font-medium rounded-lg px-4 py-[7px] transition-all text-white"
-          :class="opaque
-            ? 'bg-forest-700 hover:bg-forest-800'
-            : 'bg-white/15 border border-white/50 backdrop-blur-sm hover:bg-white/25'"
-          @click="show('register')"
-        >Register</button>
-      </template>
-
+        <template v-else>
+          <button
+            type="button"
+            class="bg-transparent border-none text-sm font-medium px-3.5 py-2"
+            style="color: var(--text-mid);"
+            @click="show('login')"
+          >Sign in</button>
+          <button
+            type="button"
+            class="border-none text-sm font-semibold text-white rounded-[10px] px-5 py-[9px] transition-colors"
+            style="background: var(--green-dark);"
+            @mouseenter="(e) => ((e.currentTarget as HTMLElement).style.background = '#1a6038')"
+            @mouseleave="(e) => ((e.currentTarget as HTMLElement).style.background = '#1e7a47')"
+            @click="show('register')"
+          >Register free</button>
+        </template>
+      </div>
     </div>
-  </nav>
+  </header>
 </template>

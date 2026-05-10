@@ -7,18 +7,18 @@ const email = ref('')
 const password = ref('')
 const firstName = ref('')
 const lastName = ref('')
-const showPassword = ref(false)
 const error = ref<string | null>(null)
 const submitting = ref(false)
+const showPassword = ref(false)
 
 function resetForm() {
   email.value = ''
   password.value = ''
   firstName.value = ''
   lastName.value = ''
-  showPassword.value = false
   error.value = null
   submitting.value = false
+  showPassword.value = false
 }
 
 function switchTab(next: 'login' | 'register') {
@@ -98,154 +98,130 @@ async function onSubmit() {
   <Teleport to="body">
     <div
       v-if="open"
-      class="fixed inset-0 z-[3000] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+      class="fixed inset-0 z-[3000] flex items-center justify-center p-4"
+      style="background: rgba(15,30,20,0.55); backdrop-filter: blur(4px);"
       @mousedown="onBackdropMouseDown"
       @mouseup="onBackdropMouseUp"
     >
       <div
-        class="w-full max-w-md bg-white rounded-[22px] overflow-hidden shadow-2xl animate-slide-up"
+        class="w-full max-w-[400px] rounded-[20px] relative animate-pop-in"
+        style="background: var(--cream-light); box-shadow: 0 24px 80px rgba(0,0,0,0.18);"
         role="dialog"
         aria-modal="true"
       >
-        <!-- Header -->
-        <div class="relative px-7 pt-6 pb-5 bg-gradient-to-br from-forest-700 to-forest-600">
-          <button
-            type="button"
-            aria-label="Close"
-            class="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center text-white transition-colors"
-            @click="close"
-          >
-            <UIcon name="i-lucide-x" class="size-4" />
-          </button>
+        <!-- Close button -->
+        <button
+          type="button"
+          aria-label="Close"
+          class="absolute top-4 right-4 bg-transparent border-none text-[22px] leading-none"
+          style="color: var(--text-soft);"
+          @click="close"
+        >×</button>
 
-          <div class="flex items-center gap-2.5 mb-4">
-            <div class="w-9 h-9 bg-white/15 rounded-[10px] flex items-center justify-center">
-              <UIcon name="i-lucide-leaf" class="size-[18px] text-forest-300" />
-            </div>
-            <span class="font-serif text-white text-xl font-bold">PantryFinder</span>
+        <div class="px-8 pt-9 pb-8">
+          <!-- Header -->
+          <div class="text-center mb-7">
+            <span class="block mb-2.5 text-[36px]">{{ tab === 'login' ? '🌿' : '🌱' }}</span>
+            <h2 class="font-serif font-semibold text-[22px] mb-1.5" style="color: var(--text-dark);">
+              {{ tab === 'login' ? 'Welcome back' : 'Join the community' }}
+            </h2>
+            <p class="text-[14px]" style="color: var(--text-soft);">
+              {{ tab === 'login' ? 'Sign in to save pantries & leave reviews' : 'Free forever — no strings attached' }}
+            </p>
           </div>
 
-          <div class="flex gap-1 bg-white/10 rounded-[10px] p-1">
-            <button
-              type="button"
-              class="flex-1 py-2 rounded-[7px] text-sm font-medium transition-all"
-              :class="tab === 'login' ? 'bg-white/20 text-white' : 'text-white/70 hover:text-white'"
-              @click="switchTab('login')"
-            >Sign In</button>
-            <button
-              type="button"
-              class="flex-1 py-2 rounded-[7px] text-sm font-medium transition-all"
-              :class="tab === 'register' ? 'bg-white/20 text-white' : 'text-white/70 hover:text-white'"
-              @click="switchTab('register')"
-            >Register</button>
-          </div>
-        </div>
-
-        <!-- Form -->
-        <form class="px-7 pt-6 pb-7 space-y-3" @submit.prevent="onSubmit">
-          <template v-if="tab === 'register'">
-            <label class="block">
-              <span class="block text-[13px] font-semibold text-gray-700 mb-1">First name</span>
-              <div class="flex items-center gap-2.5 bg-cream rounded-[10px] px-3.5 border-[1.5px] border-cream-dark focus-within:border-forest-500 transition-colors">
-                <UIcon name="i-lucide-user" class="size-4 text-gray-400" />
-                <input
-                  v-model="firstName"
-                  type="text"
-                  autocomplete="given-name"
-                  required
-                  placeholder="Jane"
-                  class="flex-1 bg-transparent border-0 outline-none text-sm py-3 text-gray-900 placeholder:text-gray-400"
-                />
-              </div>
-            </label>
-
-            <label class="block">
-              <span class="block text-[13px] font-semibold text-gray-700 mb-1">Last name</span>
-              <div class="flex items-center gap-2.5 bg-cream rounded-[10px] px-3.5 border-[1.5px] border-cream-dark focus-within:border-forest-500 transition-colors">
-                <UIcon name="i-lucide-user" class="size-4 text-gray-400" />
-                <input
-                  v-model="lastName"
-                  type="text"
-                  autocomplete="family-name"
-                  required
-                  placeholder="Smith"
-                  class="flex-1 bg-transparent border-0 outline-none text-sm py-3 text-gray-900 placeholder:text-gray-400"
-                />
-              </div>
-            </label>
-          </template>
-
-          <label class="block">
-            <span class="block text-[13px] font-semibold text-gray-700 mb-1">Email address</span>
-            <div class="flex items-center gap-2.5 bg-cream rounded-[10px] px-3.5 border-[1.5px] border-cream-dark focus-within:border-forest-500 transition-colors">
-              <UIcon name="i-lucide-mail" class="size-4 text-gray-400" />
+          <!-- Form -->
+          <form class="flex flex-col gap-3" @submit.prevent="onSubmit">
+            <template v-if="tab === 'register'">
               <input
-                v-model="email"
-                type="email"
-                autocomplete="email"
+                v-model="firstName"
+                type="text"
+                autocomplete="given-name"
                 required
-                placeholder="you@example.com"
-                class="flex-1 bg-transparent border-0 outline-none text-sm py-3 text-gray-900 placeholder:text-gray-400"
+                placeholder="First name"
+                class="w-full bg-white rounded-[12px] px-4 py-[11px] text-sm border-[1.5px] outline-none transition-colors"
+                style="border-color: var(--border-input); color: var(--text-dark);"
+                @focus="(e) => ((e.currentTarget as HTMLElement).style.borderColor = '#1e7a47')"
+                @blur="(e) => ((e.currentTarget as HTMLElement).style.borderColor = '#dde8e2')"
               />
-            </div>
-          </label>
+              <input
+                v-model="lastName"
+                type="text"
+                autocomplete="family-name"
+                required
+                placeholder="Last name"
+                class="w-full bg-white rounded-[12px] px-4 py-[11px] text-sm border-[1.5px] outline-none transition-colors"
+                style="border-color: var(--border-input); color: var(--text-dark);"
+                @focus="(e) => ((e.currentTarget as HTMLElement).style.borderColor = '#1e7a47')"
+                @blur="(e) => ((e.currentTarget as HTMLElement).style.borderColor = '#dde8e2')"
+              />
+            </template>
 
-          <label class="block">
-            <span class="block text-[13px] font-semibold text-gray-700 mb-1">Password</span>
-            <div class="flex items-center gap-2.5 bg-cream rounded-[10px] px-3.5 border-[1.5px] border-cream-dark focus-within:border-forest-500 transition-colors">
-              <UIcon name="i-lucide-lock" class="size-4 text-gray-400" />
+            <input
+              v-model="email"
+              type="email"
+              autocomplete="email"
+              required
+              placeholder="Email address"
+              class="w-full bg-white rounded-[12px] px-4 py-[11px] text-sm border-[1.5px] outline-none transition-colors"
+              style="border-color: var(--border-input); color: var(--text-dark);"
+              @focus="(e) => ((e.currentTarget as HTMLElement).style.borderColor = '#1e7a47')"
+              @blur="(e) => ((e.currentTarget as HTMLElement).style.borderColor = '#dde8e2')"
+            />
+
+            <div class="relative">
               <input
                 v-model="password"
                 :type="showPassword ? 'text' : 'password'"
                 :autocomplete="tab === 'login' ? 'current-password' : 'new-password'"
                 required
-                placeholder="••••••••"
-                class="flex-1 bg-transparent border-0 outline-none text-sm py-3 text-gray-900 placeholder:text-gray-400"
+                :placeholder="tab === 'login' ? 'Password' : 'Create a password'"
+                class="w-full bg-white rounded-[12px] pl-4 pr-11 py-[11px] text-sm border-[1.5px] outline-none transition-colors"
+                style="border-color: var(--border-input); color: var(--text-dark);"
+                @focus="(e) => ((e.currentTarget as HTMLElement).style.borderColor = '#1e7a47')"
+                @blur="(e) => ((e.currentTarget as HTMLElement).style.borderColor = '#dde8e2')"
               />
               <button
                 type="button"
                 :aria-label="showPassword ? 'Hide password' : 'Show password'"
-                class="text-gray-400 hover:text-gray-600 transition-colors"
+                :aria-pressed="showPassword"
+                tabindex="-1"
+                class="absolute inset-y-0 right-0 flex items-center px-3 bg-transparent border-none cursor-pointer"
+                style="color: var(--text-soft);"
                 @click="showPassword = !showPassword"
               >
-                <UIcon :name="showPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'" class="size-4" />
+                <UIcon :name="showPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'" class="size-[18px]" />
               </button>
             </div>
-          </label>
 
-          <p
-            v-if="error"
-            class="text-sm text-red-700 bg-red-50 rounded-md px-3 py-2"
-          >{{ error }}</p>
+            <p
+              v-if="error"
+              class="text-sm rounded-md px-3 py-2"
+              style="color: #b91c1c; background: #fef2f2;"
+            >{{ error }}</p>
 
-          <button
-            type="submit"
-            :disabled="submitting"
-            class="w-full mt-1 py-3.5 rounded-xl text-white text-[15px] font-semibold bg-gradient-to-br from-forest-700 to-forest-600 hover:from-forest-800 hover:to-forest-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-          >
-            <template v-if="tab === 'login'">{{ submitting ? 'Signing in…' : 'Sign In' }}</template>
-            <template v-else>{{ submitting ? 'Creating account…' : 'Create Account' }}</template>
-          </button>
+            <button
+              type="submit"
+              :disabled="submitting"
+              class="w-full mt-1 py-3 rounded-[12px] text-white text-[14px] font-semibold border-none disabled:opacity-50 disabled:cursor-not-allowed"
+              style="background: var(--green-dark);"
+            >
+              <template v-if="tab === 'login'">{{ submitting ? 'Signing in…' : 'Sign In' }}</template>
+              <template v-else>{{ submitting ? 'Creating account…' : 'Create Account' }}</template>
+            </button>
+          </form>
 
-          <p class="text-center text-[13px] text-gray-500">
+          <p class="text-center text-[13px] mt-5" style="color: var(--text-soft);">
             <template v-if="tab === 'login'">
-              Don't have an account?
-              <button
-                type="button"
-                class="text-forest-700 font-semibold hover:underline"
-                @click="switchTab('register')"
-              >Register</button>
+              No account?
+              <a href="#" class="font-semibold no-underline" style="color: var(--green-dark);" @click.prevent="switchTab('register')">Create one free →</a>
             </template>
             <template v-else>
               Already have an account?
-              <button
-                type="button"
-                class="text-forest-700 font-semibold hover:underline"
-                @click="switchTab('login')"
-              >Sign In</button>
+              <a href="#" class="font-semibold no-underline" style="color: var(--green-dark);" @click.prevent="switchTab('login')">Sign in →</a>
             </template>
           </p>
-        </form>
+        </div>
       </div>
     </div>
   </Teleport>
@@ -256,9 +232,9 @@ input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
 input:-webkit-autofill:active {
-  -webkit-box-shadow: 0 0 0 1000px #F6F4EE inset;
-  -webkit-text-fill-color: #111827;
-  caret-color: #111827;
+  -webkit-box-shadow: 0 0 0 1000px #ffffff inset;
+  -webkit-text-fill-color: #1a2e1e;
+  caret-color: #1a2e1e;
   transition: background-color 9999s ease-in-out 0s;
 }
 </style>

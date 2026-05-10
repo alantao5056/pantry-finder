@@ -5,7 +5,7 @@
   --font-sans: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
   --font-serif: 'Playfair Display', Georgia, serif;
 
-  /* Forest green scale */
+  /* Forest green scale (legacy — used by PantryCard / FiltersSidebar) */
   --color-forest-50:  #E8F5EC;
   --color-forest-100: #D8F3DC;
   --color-forest-200: #B7E4C7;
@@ -16,10 +16,25 @@
   --color-forest-700: #1C4532;
   --color-forest-800: #0B3D26;
 
-  /* Warm cream palette */
+  /* Warm cream palette (legacy) */
   --color-cream:        #F6F4EE;
   --color-cream-muted:  #EEE9E0;
   --color-cream-dark:   #E8E4DC;
+}
+
+/* New v2 design tokens (used by landing, navbar, footer, auth modal, search bar) */
+:root {
+  --green-dark: #1e7a47;
+  --green-mid: #2d9a5f;
+  --green-light: #f0faf4;
+  --cream-light: #fdfbf7;
+  --cream-warm: #faf5ec;
+  --soil: #c4a882;
+  --text-dark: #1a2e1e;
+  --text-mid: #4a6355;
+  --text-soft: #8aab97;
+  --border-soft: #edf3ef;
+  --border-input: #dde8e2;
 }
 
 @keyframes slide-up {
@@ -32,8 +47,94 @@
   50%       { transform: translateY(-12px); }
 }
 
+@keyframes popIn {
+  from { opacity: 0; transform: scale(0.92) translateY(16px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
 .animate-slide-up {
   animation: slide-up 0.8s ease both;
+}
+
+.animate-pop-in {
+  animation: popIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+
+/* Reveal-on-scroll */
+.reveal { opacity: 0; transform: translateY(32px); transition: opacity 0.7s ease, transform 0.7s ease; }
+.reveal.visible { opacity: 1; transform: translateY(0); }
+.reveal-left { opacity: 0; transform: translateX(-32px); transition: opacity 0.7s ease, transform 0.7s ease; }
+.reveal-left.visible { opacity: 1; transform: translateX(0); }
+.reveal-right { opacity: 0; transform: translateX(32px); transition: opacity 0.7s ease, transform 0.7s ease; }
+.reveal-right.visible { opacity: 1; transform: translateX(0); }
+
+.delay-1 { transition-delay: 0.1s; }
+.delay-2 { transition-delay: 0.2s; }
+.delay-3 { transition-delay: 0.3s; }
+.delay-4 { transition-delay: 0.4s; }
+.delay-5 { transition-delay: 0.5s; }
+
+/* Search input glow */
+.search-wrap { transition: box-shadow 0.3s ease; }
+.search-wrap:focus-within {
+  box-shadow: 0 0 0 4px rgba(45, 154, 95, 0.18), 0 8px 40px rgba(30, 122, 71, 0.12);
+}
+
+/* Nav link underline */
+.nav-link { position: relative; }
+.nav-link::after {
+  content: ''; position: absolute; bottom: -2px; left: 0; width: 0; height: 1.5px;
+  background: var(--green-dark); transition: width 0.25s ease;
+}
+.nav-link:hover::after { width: 100%; }
+
+/* Tag pill (section eyebrows) */
+.tag-pill {
+  display: inline-block; padding: 4px 14px; border-radius: 100px;
+  font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+}
+
+/* Category pill */
+.cat-pill {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 20px; border-radius: 100px;
+  background: white; border: 1.5px solid #e5ede8;
+  transition: all 0.25s ease; cursor: default;
+  font-size: 14px; font-weight: 500; color: var(--text-mid);
+}
+.cat-pill:hover {
+  border-color: var(--green-mid); background: var(--green-light);
+  color: var(--green-dark); transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(45,154,95,0.12);
+}
+
+/* Testimonial card */
+.testimonial-card {
+  background: white; border-radius: 20px;
+  padding: 28px; border: 1.5px solid #edf3ef;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.testimonial-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(30,122,71,0.1);
+}
+
+/* CTA band background flourishes */
+.cta-band {
+  background: var(--green-dark);
+  position: relative; overflow: hidden;
+}
+.cta-band::before {
+  content: '';
+  position: absolute; top: -60%; right: -10%;
+  width: 500px; height: 500px; border-radius: 50%;
+  background: rgba(255,255,255,0.04); pointer-events: none;
+}
+.cta-band::after {
+  content: '';
+  position: absolute; bottom: -40%; left: -5%;
+  width: 320px; height: 320px; border-radius: 50%;
+  background: rgba(255,255,255,0.03); pointer-events: none;
 }
 
 html {

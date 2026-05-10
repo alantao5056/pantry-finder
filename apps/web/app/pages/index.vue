@@ -1,248 +1,393 @@
 <script setup lang="ts">
-const stats = [
-  { value: '10+',     label: 'Pantries Listed' },
-  { value: '5',       label: 'Cities Covered' },
-  { value: 'Free',    label: 'Always & Forever' },
-  { value: 'Updated', label: 'Community-Sourced' },
+const { show } = useAuthModal()
+
+const STATS = [
+  { number: '1,400+', label: 'Food Pantries Listed', icon: '🏪' },
+  { number: '60+',    label: 'Cities Covered',        icon: '📍' },
+  { number: '28K+',   label: 'Families Served Monthly', icon: '👨‍👩‍👧‍👦' },
+  { number: '100%',   label: 'Free, Always',          icon: '💚' },
 ]
 
-const steps = [
-  {
-    number: '01',
-    icon: 'i-lucide-search',
-    title: 'Search Your Area',
-    desc: 'Enter your address or city and set a search radius to find pantries near you.',
-  },
-  {
-    number: '02',
-    icon: 'i-lucide-clock',
-    title: 'Check Hours & Details',
-    desc: 'View open schedules, food types available, and contact info for each pantry.',
-  },
-  {
-    number: '03',
-    icon: 'i-lucide-heart',
-    title: 'Connect & Follow',
-    desc: 'Love a pantry, follow for updates, and help keep information accurate for everyone.',
-  },
+const STEPS = [
+  { num: '01', title: 'Search Your Area',        desc: 'Enter your address or city and set a search radius to find pantries near you.', icon: 'i-lucide-search' },
+  { num: '02', title: 'Check Hours & Details',   desc: 'View open schedules, food types available, and contact info for each pantry.',   icon: 'i-lucide-clock' },
+  { num: '03', title: 'Connect & Follow',        desc: 'Love a pantry, follow for updates, and help keep information accurate for everyone.', icon: 'i-lucide-heart' },
 ]
 
-const featuredPantries = [
+const CATEGORIES = [
+  { icon: '🥦', label: 'Fresh Produce' },
+  { icon: '🥩', label: 'Meat & Protein' },
+  { icon: '🥛', label: 'Dairy & Eggs' },
+  { icon: '🍞', label: 'Bread & Bakery' },
+  { icon: '🥫', label: 'Canned Goods' },
+  { icon: '🌾', label: 'Dry Goods' },
+  { icon: '🍼', label: 'Baby Food' },
+  { icon: '🐾', label: 'Pet Supplies' },
+  { icon: '🧴', label: 'Personal Care' },
+  { icon: '🏠', label: 'Household Items' },
+  { icon: '❄️', label: 'Frozen Meals' },
+  { icon: '🌿', label: 'Halal & Kosher' },
+]
+
+const TESTIMONIALS = [
   {
-    id: 'O5Fyb4ZkN9EqUhksQZyl',
-    name: 'Newton Food Pantry',
-    address: '1000 Commonwealth Avenue, Newton, MA 02459',
-    openToday: true,
+    quote: 'I was too ashamed to ask for help, but PantryFinder made it feel simple and private. Found a pantry two blocks from my apartment within minutes.',
+    name: 'Maria T.', location: 'Newton, MA', avatar: 'MT', color: '#dcf4e6',
   },
   {
-    id: 'yoP10WZfa0WLj3WmBKb8',
-    name: 'Centre Street Food Pantry',
-    address: '11 Homer Street, Newton, MA 02459',
-    openToday: true,
+    quote: 'As a pantry coordinator, getting listed here tripled our walk-in traffic. The families we now reach would have never found us otherwise.',
+    name: 'Pastor James K.', location: 'Waltham, MA', avatar: 'JK', color: '#faf5ec',
   },
   {
-    id: 'Dn8lbl7RYacLyrYofQ07',
-    name: 'Watertown Food Pantry',
-    address: '80 Mt. Auburn St., Watertown, MA 02472',
-    openToday: false,
+    quote: 'The schedule info is so accurate. I drove 20 minutes and they were actually open — with halal options too. I cried, honestly.',
+    name: 'Aisha M.', location: 'Brighton, MA', avatar: 'AM', color: '#f0faf4',
   },
 ]
 
-const orbs = [
-  { top: '15%', left: '8%',  right: undefined, size: 300, opacity: 0.06, duration: 4, delay: 0   },
-  { top: '60%', left: undefined, right: '5%',  size: 400, opacity: 0.05, duration: 5, delay: 1.2 },
-  { top: '5%',  left: undefined, right: '20%', size: 200, opacity: 0.08, duration: 6, delay: 2.4 },
+const QUICK_TAGS = ['Newton MA', '02458', 'Waltham MA', 'Brighton MA', 'Watertown MA']
+
+const OPERATOR_FEATURES = [
+  { icon: '⚡', text: 'Live in under 5 minutes' },
+  { icon: '📅', text: 'Real-time schedule management' },
+  { icon: '📊', text: "See who's visiting your listing" },
+  { icon: '💸', text: 'Completely free, forever' },
 ]
 
-const onSearch = (address: string, radius: string) => {
-  navigateTo({ path: '/search', query: { address, radius } })
+const onSearch = (address: string) => {
+  navigateTo({ path: '/search', query: { address, radius: '5' } })
 }
+
+const onTagClick = (tag: string) => {
+  navigateTo({ path: '/search', query: { address: tag, radius: '5' } })
+}
+
+let revealObserver: IntersectionObserver | null = null
+
+onMounted(() => {
+  const els = document.querySelectorAll('.reveal, .reveal-left, .reveal-right')
+  revealObserver = new IntersectionObserver((entries) => {
+    entries.forEach((e) => {
+      if (e.isIntersecting) e.target.classList.add('visible')
+    })
+  }, { threshold: 0.12 })
+  els.forEach((el) => revealObserver!.observe(el))
+})
+
+onUnmounted(() => {
+  revealObserver?.disconnect()
+})
 </script>
 
 <template>
-  <div class="font-sans">
+  <div class="font-sans relative z-[1]" style="color: var(--text-dark);">
 
-    <!-- ─── Hero ────────────────────────────────────────────── -->
+    <!-- ══ HERO ══ -->
     <section
-      class="relative min-h-screen flex items-center justify-center"
-      style="background: linear-gradient(160deg, #0B3D26 0%, #1C4532 40%, #2D6A4F 70%, #52B788 100%)"
+      class="relative overflow-hidden flex flex-col justify-center"
+      style="background: linear-gradient(160deg, #f0faf4 0%, #fdfbf7 55%, #faf5ec 100%); min-height: 92vh;"
     >
-      <!-- Decorations: clipped to the hero so orbs/wave don't bleed -->
-      <div class="absolute inset-0 overflow-hidden pointer-events-none">
-        <!-- Floating orbs -->
-        <div
-          v-for="(orb, i) in orbs"
-          :key="i"
-          class="absolute rounded-full"
-          :style="{
-            top: orb.top,
-            left: orb.left,
-            right: orb.right,
-            width: `${orb.size}px`,
-            height: `${orb.size}px`,
-            background: `rgba(82,183,136,${orb.opacity})`,
-            filter: 'blur(60px)',
-            animation: `float ${orb.duration}s ease-in-out infinite`,
-            animationDelay: `${orb.delay}s`,
-          }"
-        />
+      <!-- Large decorative word -->
+      <div
+        class="absolute font-serif font-semibold leading-none select-none pointer-events-none"
+        style="top: 8%; right: -2%; font-size: clamp(100px, 15vw, 200px); color: rgba(30,122,71,0.045);"
+      >food</div>
 
-        <!-- Dot pattern overlay -->
-        <div
-          class="absolute inset-0 opacity-50"
-          style="
-            background-image: radial-gradient(circle, rgba(255,255,255,0.08) 1px, transparent 1px);
-            background-size: 32px 32px;
-          "
-        />
+      <div class="max-w-[1120px] mx-auto py-[20px] pb-[100px] relative z-[1]">
+        <div class="max-w-[760px]">
 
-        <!-- Wave divider -->
-        <div class="absolute -bottom-px inset-x-0">
-          <svg viewBox="0 0 1440 80" preserveAspectRatio="none" class="w-full h-20 block">
-            <path d="M0,40 C360,80 1080,0 1440,40 L1440,80 L0,80 Z" fill="#F6F4EE" />
-          </svg>
-        </div>
-      </div>
+          <!-- Eyebrow -->
+          <div
+            class="inline-flex items-center gap-2 bg-white border-[1.5px] rounded-[100px] px-4 py-1.5 mb-7"
+            style="border-color: #b8e8cc; box-shadow: 0 2px 12px rgba(30,122,71,0.08);"
+          >
+            <span class="text-[14px]">🌱</span>
+            <span class="text-[13px] font-semibold tracking-wide" style="color: var(--green-dark);">
+              Free • Community-Powered • Always Up-to-Date
+            </span>
+          </div>
 
-      <!-- Content -->
-      <div class="relative z-10 text-center px-6 pt-[30px] pb-[60px] max-w-[760px] w-full animate-slide-up">
+          <!-- Headline -->
+          <h1
+            class="font-serif font-semibold mb-5"
+            style="font-size: clamp(40px, 6vw, 76px); line-height: 1.08; color: var(--text-dark); letter-spacing: -0.02em;"
+          >
+            Find Food Pantries,
+            <span class="font-serif italic font-medium" style="color: var(--green-dark);">Near You</span>
+          </h1>
 
-        <!-- Badge -->
-        <div class="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-4 py-1.5 mb-7">
-          <UIcon name="i-lucide-leaf" class="size-3.5 text-forest-300" />
-          <span class="text-forest-100 text-[13px] font-medium tracking-wide">
-            Free • Community-Powered • Always Up-to-Date
-          </span>
-        </div>
-
-        <!-- Heading -->
-        <h1
-          class="font-serif font-bold text-white leading-[1.1] mb-5"
-          style="font-size: clamp(38px, 6vw, 68px); letter-spacing: -1px;"
-        >
-          Find Food Pantries<br />
-          <em class="text-forest-300">Near You</em>
-        </h1>
-
-        <!-- Subtitle -->
-        <p
-          class="text-white/75 leading-relaxed mx-auto mb-10"
-          style="font-size: clamp(16px, 2.5vw, 20px);"
-        >
-          Connecting communities with nutritious food.<br/>
-          Discover pantries, check hours, and get help when you need it most.
-        </p>
-
-        <!-- Search bar -->
-        <SearchBar variant="dark" @submit="onSearch" />
-      </div>
-    </section>
-
-    <!-- ─── Stats bar ────────────────────────────────────────── -->
-    <div class="bg-white border-b border-cream-dark py-5 px-6">
-      <div class="max-w-[1200px] mx-auto flex justify-center gap-12 flex-wrap">
-        <div v-for="stat in stats" :key="stat.label" class="text-center">
-          <div class="font-serif text-[28px] font-bold text-forest-700">{{ stat.value }}</div>
-          <div class="text-[13px] text-gray-500 font-medium">{{ stat.label }}</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ─── How it Works ─────────────────────────────────────── -->
-    <section class="py-20 px-6 bg-cream">
-      <div class="max-w-[1100px] mx-auto">
-        <div class="text-center mb-14">
-          <h2
-            class="font-serif font-bold text-forest-700 mb-3"
-            style="font-size: clamp(28px, 4vw, 42px);"
-          >How PantryFinder Works</h2>
-          <p class="text-gray-500 text-base max-w-[480px] mx-auto">
-            Three simple steps to find the food support you need
+          <!-- Sub -->
+          <p
+            class="leading-[1.65] mb-11 font-light"
+            style="font-size: clamp(16px, 2vw, 20px); color: var(--text-mid); max-width: 560px;"
+          >
+            Connecting communities with nutritious food.
+            Discover pantries, check hours, and get help when you need it most.
           </p>
+
+          <!-- Search box -->
+          <div class="max-w-[720px] mb-5">
+            <SearchBar :show-radius="false" @submit="onSearch" />
+          </div>
+
+          <!-- Quick tags -->
+          <div class="flex items-center flex-wrap gap-2">
+            <span class="text-[13px] font-medium" style="color: var(--text-soft);">Try:</span>
+            <button
+              v-for="t in QUICK_TAGS"
+              :key="t"
+              type="button"
+              class="bg-white border-[1.5px] rounded-[100px] px-3.5 py-1 text-[13px] font-sans transition-colors"
+              style="border-color: var(--border-input); color: var(--text-mid);"
+              @mouseenter="(e) => { const el = e.currentTarget as HTMLElement; el.style.borderColor = '#82d4a7'; el.style.color = '#1e7a47'; el.style.background = '#f0faf4'; }"
+              @mouseleave="(e) => { const el = e.currentTarget as HTMLElement; el.style.borderColor = '#dde8e2'; el.style.color = '#4a6355'; el.style.background = 'white'; }"
+              @click="onTagClick(t)"
+            >{{ t }}</button>
+          </div>
         </div>
+      </div>
 
-        <div class="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-7">
+      <!-- Scroll cue -->
+      <div
+        class="absolute bottom-7 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1.5"
+        style="color: var(--text-soft);"
+      >
+        <span class="text-[12px] font-medium" style="letter-spacing: 0.1em;">EXPLORE</span>
+        <svg width="16" height="24" viewBox="0 0 16 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <path d="M8 2v20M2 16l6 6 6-6"/>
+        </svg>
+      </div>
+    </section>
+
+    <!-- ══ STATS ══ -->
+    <section class="bg-white border-t border-b" style="border-color: var(--border-soft);">
+      <div class="max-w-[1120px] mx-auto px-6">
+        <div class="grid grid-cols-2 md:grid-cols-4">
           <div
-            v-for="step in steps"
-            :key="step.number"
-            class="bg-white rounded-[20px] p-8 shadow-[0_4px_20px_rgba(28,69,50,0.07)] border border-cream-muted relative overflow-hidden"
+            v-for="(s, i) in STATS"
+            :key="s.label"
+            class="reveal text-center px-8 py-11"
+            :class="i < 3 ? 'md:border-r' : ''"
+            :style="{ borderColor: 'var(--border-soft)', transitionDelay: `${i * 0.1}s` }"
           >
-            <!-- Ghost step number -->
-            <span
-              class="absolute top-5 right-5 font-serif text-[48px] font-bold leading-none select-none pointer-events-none text-forest-700"
-              style="opacity: 0.05;"
-            >{{ step.number }}</span>
-
-            <!-- Icon -->
-            <div class="w-[52px] h-[52px] bg-forest-50 rounded-[14px] flex items-center justify-center mb-5">
-              <UIcon :name="step.icon" class="size-6 text-forest-700" />
-            </div>
-
-            <h3 class="font-serif font-bold text-xl text-gray-900 mb-2.5">{{ step.title }}</h3>
-            <p class="text-gray-500 text-[15px] leading-relaxed">{{ step.desc }}</p>
+            <div class="text-[28px] mb-2.5">{{ s.icon }}</div>
+            <div class="font-serif font-semibold text-[3rem] leading-none" style="color: var(--green-dark);">{{ s.number }}</div>
+            <div class="text-[14px] mt-2 font-normal" style="color: var(--text-soft);">{{ s.label }}</div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- ─── Featured Pantries ────────────────────────────────── -->
-    <section class="py-20 px-6 bg-white">
-      <div class="max-w-[1100px] mx-auto">
-        <div class="flex items-center justify-between mb-10 flex-wrap gap-3">
+    <!-- ══ HOW IT WORKS ══ -->
+    <section id="how-it-works" class="py-[100px] px-6" style="background: var(--cream-light);">
+      <div class="max-w-[1120px] mx-auto">
+        <div class="text-center mb-16">
+          <span class="tag-pill reveal" style="background: #dcf4e6; color: var(--green-dark);">How It Works</span>
           <h2
-            class="font-serif font-bold text-forest-700"
-            style="font-size: clamp(24px, 3.5vw, 38px);"
-          >Featured Pantries</h2>
-          <button class="flex items-center gap-1.5 border-[1.5px] border-forest-700 text-forest-700 rounded-[10px] px-5 py-2 text-sm font-medium hover:bg-forest-700/5 transition-colors">
-            View All <UIcon name="i-lucide-chevron-right" class="size-4" />
-          </button>
+            class="font-serif font-semibold reveal mt-4"
+            style="font-size: clamp(32px, 4vw, 52px); color: var(--text-dark); letter-spacing: -0.02em; line-height: 1.15;"
+          >
+            Three steps to your<br/>
+            <span class="font-serif italic font-medium" style="color: var(--green-mid);">nearest pantry</span>
+          </h2>
         </div>
 
-        <div class="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-5">
+        <div class="relative grid grid-cols-1 md:grid-cols-3 gap-10">
+          <!-- Connector line -->
           <div
-            v-for="pantry in featuredPantries"
-            :key="pantry.id"
-            class="bg-cream rounded-2xl p-6 border border-cream-muted"
+            class="hidden md:block absolute left-0 right-0 h-0 z-0"
+            style="top: 58px; border-top: 2px dashed #b8e8cc;"
+          ></div>
+
+          <div
+            v-for="(s, i) in STEPS"
+            :key="s.num"
+            class="reveal relative z-[1]"
+            :style="{ transitionDelay: `${i * 0.15}s` }"
           >
-            <div class="flex justify-between items-start mb-3">
-              <h3 class="text-[17px] text-gray-900 flex-1 mr-2">{{ pantry.name }}</h3>
+            <div class="mb-6">
               <span
-                v-if="pantry.openToday"
-                class="bg-green-100 text-green-900 text-[11px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap"
-              >Open Today</span>
+                class="block w-14 text-center font-serif text-[16px] font-semibold mb-2"
+                style="color: #b8e8cc; letter-spacing: 0.12em;"
+              >{{ s.num }}</span>
+              <div
+                class="w-14 h-14 rounded-2xl flex items-center justify-center border-2"
+                style="background: var(--green-light); border-color: #b8e8cc; color: var(--green-dark);"
+              >
+                <UIcon :name="s.icon" class="size-7" />
+              </div>
             </div>
-            <div class="flex items-start gap-1.5 text-gray-500 text-[13px] mb-4">
-              <UIcon name="i-lucide-map-pin" class="size-3.5 shrink-0 mt-0.5" />
-              <span>{{ pantry.address }}</span>
-            </div>
-            <button class="w-full bg-forest-700 text-white rounded-lg py-2 text-[13px] font-medium hover:bg-forest-800 transition-colors">
-              View Details
-            </button>
+            <h3 class="font-serif font-semibold text-[22px] mb-3" style="color: var(--text-dark);">{{ s.title }}</h3>
+            <p class="text-[15px] leading-[1.7] font-light" style="color: var(--text-mid);">{{ s.desc }}</p>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- ─── CTA ──────────────────────────────────────────────── -->
-    <section
-      class="py-20 px-6 text-center"
-      style="background: linear-gradient(135deg, #1C4532, #2D6A4F)"
-    >
-      <h2
-        class="font-serif text-white mb-4"
-        style="font-size: clamp(28px, 4vw, 44px);"
-      >Know a pantry we're missing?</h2>
-      <p class="text-white/75 text-base max-w-[500px] mx-auto mb-8">
-        Help us keep PantryFinder accurate and complete for everyone in the community.
-      </p>
-      <button class="bg-white/15 border-[1.5px] border-white/40 text-white rounded-xl px-8 py-3.5 text-base font-medium backdrop-blur-sm hover:bg-white/25 transition-colors">
-        Submit a Pantry
-      </button>
+    <!-- ══ FOOD CATEGORIES ══ -->
+    <section class="py-[100px] px-6" style="background: var(--green-light);">
+      <div class="max-w-[1120px] mx-auto">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-20 items-center">
+          <div>
+            <span class="tag-pill reveal" style="background: white; color: var(--green-dark);">What's Available</span>
+            <h2
+              class="font-serif font-semibold reveal mt-4 mb-5"
+              style="font-size: clamp(28px, 3.5vw, 46px); color: var(--text-dark); letter-spacing: -0.02em; line-height: 1.15;"
+            >
+              Food for every<br/>need &amp; culture
+            </h2>
+            <p
+              class="reveal text-[16px] leading-[1.75] font-light mb-8"
+              style="color: var(--text-mid); max-width: 420px;"
+            >
+              Our pantries collectively stock a wide variety of items — from fresh produce to culturally specific ingredients, baby essentials to pet supplies. No one slips through.
+            </p>
+            <NuxtLink
+              to="/search"
+              class="reveal inline-block border-none text-white font-semibold text-[14px] rounded-[12px] px-7 py-3 no-underline"
+              style="background: var(--green-dark);"
+            >Search All Pantries →</NuxtLink>
+          </div>
+
+          <div class="flex flex-wrap gap-2.5">
+            <div
+              v-for="(c, i) in CATEGORIES"
+              :key="c.label"
+              class="cat-pill reveal"
+              :style="{ transitionDelay: `${(i % 4) * 0.08}s` }"
+            >
+              <span class="text-[18px]">{{ c.icon }}</span>
+              <span>{{ c.label }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
 
-    <!-- ─── Footer ───────────────────────────────────────────── -->
-    <Footer />
+    <!-- ══ TESTIMONIALS ══ -->
+    <section class="py-[100px] px-6 bg-white">
+      <div class="max-w-[1120px] mx-auto">
+        <div class="text-center mb-16">
+          <span class="tag-pill reveal" style="background: var(--cream-warm); color: #a07850;">Community Voices</span>
+          <h2
+            class="font-serif font-semibold reveal mt-4"
+            style="font-size: clamp(28px, 3.5vw, 46px); color: var(--text-dark); letter-spacing: -0.02em; line-height: 1.15;"
+          >
+            Real people,<br/>
+            <span class="font-serif italic font-medium" style="color: var(--green-mid);">real stories</span>
+          </h2>
+        </div>
 
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div
+            v-for="(t, i) in TESTIMONIALS"
+            :key="t.name"
+            class="testimonial-card reveal"
+            :style="{ transitionDelay: `${i * 0.15}s` }"
+          >
+            <div class="flex gap-0.5">
+              <span v-for="n in 5" :key="n" style="color: #fc7e0a; font-size: 14px;">★</span>
+            </div>
+            <p class="text-[15px] leading-[1.75] font-light italic my-4 mb-6" style="color: var(--text-mid);">
+              "{{ t.quote }}"
+            </p>
+            <div class="flex items-center gap-3 pt-5 border-t" style="border-color: var(--border-soft);">
+              <div
+                class="w-10 h-10 rounded-full flex items-center justify-center font-semibold text-[13px] shrink-0"
+                :style="{ background: t.color, color: 'var(--green-dark)' }"
+              >{{ t.avatar }}</div>
+              <div>
+                <div class="font-semibold text-[14px]" style="color: var(--text-dark);">{{ t.name }}</div>
+                <div class="text-[13px]" style="color: var(--text-soft);">{{ t.location }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ FOR PANTRY OPERATORS ══ -->
+    <section class="py-[100px] px-6" style="background: var(--cream-light);">
+      <div class="max-w-[1120px] mx-auto">
+        <div
+          class="bg-white rounded-[28px] p-16 grid grid-cols-1 md:grid-cols-[1fr_auto] gap-12 items-center border-[1.5px]"
+          style="border-color: var(--border-soft); box-shadow: 0 4px 40px rgba(30,122,71,0.06);"
+        >
+          <div>
+            <span class="tag-pill reveal" style="background: var(--cream-warm); color: #a07850;">For Pantry Operators</span>
+            <h2
+              class="font-serif font-semibold reveal mt-4 mb-4"
+              style="font-size: clamp(28px, 3.5vw, 44px); color: var(--text-dark); letter-spacing: -0.02em; line-height: 1.15;"
+            >
+              Run a pantry?<br/>List it
+              <span class="font-serif italic font-medium" style="color: var(--green-mid);">for free.</span>
+            </h2>
+            <p
+              class="reveal text-[16px] leading-[1.75] font-light"
+              style="color: var(--text-mid); max-width: 480px;"
+            >
+              Thousands of families search PantryFinder every week. Get listed in minutes — manage your schedule, food availability, and contact info all in one place.
+            </p>
+            <div class="reveal flex gap-3 mt-8">
+              <button
+                type="button"
+                class="border-none text-white font-semibold text-[14px] rounded-[12px] px-7 py-3"
+                style="background: var(--green-dark);"
+              >Add Your Pantry →</button>
+              <button
+                type="button"
+                class="bg-transparent border-[1.5px] font-medium text-[14px] rounded-[12px] px-6 py-3"
+                style="border-color: var(--border-input); color: var(--text-mid);"
+              >Learn More</button>
+            </div>
+          </div>
+
+          <div class="reveal-right flex flex-col gap-4 min-w-[240px]">
+            <div
+              v-for="f in OPERATOR_FEATURES"
+              :key="f.text"
+              class="flex items-center gap-3 px-4.5 py-3.5 rounded-[12px]"
+              style="background: var(--green-light); padding: 14px 18px;"
+            >
+              <span class="text-[20px]">{{ f.icon }}</span>
+              <span class="text-[14px] font-medium" style="color: var(--text-mid);">{{ f.text }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ CTA BAND ══ -->
+    <section class="cta-band py-[90px] px-6">
+      <div class="max-w-[700px] mx-auto text-center relative z-[1]">
+        <span class="block mb-5 text-[48px]">🌿</span>
+        <h2
+          class="reveal font-serif font-semibold text-white mb-4"
+          style="font-size: clamp(30px, 4vw, 54px); letter-spacing: -0.02em; line-height: 1.1;"
+        >
+          No one should go<br/>hungry in our community.
+        </h2>
+        <p
+          class="reveal text-[18px] mb-11 leading-[1.65] font-light"
+          style="color: rgba(255,255,255,0.7);"
+        >
+          Start your search now — it takes less than 30 seconds to find a pantry near you.
+        </p>
+        <div class="reveal flex gap-3 justify-center flex-wrap">
+          <NuxtLink
+            to="/search"
+            class="bg-white border-none font-medium text-[15px] rounded-[14px] px-8 py-3.5 no-underline"
+            style="color: var(--green-dark);"
+          >Find a Pantry Near Me</NuxtLink>
+          <button
+            type="button"
+            class="border-[1.5px] text-white font-medium text-[15px] rounded-[14px] px-7 py-3.5"
+            style="background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.3);"
+            @click="show('register')"
+          >Create Free Account</button>
+        </div>
+      </div>
+    </section>
+
+    <Footer />
   </div>
 </template>
-

@@ -166,12 +166,11 @@ const isAddressNotFound = computed(() => addressNotFound.value)
 </script>
 
 <template>
-  <div class="h-screen pt-16 flex flex-col bg-cream font-sans overflow-hidden">
+  <div class="h-[calc(100vh-4rem)] flex flex-col bg-cream font-sans overflow-hidden">
     <!-- Top search bar -->
     <div class="bg-white border-b border-cream-dark px-6 py-3 flex-shrink-0">
       <div class="max-w-[1200px] mx-auto">
         <SearchBar
-          variant="light"
           :initial-address="initialAddress"
           :initial-radius="initialRadius"
           @submit="onSearch"
