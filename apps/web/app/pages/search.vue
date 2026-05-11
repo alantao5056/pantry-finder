@@ -169,7 +169,7 @@ const isAddressNotFound = computed(() => addressNotFound.value)
   <div class="h-[calc(100vh-4rem)] flex flex-col bg-cream font-sans overflow-hidden">
     <!-- Top search bar -->
     <div class="bg-white border-b border-cream-dark px-6 py-3 flex-shrink-0">
-      <div class="max-w-[1200px] mx-auto">
+      <div class="max-w-[1120px] mx-auto">
         <SearchBar
           :initial-address="initialAddress"
           :initial-radius="initialRadius"

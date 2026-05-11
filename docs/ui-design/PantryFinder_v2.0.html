@@ -92,6 +92,10 @@
       0%, 100% { transform: translateY(0) rotate(0deg); }
       50% { transform: translateY(12px) rotate(4deg); }
     }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
     .float-a { animation: float 7s ease-in-out infinite; }
     .float-b { animation: floatB 9s ease-in-out infinite; }
     .float-c { animation: float 11s ease-in-out infinite reverse; }
@@ -114,13 +118,6 @@
       font-family: 'Playfair Display', Georgia, serif;
       font-size: 3rem; font-weight: 600; line-height: 1;
       color: var(--green-dark);
-    }
-
-    /* Step line */
-    .step-connector {
-      position: absolute; top: 28px; left: calc(50% + 32px);
-      width: calc(100% - 64px); height: 1px;
-      background: linear-gradient(to right, var(--green-mid), transparent);
     }
 
     /* Category pill */
@@ -178,6 +175,13 @@
       box-shadow: 0 24px 80px rgba(0,0,0,0.18);
       animation: popIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both;
     }
+    .modal-box-lg {
+      background: var(--cream); border-radius: 24px;
+      max-width: 720px; width: 100%; position: relative;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.2);
+      animation: slideUp 0.35s ease both;
+      max-height: 90vh; overflow-y: auto;
+    }
     @keyframes popIn {
       from { opacity: 0; transform: scale(0.92) translateY(16px); }
       to { opacity: 1; transform: scale(1) translateY(0); }
@@ -191,113 +195,357 @@
       font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
     }
 
-    /* Section divider leaf */
-    .leaf-divider { color: var(--green-light); }
+    /* Pantry card */
+    .pantry-card {
+      background: white; border-radius: 20px; border: 1.5px solid #edf3ef;
+      box-shadow: 0 2px 16px rgba(30,122,71,0.05);
+      transition: box-shadow 0.25s ease, transform 0.25s ease;
+      cursor: pointer; display: flex; flex-direction: column; overflow: hidden;
+    }
+    .pantry-card:hover {
+      box-shadow: 0 10px 36px rgba(30,122,71,0.13);
+      transform: translateY(-3px);
+    }
 
-    /* Pantry count badge */
-    @keyframes countUp { from { opacity: 0; } to { opacity: 1; } }
+    /* Filter button */
+    .filter-btn {
+      width: 100%; padding: 9px 13px; border-radius: 10px; border: 1.5px solid #edf3ef;
+      background: white; color: #4a6355; font-size: 13px; font-weight: 400; cursor: pointer;
+      text-align: left; display: flex; justify-content: space-between; align-items: center;
+      transition: all 0.18s ease; font-family: 'DM Sans', sans-serif;
+    }
+    .filter-btn:hover { border-color: #b8e8cc; background: #f8fcf9; color: #1e7a47; }
+    .filter-btn.active { border-color: #1e7a47; background: #f0faf4; color: #1e7a47; font-weight: 600; }
 
-    /* Scrollbar hide */
+    /* Scrollbar */
     ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: #c4d4ca; border-radius: 3px; }
+
+    .leaflet-container { font-family: 'DM Sans', sans-serif !important; }
+    select option { color: #1a2e1e; background: #fff; }
   </style>
 </head>
 <body>
 <div id="root"></div>
 
 <script type="text/babel">
-const { useState, useEffect, useRef } = React;
+const { useState, useEffect, useRef, useMemo } = React;
 
-/* ── Intersection Observer Hook ── */
+/* ─────────────────────────────────────────────────────────
+   INTERSECTION OBSERVER HOOK (for landing page reveals)
+───────────────────────────────────────────────────────── */
 function useReveal() {
   useEffect(() => {
     const els = document.querySelectorAll('.reveal, .reveal-left, .reveal-right');
     const obs = new IntersectionObserver((entries) => {
-      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); } });
+      entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
     }, { threshold: 0.12 });
     els.forEach(el => obs.observe(el));
     return () => obs.disconnect();
   }, []);
 }
 
-/* ── Data ── */
+/* ─────────────────────────────────────────────────────────
+   LANDING PAGE DATA (v2.0 — unchanged)
+───────────────────────────────────────────────────────── */
 const STATS = [
-  { number: "1,400+", label: "Food Pantries Listed", icon: "🏪" },
-  { number: "60+",    label: "Cities Covered",       icon: "📍" },
+  { number: "1,400+", label: "Food Pantries Listed",    icon: "🏪" },
+  { number: "60+",    label: "Cities Covered",          icon: "📍" },
   { number: "28K+",   label: "Families Served Monthly", icon: "👨‍👩‍👧‍👦" },
-  { number: "100%",   label: "Free, Always",         icon: "💚" },
+  { number: "100%",   label: "Free, Always",            icon: "💚" },
 ];
 
 const STEPS = [
-  {
-    num: "01",
-    title: "Search Your Area",
-    desc: "Enter your address or city and set a search radius to find pantries near you.",
-    icon: <iconify-icon icon="lucide:search" width="28" height="28" />,
-  },
-  {
-    num: "02",
-    title: "Check Hours & Details",
-    desc: "View open schedules, food types available, and contact info for each pantry.",
-    icon: <iconify-icon icon="lucide:clock" width="28" height="28" />,
-  },
-  {
-    num: "03",
-    title: "Connect & Follow",
-    desc: "Love a pantry, follow for updates, and help keep information accurate for everyone.",
-    icon: <iconify-icon icon="lucide:heart" width="28" height="28" />,
-  },
+  { num: "01", title: "Search Your Area",      desc: "Enter your address or city and set a search radius to find pantries near you.",                              icon: <iconify-icon icon="lucide:search" width="28" height="28" /> },
+  { num: "02", title: "Check Hours & Details", desc: "View open schedules, food types available, and contact info for each pantry.",                              icon: <iconify-icon icon="lucide:clock"  width="28" height="28" /> },
+  { num: "03", title: "Connect & Follow",      desc: "Love a pantry, follow for updates, and help keep information accurate for everyone.", icon: <iconify-icon icon="lucide:heart"  width="28" height="28" /> },
 ];
 
 const CATEGORIES = [
-  { icon: "🥦", label: "Fresh Produce" },
-  { icon: "🥩", label: "Meat & Protein" },
-  { icon: "🥛", label: "Dairy & Eggs" },
-  { icon: "🍞", label: "Bread & Bakery" },
-  { icon: "🥫", label: "Canned Goods" },
-  { icon: "🌾", label: "Dry Goods" },
-  { icon: "🍼", label: "Baby Food" },
-  { icon: "🐾", label: "Pet Supplies" },
-  { icon: "🧴", label: "Personal Care" },
-  { icon: "🏠", label: "Household Items" },
-  { icon: "❄️", label: "Frozen Meals" },
-  { icon: "🌿", label: "Halal & Kosher" },
+  { icon: "🥦", label: "Fresh Produce" }, { icon: "🥩", label: "Meat & Protein" },
+  { icon: "🥛", label: "Dairy & Eggs" }, { icon: "🍞", label: "Bread & Bakery" },
+  { icon: "🥫", label: "Canned Goods" }, { icon: "🌾", label: "Dry Goods" },
+  { icon: "🍼", label: "Baby Food" },    { icon: "🐾", label: "Pet Supplies" },
+  { icon: "🧴", label: "Personal Care" },{ icon: "🏠", label: "Household Items" },
+  { icon: "❄️", label: "Frozen Meals" }, { icon: "🌿", label: "Halal & Kosher" },
 ];
 
 const TESTIMONIALS = [
-  {
-    quote: "I was too ashamed to ask for help, but PantryFinder made it feel simple and private. Found a pantry two blocks from my apartment within minutes.",
-    name: "Maria T.",
-    location: "Newton, MA",
-    avatar: "MT",
-    color: "#dcf4e6",
-  },
-  {
-    quote: "As a pantry coordinator, getting listed here tripled our walk-in traffic. The families we now reach would have never found us otherwise.",
-    name: "Pastor James K.",
-    location: "Waltham, MA",
-    avatar: "JK",
-    color: "#faf5ec",
-  },
-  {
-    quote: "The schedule info is so accurate. I drove 20 minutes and they were actually open — with halal options too. I cried, honestly.",
-    name: "Aisha M.",
-    location: "Brighton, MA",
-    avatar: "AM",
-    color: "#f0faf4",
-  },
+  { quote: "I was too ashamed to ask for help, but PantryFinder made it feel simple and private. Found a pantry two blocks from my apartment within minutes.", name: "Maria T.",      location: "Newton, MA",   avatar: "MT", color: "#dcf4e6" },
+  { quote: "As a pantry coordinator, getting listed here tripled our walk-in traffic. The families we now reach would have never found us otherwise.",            name: "Pastor James K.", location: "Waltham, MA",  avatar: "JK", color: "#faf5ec" },
+  { quote: "The schedule info is so accurate. I drove 20 minutes and they were actually open — with halal options too. I cried, honestly.",                      name: "Aisha M.",     location: "Brighton, MA", avatar: "AM", color: "#f0faf4" },
 ];
 
 const QUICK_TAGS = ["Newton MA", "02458", "Waltham MA", "Brighton MA", "Watertown MA"];
 
-/* ── Components ── */
+/* ─────────────────────────────────────────────────────────
+   PANTRY DATA (from v1.1)
+───────────────────────────────────────────────────────── */
+const PANTRIES_DATA = [
+  {
+    id: "O5Fyb4ZkN9EqUhksQZyl", name: "Newton Food Pantry",
+    address: "1000 Commonwealth Avenue, Newton, MA 02459",
+    latitude: 42.3374309, longitude: -71.2088565, phone: "617-796-1233",
+    about: "Serving the Newton community with fresh food distributions and appointment-based services.",
+    schedules: [
+      { weekDay: "Wednesday", start: "12:00 PM", end: "7:00 PM", notes: "12–3pm appointment only; 3–7pm walk-in" },
+      { weekDay: "Thursday",  start: "10:00 AM", end: "1:00 PM", notes: "By appointment only" }
+    ],
+    services: [{ name: "Pantry Program", category: "Food Program", program: "Food Distribution",
+      food: ["Dairy", "Meat"],
+      schedules: [
+        { weekDay: "Wednesday", start: "12:00 PM", end: "3:00 PM" },
+        { weekDay: "Wednesday", start: "3:00 PM",  end: "7:00 PM" },
+        { weekDay: "Thursday",  start: "10:00 AM", end: "1:00 PM", notes: "By appointment only" }
+      ]
+    }],
+    loves: 47, followers: 23
+  },
+  {
+    id: "yoP10WZfa0WLj3WmBKb8", name: "Centre Street Food Pantry",
+    address: "11 Homer Street, Newton, MA 02459",
+    latitude: 42.3349884, longitude: -71.194005, phone: "617-340-9554",
+    about: "Located at Trinity Episcopal Church. Curbside pickup of groceries at the side annex on Furber Lane.",
+    schedules: [
+      { weekDay: "Tuesday",  start: "1:00 PM",  end: "2:00 PM",  notes: "Seniors only; no appointment required" },
+      { weekDay: "Tuesday",  start: "2:00 PM",  end: "5:45 PM",  notes: "Appointments required" },
+      { weekDay: "Saturday", start: "10:00 AM", end: "12:00 PM", notes: "No appointments required" }
+    ],
+    services: [{ name: "Pantry Program", category: "Food Program", program: "Food Distribution",
+      food: ["Dairy","Diapers","Eggs","Fruits & Vegetables","Household Products","Meat","Pet Food / Supplies","Shelf Stable/Non-Perishable Goods","Toiletries / Hygiene Products"],
+      schedules: [
+        { weekDay: "Tuesday",  start: "1:00 PM",  end: "2:00 PM",  notes: "Seniors only" },
+        { weekDay: "Tuesday",  start: "2:00 PM",  end: "5:45 PM",  notes: "Appointments required" },
+        { weekDay: "Saturday", start: "10:00 AM", end: "12:00 PM" }
+      ]
+    }],
+    loves: 82, followers: 41
+  },
+  {
+    id: "Dn8lbl7RYacLyrYofQ07", name: "Watertown Food Pantry",
+    address: "80 Mt. Auburn St., Watertown, MA 02472",
+    latitude: 42.3672148, longitude: -71.1811997, phone: "617-972-6490",
+    schedules: [{ weekDay: "Tuesday", start: "10:00 AM", end: "2:00 PM" }],
+    services: [{ name: "Pantry Program", category: "Food Program", program: "Food Distribution",
+      food: [], schedules: [{ weekDay: "Tuesday", start: "10:00 AM", end: "11:30 AM" }]
+    }],
+    loves: 31, followers: 14
+  },
+  {
+    id: "bUFzah7ZiDIw0LPEdvRf", name: "Salvation Army / Waltham Pantry & Meals",
+    address: "33 Myrtle Street, Waltham, MA 02453",
+    latitude: 42.3658786, longitude: -71.2364257, phone: "781-894-0413",
+    about: "This location is a Healthy Pantry participant offering food, meals, and support services.",
+    schedules: [],
+    services: [
+      { name: "Pantry Program", category: "Food Program", program: "Food Distribution",
+        food: ["Dairy","Meat"],
+        schedules: [
+          { weekDay: "Tuesday",   start: "10:00 AM", end: "12:00 PM" },
+          { weekDay: "Wednesday", start: "10:00 AM", end: "12:00 PM" },
+          { weekDay: "Thursday",  start: "10:00 AM", end: "12:00 PM" }
+        ]
+      },
+      { name: "Meal Program", category: "Food Program", program: "Hot/Cold Meal Program",
+        food: ["Dairy","Meat"],
+        schedules: [
+          { weekDay: "Monday",    start: "10:00 AM", end: "12:00 PM" },
+          { weekDay: "Tuesday",   start: "10:00 AM", end: "12:00 PM" },
+          { weekDay: "Wednesday", start: "10:00 AM", end: "12:00 PM" },
+          { weekDay: "Thursday",  start: "10:00 AM", end: "12:00 PM" },
+          { weekDay: "Friday",    start: "10:00 AM", end: "12:00 PM" }
+        ]
+      },
+      { name: "Healthcare Screenings/Referrals", category: "Healthcare Screenings/Referrals", food: [], schedules: [] },
+      { name: "Housing Assistance",              category: "Housing Assistance",              food: [], schedules: [] },
+      { name: "Tax/Financial Support",           category: "Tax/Financial Support",           food: [], schedules: [] },
+      { name: "SNAP Assistance",                 category: "Other",                           food: [], schedules: [] }
+    ],
+    loves: 56, followers: 29
+  },
+  {
+    id: "I6PLOBWLqlgWHTYU7qvI", name: "ABCD / Allston Brighton",
+    address: "640 Washington St, #202, Brighton, MA 02135",
+    latitude: 42.3506927, longitude: -71.1692242,
+    about: "Community action agency providing food assistance and supportive services for Allston-Brighton residents.",
+    schedules: [
+      { weekDay: "Wednesday", start: "10:00 AM", end: "4:00 PM" },
+      { weekDay: "Thursday",  start: "10:00 AM", end: "1:00 PM" },
+      { weekDay: "Friday",    start: "10:00 AM", end: "4:00 PM" }
+    ],
+    services: [{ name: "Food Assistance", category: "Food Program", program: "Food Distribution",
+      food: ["Fruits & Vegetables","Shelf Stable/Non-Perishable Goods","Other"],
+      schedules: [
+        { weekDay: "Wednesday", start: "10:00 AM", end: "4:00 PM" },
+        { weekDay: "Thursday",  start: "10:00 AM", end: "1:00 PM" },
+        { weekDay: "Friday",    start: "10:00 AM", end: "4:00 PM" }
+      ]
+    }],
+    loves: 38, followers: 17
+  },
+  {
+    id: "ULR0oVfS1wUA3ELunCcd", name: "Haitian Baptist Church",
+    address: "9 Russel Avenue, Watertown, MA 02472",
+    latitude: 42.3687748, longitude: -71.1759967, phone: "978-663-1808",
+    about: "Call for schedule information. The church provides food distribution to community members.",
+    schedules: [],
+    services: [{ name: "Food Program", category: "Food Program", program: "Food Distribution",
+      food: [], schedules: [{ weekDay: "", start: "", end: "", notes: "Call for Information" }]
+    }],
+    loves: 19, followers: 8
+  },
+  {
+    id: "W6V2sb9A9l04WvrEl0DX", name: "Healthy Waltham Mobile Pantry",
+    address: "5 Cherry Street, Waltham, MA 02453",
+    latitude: 42.3672878, longitude: -71.2421776, phone: "781-314-5647",
+    about: "A mobile pantry service bringing food directly to the community by appointment and walk-in.",
+    schedules: [
+      { weekDay: "Thursday", start: "1:30 PM", end: "4:15 PM", notes: "By Appointment" },
+      { weekDay: "Thursday", start: "4:30 PM", end: "5:00 PM", notes: "Walk-ins" }
+    ],
+    services: [{ name: "Mobile Market Location", category: "Food Program", program: "Pop-Up/Mobile Resource",
+      food: ["Fruits & Vegetables","Shelf Stable/Non-Perishable Goods"],
+      schedules: [
+        { weekDay: "Thursday", start: "1:30 PM", end: "4:15 PM", notes: "By Appointment" },
+        { weekDay: "Thursday", start: "4:30 PM", end: "5:00 PM", notes: "Walk-ins" }
+      ]
+    }],
+    loves: 44, followers: 21
+  },
+  {
+    id: "2TCjponDbsAIbSdzjn2j", name: "MHSA / Bristol Lodge Pantry",
+    address: "750 Main Street, Waltham, MA 02451",
+    latitude: 42.3758904, longitude: -71.2403251, phone: "781-899-2099",
+    schedules: [{ weekDay: "Wednesday", start: "9:00 AM", end: "12:00 PM" }],
+    services: [{ name: "Pantry Program", category: "Food Program", program: "Food Distribution",
+      food: [], schedules: [{ weekDay: "Wednesday", start: "9:00 AM", end: "12:00 PM" }]
+    }],
+    loves: 27, followers: 11
+  },
+  {
+    id: "PzLEpSFwJ4ivFKa2FZ05", name: "MACCMS / Allston-Brighton Food Pantry",
+    address: "404 Washington Street, Brighton, MA 02135",
+    latitude: 42.3487592, longitude: -71.1552075, phone: "617-254-4046",
+    about: "Serving Allston-Brighton since 1985. Special priority hours for seniors, veterans, and disabled individuals.",
+    schedules: [
+      { weekDay: "Wednesday", start: "3:30 PM", end: "6:00 PM",  notes: "3:30–4:30 Seniors, Veterans, Disabled only" },
+      { weekDay: "Saturday",  start: "10:00 AM",end: "1:00 PM",  notes: "Saturday Food Pantry" }
+    ],
+    services: [
+      { name: "Pantry Program", category: "Food Program", program: "Food Distribution",
+        food: [], schedules: [{ weekDay: "Saturday", start: "10:00 AM", end: "1:00 PM" }]
+      },
+      { name: "Meal Program", category: "Food Program", program: "Hot/Cold Meal Program",
+        food: [], schedules: [{ weekDay: "Wednesday", start: "4:30 PM", end: "6:00 PM" }]
+      }
+    ],
+    loves: 61, followers: 33
+  },
+  {
+    id: "8i7sDLbrIvJugX7mjJMw", name: "Belmont Church of God Food Pantry",
+    address: "25 Marlboro Street, Belmont, MA 02478",
+    latitude: 42.3767119, longitude: -71.1567912, phone: "617-816-7419",
+    schedules: [
+      { weekDay: "Friday",   start: "10:00 AM", end: "10:30 AM" },
+      { weekDay: "Saturday", start: "10:30 AM", end: "12:00 PM", notes: "1st and 3rd Saturday of the month" }
+    ],
+    services: [{ name: "Pantry Program", category: "Food Program", program: "Food Distribution",
+      food: [], schedules: [{ weekDay: "Saturday", start: "10:30 AM", end: "12:00 PM", notes: "1st and 3rd Saturdays" }]
+    }],
+    loves: 22, followers: 9
+  }
+];
 
+const ALL_DAYS      = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+const ALL_FOOD_TYPES = [
+  "Dairy","Eggs","Fruits & Vegetables","Meat","Shelf Stable/Non-Perishable Goods",
+  "Prepared Food / Grab and Go","Household Products","Toiletries / Hygiene Products",
+  "Pet Food / Supplies","Diapers","Other"
+];
+
+/* ─────────────────────────────────────────────────────────
+   UTILITY FUNCTIONS
+───────────────────────────────────────────────────────── */
+function haversineDistance(lat1, lon1, lat2, lon2) {
+  const R = 3959;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLon/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+function parseTime(t) {
+  if (!t) return 0;
+  const [time, period] = t.split(' ');
+  let [h, m] = time.split(':').map(Number);
+  if (period === 'PM' && h !== 12) h += 12;
+  if (period === 'AM' && h === 12) h = 0;
+  return h * 60 + m;
+}
+function isOpenNow(schedules) {
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const today = days[new Date().getDay()];
+  const now   = new Date().getHours() * 60 + new Date().getMinutes();
+  return schedules.some(s => s.weekDay === today && s.start && now >= parseTime(s.start) && now <= parseTime(s.end));
+}
+function isOpenToday(schedules) {
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const today = days[new Date().getDay()];
+  return schedules.some(s => s.weekDay === today && s.start);
+}
+function getUniqueFoods(services) {
+  const foods = new Set();
+  services.forEach(s => s.food.forEach(f => foods.add(f)));
+  return [...foods];
+}
+function getScheduleDays(schedules) {
+  const seen = new Set();
+  return schedules.filter(s => s.weekDay && s.start && !seen.has(s.weekDay) && seen.add(s.weekDay));
+}
+function foodEmoji(food) {
+  const map = {
+    'Dairy':'🥛','Eggs':'🥚','Fruits & Vegetables':'🥦','Meat':'🥩',
+    'Shelf Stable/Non-Perishable Goods':'🥫','Prepared Food / Grab and Go':'🍱',
+    'Household Products':'🧹','Toiletries / Hygiene Products':'🧴',
+    'Pet Food / Supplies':'🐾','Diapers':'👶','Other':'📦',
+  };
+  return map[food] || '🍽️';
+}
+
+/* ─────────────────────────────────────────────────────────
+   MINI SVG ICON COMPONENTS (for search page)
+───────────────────────────────────────────────────────── */
+const I = ({ size=16, color='currentColor', sw=2, children, style }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color}
+    strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" style={style}>{children}</svg>
+);
+const IcoSearch     = p => <I {...p}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></I>;
+const IcoMapPin     = p => <I {...p}><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></I>;
+const IcoClock      = p => <I {...p}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></I>;
+const IcoPhone      = p => <I {...p}><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.99 13 19.79 19.79 0 0 1 1.95 4.38 2 2 0 0 1 3.94 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></I>;
+const IcoHeart      = ({ fill='none', ...p }) => <I {...p}><path fill={fill} d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></I>;
+const IcoX          = p => <I {...p}><path d="M18 6 6 18M6 6l12 12"/></I>;
+const IcoList       = p => <I {...p}><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></I>;
+const IcoMap        = p => <I {...p}><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></I>;
+const IcoSliders    = p => <I {...p}><line x1="21" y1="4" x2="14" y2="4"/><line x1="10" y1="4" x2="3" y2="4"/><line x1="21" y1="12" x2="12" y2="12"/><line x1="8" y1="12" x2="3" y2="12"/><line x1="21" y1="20" x2="16" y2="20"/><line x1="12" y1="20" x2="3" y2="20"/><line x1="14" y1="2" x2="14" y2="6"/><line x1="8" y1="10" x2="8" y2="14"/><line x1="16" y1="18" x2="16" y2="22"/></I>;
+const IcoCheck      = p => <I {...p}><polyline points="20 6 9 16 4 11"/></I>;
+const IcoBell       = p => <I {...p}><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></I>;
+const IcoBellOff    = p => <I {...p}><path d="M13.73 21a2 2 0 0 1-3.46 0"/><path d="M18.63 13A17.89 17.89 0 0 1 18 8"/><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"/><path d="M18 8a6 6 0 0 0-9.33-5"/><line x1="1" y1="1" x2="23" y2="23"/></I>;
+const IcoFlag       = p => <I {...p}><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></I>;
+const IcoInfo       = p => <I {...p}><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></I>;
+const IcoCalendar   = p => <I {...p}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></I>;
+const IcoLeaf       = p => <I {...p}><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></I>;
+const IcoStar       = p => <I {...p}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></I>;
+const IcoArrowLeft  = p => <I {...p}><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></I>;
+
+/* ─────────────────────────────────────────────────────────
+   v2.0 SHARED COMPONENTS
+───────────────────────────────────────────────────────── */
 function Stars({ n = 5 }) {
   return (
-    <div style={{ display: 'flex', gap: 2 }}>
+    <div style={{ display:'flex', gap:2 }}>
       {Array.from({ length: n }).map((_, i) => (
-        <span key={i} style={{ color: '#fc7e0a', fontSize: 14 }}>★</span>
+        <span key={i} style={{ color:'#fc7e0a', fontSize:14 }}>★</span>
       ))}
     </div>
   );
@@ -306,22 +554,21 @@ function Stars({ n = 5 }) {
 function Avatar({ initials, color }) {
   return (
     <div style={{
-      width: 40, height: 40, borderRadius: '50%',
-      background: color || '#dcf4e6',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontWeight: 600, fontSize: 13, color: '#1e7a47', flexShrink: 0,
+      width:40, height:40, borderRadius:'50%', background: color || '#dcf4e6',
+      display:'flex', alignItems:'center', justifyContent:'center',
+      fontWeight:600, fontSize:13, color:'#1e7a47', flexShrink:0,
     }}>{initials}</div>
   );
 }
 
 function LoginModal({ onClose, onSwitch }) {
   const [email, setEmail] = useState('');
-  const [pass, setPass]   = useState('');
+  const [pass,  setPass]  = useState('');
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal-box">
         <button onClick={onClose} style={{ position:'absolute', top:16, right:16, background:'none', border:'none', cursor:'pointer', fontSize:22, color:'#8aab97', lineHeight:1 }}>×</button>
-        <div style={{ padding: '36px 32px 32px' }}>
+        <div style={{ padding:'36px 32px 32px' }}>
           <div style={{ textAlign:'center', marginBottom:28 }}>
             <span style={{ fontSize:36, display:'block', marginBottom:10 }}>🌿</span>
             <h2 style={{ fontFamily:'Playfair Display,Georgia,serif', fontWeight:600, fontSize:22, color:'#1a2e1e', marginBottom:6 }}>Welcome back</h2>
@@ -347,14 +594,14 @@ function LoginModal({ onClose, onSwitch }) {
 }
 
 function RegisterModal({ onClose, onSwitch }) {
-  const [name, setName]   = useState('');
+  const [name,  setName]  = useState('');
   const [email, setEmail] = useState('');
-  const [pass, setPass]   = useState('');
+  const [pass,  setPass]  = useState('');
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal-box">
         <button onClick={onClose} style={{ position:'absolute', top:16, right:16, background:'none', border:'none', cursor:'pointer', fontSize:22, color:'#8aab97', lineHeight:1 }}>×</button>
-        <div style={{ padding: '36px 32px 32px' }}>
+        <div style={{ padding:'36px 32px 32px' }}>
           <div style={{ textAlign:'center', marginBottom:28 }}>
             <span style={{ fontSize:36, display:'block', marginBottom:10 }}>🌱</span>
             <h2 style={{ fontFamily:'Playfair Display,Georgia,serif', fontWeight:600, fontSize:22, color:'#1a2e1e', marginBottom:6 }}>Join the community</h2>
@@ -381,73 +628,623 @@ function RegisterModal({ onClose, onSwitch }) {
   );
 }
 
-/* ── App ── */
-function App() {
-  const [search, setSearch] = useState('');
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [modal, setModal] = useState(null); // 'login' | 'register' | null
+/* ─────────────────────────────────────────────────────────
+   PANTRY CARD  — v1.1 layout · v2.0 colors
+───────────────────────────────────────────────────────── */
+function PantryCard({ pantry, loved, followed, loveCounts, onLove, onFollow, onSelect, distance }) {
+  const openNow   = isOpenNow(pantry.schedules);
+  const openToday = isOpenToday(pantry.schedules);
+  const allFoods  = getUniqueFoods(pantry.services);
+  const foods     = allFoods.slice(0, 4);
+  const days      = getScheduleDays(pantry.schedules);
+  const loveCount = loveCounts[pantry.id] ?? pantry.loves;
 
-  useReveal();
+  const uniqueServices = pantry.services.filter((s, i, a) => a.findIndex(x => x.name === s.name) === i);
+  const MAX_SVC = 3;
+  const visibleSvc = uniqueServices.slice(0, MAX_SVC);
+  const extraSvc   = uniqueServices.length - MAX_SVC;
+
+  const svcColor = cat => {
+    if (cat === 'Food Program')                    return { bg:'#f0faf4', color:'#1e7a47', border:'#b8e8cc' };
+    if (cat === 'Healthcare Screenings/Referrals') return { bg:'#eff6ff', color:'#1d4ed8', border:'#bfdbfe' };
+    if (cat === 'Housing Assistance')              return { bg:'#fff7ed', color:'#c2410c', border:'#fed7aa' };
+    return { bg:'#f5f3ff', color:'#6d28d9', border:'#ddd6fe' };
+  };
 
   return (
-    <div style={{ minHeight:'100vh', position:'relative', zIndex:1 }}>
+    <div className="pantry-card" onClick={() => onSelect(pantry)}>
+      {/* Accent bar */}
+      <div style={{ height:4, background:'linear-gradient(90deg,#1a2e1e,#1e7a47,#2d9a5f)', flexShrink:0 }} />
 
-      {/* ══ HEADER ══ */}
-      <header style={{ position:'sticky', top:0, zIndex:50, background:'rgba(253,251,247,0.88)', backdropFilter:'blur(12px)', borderBottom:'1px solid #edf3ef' }}>
-        <div style={{ maxWidth:1120, margin:'0 auto', padding:'0 24px', height:64, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-          <a href="#" style={{ display:'flex', alignItems:'center', gap:8, textDecoration:'none' }}>
-            <span style={{ fontSize:24 }}>🌿</span>
-            <span style={{ fontFamily:'Playfair Display,Georgia,serif', fontWeight:600, fontSize:20, color:'#1a2e1e' }}>PantryFinder</span>
-          </a>
-          <nav style={{ display:'flex', alignItems:'center', gap:32 }}>
-            {['Find Pantries','How It Works','Add a Pantry','Volunteer'].map(l => (
-              <a key={l} href="#" className="nav-link" style={{ fontSize:14, color:'#4a6355', textDecoration:'none', fontWeight:500 }}>{l}</a>
-            ))}
-          </nav>
-          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-            {isLoggedIn ? (
-              <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-                <div style={{ width:34, height:34, borderRadius:'50%', background:'#dcf4e6', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:600, fontSize:12, color:'#1e7a47' }}>JD</div>
-                <button onClick={()=>setIsLoggedIn(false)} style={{ background:'none', border:'none', cursor:'pointer', fontSize:14, color:'#8aab97' }}>Sign out</button>
-              </div>
-            ) : (
-              <>
-                <button onClick={()=>setModal('login')} style={{ background:'none', border:'none', cursor:'pointer', fontSize:14, fontWeight:500, color:'#4a6355', padding:'8px 14px' }}>Sign in</button>
-                <button onClick={()=>setModal('register')} style={{ background:'#1e7a47', border:'none', cursor:'pointer', fontSize:14, fontWeight:600, color:'white', padding:'9px 20px', borderRadius:10 }}>Register free</button>
-              </>
-            )}
+      <div style={{ padding:'18px 20px', flex:1, display:'flex', flexDirection:'column' }}>
+
+        {/* Row 1 — Name + Status */}
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:10, marginBottom:8 }}>
+          <h3 style={{ fontFamily:"'Playfair Display',Georgia,serif", fontSize:17, fontWeight:600, color:'#1a2e1e', lineHeight:1.3, flex:1, margin:0 }}>
+            {pantry.name}
+          </h3>
+          <div style={{ flexShrink:0 }}>
+            {openNow   && <span style={{ background:'#dcf4e6', color:'#1e7a47', fontSize:10, fontWeight:700, padding:'3px 8px', borderRadius:100, letterSpacing:'0.3px', whiteSpace:'nowrap' }}>OPEN NOW</span>}
+            {!openNow && openToday   && <span style={{ background:'#faf5ec', color:'#a07850', fontSize:10, fontWeight:700, padding:'3px 8px', borderRadius:100, whiteSpace:'nowrap' }}>OPEN TODAY</span>}
+            {!openNow && !openToday && pantry.schedules.length > 0 && <span style={{ background:'#f5f5f2', color:'#8aab97', fontSize:10, fontWeight:600, padding:'3px 8px', borderRadius:100, whiteSpace:'nowrap' }}>CLOSED TODAY</span>}
           </div>
         </div>
-      </header>
 
+        {/* Row 2 — Address */}
+        <div style={{ display:'flex', alignItems:'flex-start', color:'#4a6355', fontSize:12, marginBottom: distance !== undefined ? 3 : 10 }}>
+          <span style={{ flexShrink:0, width:18, display:'flex', justifyContent:'center', marginTop:2 }}>
+            <IcoMapPin size={12} color="#8aab97" />
+          </span>
+          <span style={{ lineHeight:1.4 }}>{pantry.address}</span>
+        </div>
+        {distance !== undefined && (
+          <div style={{ display:'flex', alignItems:'center', fontSize:11, color:'#2d9a5f', fontWeight:600, marginBottom:10 }}>
+            <span style={{ flexShrink:0, width:18, display:'flex', justifyContent:'center', fontSize:12 }}>📍</span>
+            <span>{distance.toFixed(1)} miles away</span>
+          </div>
+        )}
+
+        {/* Row 3 — Schedule */}
+        {days.length > 0 && (
+          <div style={{ display:'flex', alignItems:'flex-start', gap:5, fontSize:12, color:'#4a6355', marginBottom:8, lineHeight:1.5 }}>
+            <IcoClock size={12} color="#8aab97" style={{ flexShrink:0, marginTop:2 }} />
+            <div>
+              {days.slice(0,2).map((s,i) => (
+                <span key={i}>{i>0 && ' · '}{s.weekDay.slice(0,3)} {s.start}–{s.end}</span>
+              ))}
+              {days.length > 2 && <span style={{ color:'#8aab97' }}> +{days.length-2} more</span>}
+            </div>
+          </div>
+        )}
+
+        {/* Row 4 — Phone */}
+        {pantry.phone && (
+          <div style={{ display:'flex', alignItems:'center', gap:5, fontSize:12, color:'#4a6355', marginBottom:10 }}>
+            <IcoPhone size={12} color="#8aab97" />{pantry.phone}
+          </div>
+        )}
+
+        {/* Divider */}
+        {(foods.length > 0 || uniqueServices.length > 0) && (
+          <div style={{ height:1, background:'#edf3ef', margin:'6px 0 12px' }} />
+        )}
+
+        {/* Row 5 — Available Food */}
+        {foods.length > 0 && (
+          <div style={{ marginBottom:10 }}>
+            <div style={{ fontSize:10, fontWeight:700, color:'#8aab97', letterSpacing:'0.6px', textTransform:'uppercase', marginBottom:6 }}>Available Food</div>
+            <div style={{ display:'flex', flexWrap:'wrap', gap:5 }}>
+              {foods.map(f => (
+                <span key={f} style={{ background:'#f0faf4', color:'#1e7a47', fontSize:11, fontWeight:500, padding:'3px 8px', borderRadius:100, border:'1px solid #b8e8cc', display:'inline-flex', alignItems:'center', gap:4 }}>
+                  <span style={{ display:'inline-flex', justifyContent:'center', width:16, flexShrink:0, fontSize:12 }}>{foodEmoji(f)}</span>{f}
+                </span>
+              ))}
+              {allFoods.length > 4 && (
+                <span style={{ background:'#f5f5f2', color:'#8aab97', fontSize:11, padding:'3px 8px', borderRadius:100 }}>+{allFoods.length-4} more</span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Row 6 — Services Offered */}
+        {uniqueServices.length > 0 && (
+          <div style={{ marginBottom:4 }}>
+            <div style={{ fontSize:10, fontWeight:700, color:'#8aab97', letterSpacing:'0.6px', textTransform:'uppercase', marginBottom:6 }}>Services Offered</div>
+            <div style={{ display:'flex', flexWrap:'wrap', gap:5 }}>
+              {visibleSvc.map((svc,i) => {
+                const c = svcColor(svc.category);
+                return (
+                  <span key={i} style={{ background:c.bg, color:c.color, border:`1px solid ${c.border}`, fontSize:11, fontWeight:500, padding:'3px 9px', borderRadius:100 }}>
+                    {svc.name}
+                  </span>
+                );
+              })}
+              {extraSvc > 0 && (
+                <span style={{ background:'#f5f5f2', color:'#8aab97', fontSize:11, padding:'3px 8px', borderRadius:100 }}>+{extraSvc} more</span>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Footer — Heart count */}
+      <div style={{ padding:'0 20px 14px', display:'flex', alignItems:'center' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:5 }}>
+          <IcoHeart size={13} fill="#e11d48" color="#e11d48" />
+          <span style={{ fontSize:13, fontWeight:600, color:'#e11d48' }}>{loveCount}</span>
+          <span style={{ fontSize:12, color:'#8aab97' }}>loves</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────
+   MAP VIEW (Leaflet, same as v1.1)
+───────────────────────────────────────────────────────── */
+function MapView({ pantries, lovedPantries, onSelectPantry }) {
+  const containerRef = useRef(null);
+  const mapRef       = useRef(null);
+
+  useEffect(() => {
+    const initMap = () => {
+      if (!containerRef.current) return;
+      if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; }
+      const L   = window.L;
+      const map = L.map(containerRef.current, { center:[42.36,-71.2], zoom:12 });
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+      }).addTo(map);
+      pantries.forEach(p => {
+        const loved   = lovedPantries.has(p.id);
+        const openNow = isOpenNow(p.schedules);
+        const color   = loved ? '#e11d48' : openNow ? '#1e7a47' : '#8aab97';
+        const icon    = L.divIcon({
+          className:'',
+          html:`<div style="background:${color};color:white;border-radius:50% 50% 50% 0;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-size:15px;font-weight:700;box-shadow:0 3px 10px rgba(0,0,0,0.2);cursor:pointer;border:2.5px solid white;transform:rotate(-45deg)"><span style="transform:rotate(45deg)">${p.name.charAt(0)}</span></div>`,
+          iconSize:[36,36], iconAnchor:[18,36],
+        });
+        const marker = L.marker([p.latitude, p.longitude], { icon }).addTo(map);
+        marker.bindPopup(`<div style="font-family:'DM Sans',sans-serif;min-width:180px"><strong style="font-family:'Playfair Display',serif;font-size:14px">${p.name}</strong><br><small style="color:#8aab97">${p.address}</small><br><br><button onclick="window._pantrySelect('${p.id}')" style="background:#1e7a47;color:white;border:none;border-radius:8px;padding:5px 12px;font-size:12px;cursor:pointer;width:100%">View Details</button></div>`);
+        marker.on('click', () => onSelectPantry(p));
+      });
+      window._pantrySelect = id => { const p = pantries.find(x => x.id === id); if (p) onSelectPantry(p); };
+      mapRef.current = map;
+    };
+    const loadLeaflet = () => {
+      if (!document.getElementById('leaflet-css')) {
+        const css = document.createElement('link');
+        css.id = 'leaflet-css'; css.rel = 'stylesheet';
+        css.href = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css';
+        document.head.appendChild(css);
+      }
+      if (window.L) { initMap(); return; }
+      if (document.getElementById('leaflet-js')) {
+        const poll = setInterval(() => { if (window.L) { clearInterval(poll); initMap(); }}, 80);
+        return;
+      }
+      const js = document.createElement('script');
+      js.id = 'leaflet-js';
+      js.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';
+      js.onload = initMap; document.head.appendChild(js);
+    };
+    loadLeaflet();
+    return () => { if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; }};
+  }, [pantries, lovedPantries]);
+
+  return <div ref={containerRef} style={{ width:'100%', height:'100%', borderRadius:16, overflow:'hidden' }} />;
+}
+
+/* ─────────────────────────────────────────────────────────
+   PANTRY DETAIL MODAL — v1.1 layout · v2.0 colors
+───────────────────────────────────────────────────────── */
+function PantryDetailModal({ pantry, loved, followed, loveCounts, onLove, onFollow, onFeedback, onClose }) {
+  if (!pantry) return null;
+  const openNow  = isOpenNow(pantry.schedules);
+  const allFoods = getUniqueFoods(pantry.services);
+  const loveCount = loveCounts[pantry.id] ?? pantry.loves;
+
+  return (
+    <div style={{ position:'fixed', inset:0, zIndex:200, display:'flex', alignItems:'flex-start', justifyContent:'center', background:'rgba(15,30,20,0.55)', backdropFilter:'blur(4px)', overflowY:'auto', padding:'24px 16px' }}
+      onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal-box-lg" style={{ marginTop:48 }}>
+
+        {/* Header */}
+        <div style={{ background:'linear-gradient(135deg,#1a2e1e,#1e7a47)', padding:'32px 32px 28px', position:'relative', borderRadius:'24px 24px 0 0' }}>
+          <button onClick={onClose} style={{ position:'absolute', top:20, right:20, background:'rgba(255,255,255,0.15)', border:'none', borderRadius:'50%', width:36, height:36, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', color:'#fff' }}>
+            <IcoX size={18} color="#fff" />
+          </button>
+          <div style={{ display:'flex', alignItems:'flex-start', gap:16 }}>
+            <div style={{ width:56, height:56, background:'rgba(255,255,255,0.15)', borderRadius:16, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:"'Playfair Display',Georgia,serif", fontSize:24, fontWeight:700, color:'#fff', flexShrink:0 }}>
+              {pantry.name.charAt(0)}
+            </div>
+            <div>
+              <h2 style={{ fontFamily:"'Playfair Display',Georgia,serif", fontSize:'clamp(20px,3vw,26px)', color:'#fff', marginBottom:8, lineHeight:1.2 }}>{pantry.name}</h2>
+              <div style={{ display:'flex', alignItems:'center', gap:6, color:'rgba(255,255,255,0.8)', fontSize:14 }}>
+                <IcoMapPin size={14} color="rgba(255,255,255,0.7)" />{pantry.address}
+              </div>
+            </div>
+          </div>
+          {openNow && (
+            <div style={{ marginTop:14, display:'inline-flex', alignItems:'center', gap:6, background:'rgba(220,244,230,0.2)', border:'1px solid rgba(184,232,204,0.4)', borderRadius:100, padding:'5px 14px' }}>
+              <div style={{ width:7, height:7, borderRadius:'50%', background:'#4ade80' }} />
+              <span style={{ color:'#dcf4e6', fontSize:13, fontWeight:600 }}>Open Right Now</span>
+            </div>
+          )}
+        </div>
+
+        {/* Action buttons */}
+        <div style={{ display:'flex', gap:10, padding:'20px 32px', borderBottom:'1px solid #edf3ef', flexWrap:'wrap' }}>
+          <button onClick={() => onLove(pantry.id)} style={{ display:'flex', alignItems:'center', gap:7, padding:'9px 18px', borderRadius:10, border:`1.5px solid ${loved ? '#fca5a5':'#dde8e2'}`, background: loved ? '#fff1f2':'#fff', color: loved ? '#e11d48':'#4a6355', fontSize:14, fontWeight:500, cursor:'pointer', transition:'all 0.15s' }}>
+            <IcoHeart size={16} fill={loved?'#e11d48':'none'} color={loved?'#e11d48':'currentColor'} />
+            {loved?'Loved':'Love'} · {loveCount}
+          </button>
+          <button onClick={() => onFollow(pantry.id)} style={{ display:'flex', alignItems:'center', gap:7, padding:'9px 18px', borderRadius:10, border:`1.5px solid ${followed ? '#b8e8cc':'#dde8e2'}`, background: followed ? '#f0faf4':'#fff', color: followed ? '#1e7a47':'#4a6355', fontSize:14, fontWeight:500, cursor:'pointer', transition:'all 0.15s' }}>
+            {followed ? <IcoBellOff size={16} /> : <IcoBell size={16} />}
+            {followed ? 'Unfollow' : 'Follow Updates'}
+          </button>
+          <button onClick={() => onFeedback && onFeedback(pantry)} style={{ display:'flex', alignItems:'center', gap:7, padding:'9px 18px', borderRadius:10, border:'1.5px solid #dde8e2', background:'#fff', color:'#4a6355', fontSize:14, fontWeight:500, cursor:'pointer' }}>
+            <IcoFlag size={16} /> Report Issue
+          </button>
+          {pantry.phone && (
+            <a href={`tel:${pantry.phone}`} style={{ display:'flex', alignItems:'center', gap:7, padding:'9px 18px', borderRadius:10, background:'#1e7a47', color:'#fff', fontSize:14, fontWeight:500, textDecoration:'none' }}>
+              <IcoPhone size={16} color="#fff" /> {pantry.phone}
+            </a>
+          )}
+        </div>
+
+        <div style={{ padding:'24px 32px', display:'grid', gridTemplateColumns:'1fr 1fr', gap:24 }}>
+          {/* About */}
+          {pantry.about && (
+            <div style={{ gridColumn:'1/-1', background:'#f0faf4', borderRadius:14, padding:20, border:'1px solid #b8e8cc' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:10, color:'#1e7a47', fontWeight:600, fontSize:14 }}>
+                <IcoInfo size={15} color="#1e7a47" /> About
+              </div>
+              <p style={{ color:'#4a6355', fontSize:14, lineHeight:1.7 }}>{pantry.about}</p>
+            </div>
+          )}
+
+          {/* Schedules */}
+          <div>
+            <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:16, color:'#1e7a47', fontWeight:600, fontSize:14 }}>
+              <IcoCalendar size={15} color="#1e7a47" /> Hours & Schedule
+            </div>
+            {pantry.schedules.length > 0 ? (
+              <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+                {getScheduleDays(pantry.schedules).map((s,i) => (
+                  <div key={i} style={{ background:'#f0faf4', borderRadius:10, padding:'12px 16px', border:'1px solid #edf3ef' }}>
+                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom: s.notes ? 4 : 0 }}>
+                      <span style={{ fontWeight:600, fontSize:14, color:'#1a2e1e' }}>{s.weekDay}</span>
+                      <span style={{ fontSize:13, color:'#2d9a5f', fontWeight:500 }}>{s.start} – {s.end}</span>
+                    </div>
+                    {s.notes && <div style={{ fontSize:12, color:'#8aab97' }}>{s.notes}</div>}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ color:'#8aab97', fontSize:13, padding:'12px 16px', background:'#f0faf4', borderRadius:10 }}>
+                Call for schedule information: {pantry.phone || 'no phone listed'}
+              </div>
+            )}
+          </div>
+
+          {/* Food Types */}
+          <div>
+            <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:16, color:'#1e7a47', fontWeight:600, fontSize:14 }}>
+              <IcoLeaf size={15} color="#1e7a47" /> Available Food Types
+            </div>
+            {allFoods.length > 0 ? (
+              <div style={{ display:'flex', flexWrap:'wrap', gap:7 }}>
+                {allFoods.map(f => (
+                  <span key={f} style={{ background:'#f0faf4', color:'#1e7a47', fontSize:12, fontWeight:500, padding:'5px 12px', borderRadius:100, border:'1px solid #b8e8cc', display:'inline-flex', alignItems:'center', gap:5 }}>
+                    <span style={{ display:'inline-flex', justifyContent:'center', width:18, flexShrink:0, fontSize:14 }}>{foodEmoji(f)}</span>{f}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <div style={{ color:'#8aab97', fontSize:13 }}>Contact for food availability details</div>
+            )}
+          </div>
+
+          {/* Services */}
+          <div style={{ gridColumn:'1/-1' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:16, color:'#1e7a47', fontWeight:600, fontSize:14 }}>
+              <IcoStar size={15} color="#1e7a47" /> Services Offered
+            </div>
+            <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+              {pantry.services.map((svc,i) => (
+                <div key={i} style={{ background:'#f0faf4', borderRadius:12, padding:'14px 18px', display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:8, border:'1px solid #edf3ef' }}>
+                  <div>
+                    <div style={{ fontWeight:600, fontSize:14, color:'#1a2e1e', marginBottom:2 }}>{svc.name}</div>
+                    <div style={{ fontSize:12, color:'#8aab97' }}>{svc.category}{svc.program && svc.program !== svc.category ? ` · ${svc.program}` : ''}</div>
+                  </div>
+                  <span style={{ background:'white', border:'1px solid #edf3ef', color:'#4a6355', fontSize:11, padding:'3px 10px', borderRadius:100 }}>
+                    {svc.schedules.filter(s=>s.weekDay).length} sessions/wk
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────
+   SEARCH PAGE — v1.1 layout · v2.0 colors
+───────────────────────────────────────────────────────── */
+function SearchPage({ initQuery, onBack, onSelect, lovedPantries, followedPantries, loveCounts, onLove, onFollow, onOpenModal }) {
+  const [address,     setAddress]     = useState(initQuery || 'Newton, MA');
+  const [radius,      setRadius]      = useState('10');
+  const [viewMode,    setViewMode]    = useState('list');
+  const [filters,     setFilters]     = useState({ day:'', foodType:'', openNow:false });
+  const [showFilters, setShowFilters] = useState(true);
+
+  const CENTER = { lat:42.3601, lon:-71.2088 };
+
+  const filteredPantries = useMemo(() => {
+    let r = PANTRIES_DATA;
+    if (filters.day)      r = r.filter(p => p.schedules.some(s => s.weekDay === filters.day && s.start));
+    if (filters.foodType) r = r.filter(p => p.services.some(s => s.food.includes(filters.foodType)));
+    if (filters.openNow)  r = r.filter(p => isOpenNow(p.schedules));
+    return r
+      .map(p => ({ ...p, distance: haversineDistance(CENTER.lat, CENTER.lon, p.latitude, p.longitude) }))
+      .filter(p => p.distance <= parseFloat(radius))
+      .sort((a,b) => a.distance - b.distance);
+  }, [filters, radius]);
+
+  const activeCount = [filters.day, filters.foodType, filters.openNow].filter(Boolean).length;
+
+  return (
+    <div style={{ display:'flex', flexDirection:'column', height:'100vh', background:'var(--cream)', paddingTop:64, fontFamily:"'DM Sans',sans-serif" }}>
+
+      {/* ── Secondary search bar ── */}
+      <div style={{ background:'white', borderBottom:'1px solid #edf3ef', padding:'12px 24px', flexShrink:0 }}>
+        <div style={{ maxWidth:1120, margin:'0 auto', display:'flex', gap:12, alignItems:'center' }}>
+
+          {/* Unified search pill — address + radius divider + search button */}
+          <div className="search-wrap" style={{ flex:1, display:'flex', background:'white', borderRadius:14, border:'1.5px solid #dde8e2', overflow:'hidden', boxShadow:'0 2px 12px rgba(30,122,71,0.06)' }}>
+            {/* Location pin + address input */}
+            <div style={{ flex:1, display:'flex', alignItems:'center', gap:10, padding:'0 18px' }}>
+              <IcoMapPin size={16} color="#2d9a5f" />
+              <input value={address} onChange={e=>setAddress(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && setAddress(address.trim())}
+                placeholder="Address, city, or ZIP code…"
+                style={{ flex:1, background:'none', border:'none', outline:'none', fontSize:14, padding:'13px 0', color:'#1a2e1e', fontFamily:"'DM Sans',sans-serif" }} />
+            </div>
+            {/* Inner divider */}
+            <div style={{ width:1, height:28, background:'#edf3ef', alignSelf:'center', flexShrink:0 }} />
+            {/* Radius select — custom styled, hidden native arrow, custom chevron */}
+            <div style={{ position:'relative', display:'flex', alignItems:'center', flexShrink:0 }}>
+              <select value={radius} onChange={e=>setRadius(e.target.value)} style={{
+                appearance:'none', WebkitAppearance:'none', MozAppearance:'none',
+                background:'transparent', border:'none', color:'#4a6355',
+                fontSize:14, padding:'0 36px 0 16px', cursor:'pointer', outline:'none',
+                fontFamily:"'DM Sans',sans-serif", fontWeight:500,
+              }}>
+                {['2','5','10','25','50'].map(r => <option key={r} value={r}>{r} miles</option>)}
+              </select>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8aab97" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                style={{ position:'absolute', right:10, pointerEvents:'none' }}>
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </div>
+            {/* Search button — flush right inside pill */}
+            <button style={{ background:'#1e7a47', color:'white', border:'none', padding:'0 24px', fontSize:14, fontWeight:600, cursor:'pointer', fontFamily:"'DM Sans',sans-serif", whiteSpace:'nowrap', transition:'background 0.2s', display:'flex', alignItems:'center', gap:7 }}
+              onMouseEnter={e=>e.currentTarget.style.background='#1a6038'}
+              onMouseLeave={e=>e.currentTarget.style.background='#1e7a47'}>
+              <IcoSearch size={15} color="#fff" /> Search
+            </button>
+          </div>
+
+          {/* Divider */}
+          <div style={{ width:1, height:28, background:'#edf3ef', flexShrink:0 }} />
+
+          {/* View toggles */}
+          {[
+            { mode:'list', label:'List', Icon: IcoList },
+            { mode:'map',  label:'Map',  Icon: IcoMap  },
+          ].map(({ mode, label, Icon }) => (
+            <button key={mode} onClick={() => setViewMode(mode)} style={{
+              padding:'9px 16px', borderRadius:10,
+              border:`1.5px solid ${viewMode===mode ? '#1e7a47' : '#edf3ef'}`,
+              background: viewMode===mode ? '#f0faf4' : 'white',
+              color:       viewMode===mode ? '#1e7a47' : '#4a6355',
+              fontSize:13, fontWeight:500, cursor:'pointer',
+              display:'flex', alignItems:'center', gap:6, fontFamily:"'DM Sans',sans-serif"
+            }}>
+              <Icon size={14} color={viewMode===mode ? '#1e7a47' : '#8aab97'} /> {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Main area ── */}
+      <div style={{ flex:1, display:'flex', overflow:'hidden' }}>
+
+        {/* ── Filter Sidebar ── */}
+        <div style={{
+          width: showFilters ? 272 : 0, flexShrink:0,
+          background:'white', borderRight:'1px solid #edf3ef',
+          overflow:'hidden', transition:'width 0.28s ease',
+        }}>
+          <div style={{ width:272, padding:'20px 18px', overflowY:'auto', height:'100%' }}>
+
+            {/* Sidebar header */}
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20 }}>
+              <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                <IcoSliders size={15} color="#1e7a47" />
+                <span style={{ fontFamily:"'Playfair Display',Georgia,serif", fontWeight:600, fontSize:15, color:'#1a2e1e' }}>Filters</span>
+                {activeCount > 0 && (
+                  <span style={{ background:'#1e7a47', color:'white', borderRadius:100, fontSize:11, padding:'1px 7px', fontWeight:600 }}>{activeCount}</span>
+                )}
+              </div>
+              {activeCount > 0 && (
+                <button onClick={()=>setFilters({day:'',foodType:'',openNow:false})} style={{ background:'none', border:'none', color:'#a07850', fontSize:12, fontWeight:600, cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>
+                  Clear all
+                </button>
+              )}
+            </div>
+
+            {/* Open Now toggle */}
+            <div style={{ marginBottom:20, padding:'14px 16px', background:'#f8fcf9', borderRadius:12, border:'1px solid #edf3ef' }}>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                <span style={{ fontSize:14, fontWeight:500, color:'#1a2e1e' }}>Open Right Now</span>
+                <button onClick={()=>setFilters(f=>({...f,openNow:!f.openNow}))} style={{
+                  width:42, height:24, borderRadius:100, border:'none', cursor:'pointer',
+                  position:'relative', transition:'background 0.2s',
+                  background: filters.openNow ? '#1e7a47' : '#dde8e2',
+                }}>
+                  <div style={{ position:'absolute', top:2, left: filters.openNow ? 18 : 2, width:20, height:20, borderRadius:'50%', background:'white', transition:'left 0.2s', boxShadow:'0 1px 4px rgba(0,0,0,0.18)' }} />
+                </button>
+              </div>
+            </div>
+
+            {/* Day filter */}
+            <div style={{ marginBottom:20 }}>
+              <label style={{ display:'block', fontSize:12, fontWeight:700, color:'#8aab97', letterSpacing:'0.06em', textTransform:'uppercase', marginBottom:10 }}>Open Day</label>
+              <div style={{ display:'flex', flexDirection:'column', gap:5 }}>
+                <button onClick={()=>setFilters(f=>({...f,day:''}))}
+                  className={`filter-btn${!filters.day?' active':''}`}>
+                  Any day
+                </button>
+                {ALL_DAYS.map(d => (
+                  <button key={d} onClick={()=>setFilters(f=>({...f,day:f.day===d?'':d}))}
+                    className={`filter-btn${filters.day===d?' active':''}`}>
+                    {d}
+                    {filters.day===d && <IcoCheck size={13} color="#1e7a47" />}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Food type filter */}
+            <div>
+              <label style={{ display:'block', fontSize:12, fontWeight:700, color:'#8aab97', letterSpacing:'0.06em', textTransform:'uppercase', marginBottom:10 }}>Food Type</label>
+              <div style={{ display:'flex', flexDirection:'column', gap:5 }}>
+                <button onClick={()=>setFilters(f=>({...f,foodType:''}))}
+                  className={`filter-btn${!filters.foodType?' active':''}`}>
+                  All types
+                </button>
+                {ALL_FOOD_TYPES.map(ft => (
+                  <button key={ft} onClick={()=>setFilters(f=>({...f,foodType:f.foodType===ft?'':ft}))}
+                    className={`filter-btn${filters.foodType===ft?' active':''}`}
+                    style={{ fontSize:12 }}>
+                    {ft}
+                    {filters.foodType===ft && <IcoCheck size={13} color="#1e7a47" />}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Right content area ── */}
+        <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden', minWidth:0 }}>
+
+          {/* Results header bar */}
+          <div style={{ padding:'11px 20px', display:'flex', alignItems:'center', gap:12, borderBottom:'1px solid #edf3ef', background:'white', flexShrink:0 }}>
+            <button onClick={()=>setShowFilters(!showFilters)} style={{ display:'flex', alignItems:'center', gap:7, padding:'7px 14px', borderRadius:9, border:'1.5px solid #edf3ef', background:'white', color:'#4a6355', fontSize:13, fontWeight:500, cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>
+              <IcoSliders size={14} color="#8aab97" />
+              {showFilters ? 'Hide' : 'Show'} Filters
+            </button>
+            <span style={{ fontSize:14, color:'#4a6355' }}>
+              <span style={{ fontWeight:700, color:'#1a2e1e' }}>{filteredPantries.length}</span> pantries found within{' '}
+              <span style={{ fontWeight:600, color:'#1e7a47' }}>{radius} miles</span>
+            </span>
+            {activeCount > 0 && (
+              <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                {filters.openNow && (
+                  <span style={{ background:'#f0faf4', color:'#1e7a47', border:'1px solid #b8e8cc', fontSize:11, padding:'3px 9px', borderRadius:100, fontWeight:500 }}>
+                    Open now ×
+                  </span>
+                )}
+                {filters.day && (
+                  <span style={{ background:'#f0faf4', color:'#1e7a47', border:'1px solid #b8e8cc', fontSize:11, padding:'3px 9px', borderRadius:100, fontWeight:500 }}>
+                    {filters.day} ×
+                  </span>
+                )}
+                {filters.foodType && (
+                  <span style={{ background:'#f0faf4', color:'#1e7a47', border:'1px solid #b8e8cc', fontSize:11, padding:'3px 9px', borderRadius:100, fontWeight:500 }}>
+                    {filters.foodType} ×
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* ── LIST VIEW ── */}
+          {viewMode === 'list' && (
+            <div style={{ flex:1, overflowY:'auto', padding:'20px 24px' }}>
+              {filteredPantries.length === 0 ? (
+                /* Empty state */
+                <div style={{ textAlign:'center', padding:'80px 20px' }}>
+                  <div style={{ width:72, height:72, background:'#f0faf4', border:'2px solid #b8e8cc', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 20px' }}>
+                    <span style={{ fontSize:32 }}>🌿</span>
+                  </div>
+                  <h3 style={{ fontFamily:"'Playfair Display',Georgia,serif", fontSize:24, fontWeight:600, color:'#1a2e1e', marginBottom:10 }}>
+                    No pantries found
+                  </h3>
+                  <p style={{ color:'#8aab97', fontSize:15, lineHeight:1.6, maxWidth:360, margin:'0 auto 24px' }}>
+                    Try adjusting your filters or increasing the search radius.
+                  </p>
+                  <button onClick={()=>setFilters({day:'',foodType:'',openNow:false})} style={{ background:'#1e7a47', color:'white', border:'none', borderRadius:11, padding:'10px 24px', fontSize:14, fontWeight:600, cursor:'pointer' }}>
+                    Clear Filters
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(320px,1fr))', gap:18 }}>
+                  {filteredPantries.map(p => (
+                    <PantryCard key={p.id} pantry={p} loved={lovedPantries.has(p.id)} followed={followedPantries.has(p.id)}
+                      loveCounts={loveCounts} onLove={onLove} onFollow={onFollow} onSelect={onSelect} distance={p.distance} />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── MAP VIEW ── */}
+          {viewMode === 'map' && (
+            <div style={{ flex:1, padding:'20px 24px', display:'flex', gap:18, overflow:'hidden' }}>
+              {/* Map */}
+              <div style={{ flex:1, borderRadius:18, overflow:'hidden', boxShadow:'0 4px 24px rgba(30,122,71,0.1)', border:'1px solid #edf3ef' }}>
+                <MapView pantries={filteredPantries} lovedPantries={lovedPantries} onSelectPantry={onSelect} />
+              </div>
+              {/* Sidebar list */}
+              <div style={{ width:300, flexShrink:0, overflowY:'auto', display:'flex', flexDirection:'column', gap:10 }}>
+                <div style={{ fontSize:12, fontWeight:700, color:'#8aab97', letterSpacing:'0.06em', textTransform:'uppercase', padding:'4px 0' }}>
+                  {filteredPantries.length} locations
+                </div>
+                {filteredPantries.map(p => (
+                  <div key={p.id} onClick={() => onSelect(p)} style={{ background:'white', borderRadius:14, padding:'14px 16px', cursor:'pointer', border:'1.5px solid #edf3ef', transition:'all 0.2s' }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor='#1e7a47'; e.currentTarget.style.boxShadow='0 4px 16px rgba(30,122,71,0.08)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor='#edf3ef'; e.currentTarget.style.boxShadow='none'; }}>
+                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:8, marginBottom:6 }}>
+                      <div style={{ fontFamily:"'Playfair Display',Georgia,serif", fontWeight:600, fontSize:14, color:'#1a2e1e', lineHeight:1.3 }}>{p.name}</div>
+                      {isOpenToday(p.schedules) && <span style={{ background:'#dcf4e6', color:'#1e7a47', fontSize:10, fontWeight:700, padding:'2px 7px', borderRadius:100, flexShrink:0 }}>OPEN</span>}
+                    </div>
+                    <div style={{ fontSize:12, color:'#8aab97', marginBottom:4 }}>{p.address}</div>
+                    <div style={{ fontSize:12, color:'#2d9a5f', fontWeight:600 }}>📍 {p.distance.toFixed(1)} mi</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────
+   LANDING PAGE (v2.0 — extracted, unchanged)
+───────────────────────────────────────────────────────── */
+function LandingPage({ onSearch, onOpenModal }) {
+  const [search, setSearch] = useState('');
+  useReveal();
+
+  const go = (q) => onSearch(q || search || 'Newton, MA');
+
+  return (
+    <div>
       {/* ══ HERO ══ */}
       <section style={{ position:'relative', overflow:'hidden', background:'linear-gradient(160deg, #f0faf4 0%, #fdfbf7 55%, #faf5ec 100%)', minHeight:'92vh', display:'flex', flexDirection:'column', justifyContent:'center' }}>
-
-
-        {/* Large decorative text */}
         <div style={{ position:'absolute', top:'8%', right:'-2%', fontFamily:'Playfair Display,Georgia,serif', fontWeight:600, fontSize:'clamp(100px,15vw,200px)', color:'rgba(30,122,71,0.045)', lineHeight:1, userSelect:'none', pointerEvents:'none' }}>
           food
         </div>
-
         <div style={{ maxWidth:1120, margin:'0 auto', padding:'10px 24px 60px', position:'relative', zIndex:1 }}>
           <div style={{ maxWidth:760 }}>
-
-            {/* Eyebrow */}
             <div style={{ display:'inline-flex', alignItems:'center', gap:8, background:'white', border:'1.5px solid #b8e8cc', borderRadius:100, padding:'6px 16px', marginBottom:28, boxShadow:'0 2px 12px rgba(30,122,71,0.08)' }}>
               <span style={{ fontSize:14 }}>🌱</span>
               <span style={{ fontSize:13, fontWeight:600, color:'#1e7a47', letterSpacing:'0.04em' }}>Free • Community-Powered • Always Up-to-Date</span>
             </div>
-
-            {/* Headline */}
             <h1 style={{ fontFamily:'Playfair Display,Georgia,serif', fontWeight:600, fontSize:'clamp(40px,6vw,76px)', lineHeight:1.08, color:'#1a2e1e', marginBottom:20, letterSpacing:'-0.02em' }}>
               Find Food Pantries,{' '}
               <span style={{ fontFamily:'Playfair Display,Georgia,serif', fontStyle:'italic', fontWeight:500, color:'#1e7a47' }}>Near You</span>
             </h1>
-
-            {/* Sub */}
             <p style={{ fontSize:'clamp(16px,2vw,20px)', color:'#4a6355', lineHeight:1.65, marginBottom:44, maxWidth:560, fontWeight:300 }}>
-              Connecting communities with nutritious food.
-Discover pantries, check hours, and get help when you need it most.
+              Connecting communities with nutritious food.{'\n'}Discover pantries, check hours, and get help when you need it most.
             </p>
 
             {/* Search box */}
@@ -456,10 +1253,12 @@ Discover pantries, check hours, and get help when you need it most.
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#82d4a7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
                 </svg>
-                <input type="text" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Address, city, or ZIP code…" className="search-input"
-                  style={{ flex:1, fontSize:15, color:'#1a2e1e', padding:'18px 0', fontFamily:'DM Sans,sans-serif' }}/>
+                <input type="text" value={search} onChange={e=>setSearch(e.target.value)}
+                  onKeyDown={e => e.key==='Enter' && go()}
+                  placeholder="Address, city, or ZIP code…" className="search-input"
+                  style={{ flex:1, fontSize:15, color:'#1a2e1e', padding:'18px 0', fontFamily:'DM Sans,sans-serif' }} />
               </div>
-              <button style={{ background:'#1e7a47', border:'none', color:'white', fontWeight:600, fontSize:15, padding:'0 28px', cursor:'pointer', fontFamily:'DM Sans,sans-serif', whiteSpace:'nowrap', transition:'background 0.2s' }}
+              <button onClick={() => go()} style={{ background:'#1e7a47', border:'none', color:'white', fontWeight:600, fontSize:15, padding:'0 28px', cursor:'pointer', fontFamily:'DM Sans,sans-serif', whiteSpace:'nowrap', transition:'background 0.2s' }}
                 onMouseEnter={e=>e.target.style.background='#1a6038'} onMouseLeave={e=>e.target.style.background='#1e7a47'}>
                 Search Pantries
               </button>
@@ -469,7 +1268,7 @@ Discover pantries, check hours, and get help when you need it most.
             <div style={{ display:'flex', alignItems:'center', flexWrap:'wrap', gap:8 }}>
               <span style={{ fontSize:13, color:'#8aab97', fontWeight:500 }}>Try:</span>
               {QUICK_TAGS.map(t => (
-                <button key={t} onClick={()=>setSearch(t)} style={{ background:'white', border:'1.5px solid #dde8e2', borderRadius:100, padding:'5px 14px', fontSize:13, color:'#4a6355', cursor:'pointer', transition:'all 0.2s', fontFamily:'DM Sans,sans-serif' }}
+                <button key={t} onClick={()=>go(t)} style={{ background:'white', border:'1.5px solid #dde8e2', borderRadius:100, padding:'5px 14px', fontSize:13, color:'#4a6355', cursor:'pointer', transition:'all 0.2s', fontFamily:'DM Sans,sans-serif' }}
                   onMouseEnter={e=>{e.target.style.borderColor='#82d4a7'; e.target.style.color='#1e7a47'; e.target.style.background='#f0faf4';}}
                   onMouseLeave={e=>{e.target.style.borderColor='#dde8e2'; e.target.style.color='#4a6355'; e.target.style.background='white';}}>
                   {t}
@@ -478,8 +1277,6 @@ Discover pantries, check hours, and get help when you need it most.
             </div>
           </div>
         </div>
-
-        
 
         {/* Scroll cue */}
         <div style={{ position:'absolute', bottom:28, left:'50%', transform:'translateX(-50%)', display:'flex', flexDirection:'column', alignItems:'center', gap:6, color:'#8aab97' }}>
@@ -494,8 +1291,8 @@ Discover pantries, check hours, and get help when you need it most.
       <section style={{ background:'white', borderTop:'1px solid #edf3ef', borderBottom:'1px solid #edf3ef' }}>
         <div style={{ maxWidth:1120, margin:'0 auto', padding:'0 24px' }}>
           <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:0 }}>
-            {STATS.map((s, i) => (
-              <div key={i} className="reveal" style={{ padding:'44px 32px', borderRight: i < 3 ? '1px solid #edf3ef' : 'none', textAlign:'center', transitionDelay: `${i*0.1}s` }}>
+            {STATS.map((s,i) => (
+              <div key={i} className="reveal" style={{ padding:'44px 32px', borderRight: i<3 ? '1px solid #edf3ef' : 'none', textAlign:'center', transitionDelay:`${i*0.1}s` }}>
                 <div style={{ fontSize:28, marginBottom:10 }}>{s.icon}</div>
                 <div className="stat-number">{s.number}</div>
                 <div style={{ fontSize:14, color:'#8aab97', marginTop:8, fontWeight:400 }}>{s.label}</div>
@@ -514,20 +1311,12 @@ Discover pantries, check hours, and get help when you need it most.
               Three steps to your<br/><span style={{ fontFamily:'Playfair Display,Georgia,serif', fontStyle:'italic', fontWeight:500, color:'#2d9a5f' }}>nearest pantry</span>
             </h2>
           </div>
-
           <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:40, position:'relative' }}>
-            {/* Single connector spanning full width at icon-center height (54px from top).
-                Numbers sit above this line at 0–26px, so they never interfere.
-                Icon boxes (background #f0faf4) visually break the line at each step.
-                The line extends past icon3 naturally, giving the desired trailing dash. */}
             <div style={{ position:'absolute', top:58, left:0, right:0, height:0, zIndex:0, borderTop:'2px dashed #b8e8cc' }}/>
-
-            {STEPS.map((s, i) => (
+            {STEPS.map((s,i) => (
               <div key={i} className="reveal" style={{ transitionDelay:`${i*0.15}s`, position:'relative', zIndex:1 }}>
                 <div style={{ marginBottom:24 }}>
-                  {/* Number above the icon — sits above the connector line, no overlap */}
                   <span style={{ display:'block', width:56, textAlign:'center', fontFamily:'Playfair Display,Georgia,serif', fontSize:16, fontWeight:600, color:'#b8e8cc', letterSpacing:'0.12em', marginBottom:8 }}>{s.num}</span>
-                  {/* Icon box with solid background — breaks the connector line at this position */}
                   <div style={{ width:56, height:56, borderRadius:16, background:'#f0faf4', border:'2px solid #b8e8cc', display:'flex', alignItems:'center', justifyContent:'center', color:'#1e7a47' }}>
                     {s.icon}
                   </div>
@@ -552,13 +1341,12 @@ Discover pantries, check hours, and get help when you need it most.
               <p className="reveal" style={{ fontSize:16, color:'#4a6355', lineHeight:1.75, fontWeight:300, marginBottom:32, maxWidth:420 }}>
                 Our pantries collectively stock a wide variety of items — from fresh produce to culturally specific ingredients, baby essentials to pet supplies. No one slips through.
               </p>
-              <button className="reveal" style={{ background:'#1e7a47', border:'none', color:'white', fontWeight:600, fontSize:14, padding:'13px 28px', borderRadius:12, cursor:'pointer' }}>
+              <button className="reveal" onClick={() => go()} style={{ background:'#1e7a47', border:'none', color:'white', fontWeight:600, fontSize:14, padding:'13px 28px', borderRadius:12, cursor:'pointer' }}>
                 Search All Pantries →
               </button>
             </div>
-
             <div style={{ display:'flex', flexWrap:'wrap', gap:10 }}>
-              {CATEGORIES.map((c, i) => (
+              {CATEGORIES.map((c,i) => (
                 <div key={i} className="cat-pill reveal" style={{ transitionDelay:`${(i%4)*0.08}s` }}>
                   <span style={{ fontSize:18 }}>{c.icon}</span>
                   <span>{c.label}</span>
@@ -578,9 +1366,8 @@ Discover pantries, check hours, and get help when you need it most.
               Real people,<br/><span style={{ fontFamily:'Playfair Display,Georgia,serif', fontStyle:'italic', fontWeight:500, color:'#2d9a5f' }}>real stories</span>
             </h2>
           </div>
-
           <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:24 }}>
-            {TESTIMONIALS.map((t, i) => (
+            {TESTIMONIALS.map((t,i) => (
               <div key={i} className="testimonial-card reveal" style={{ transitionDelay:`${i*0.15}s` }}>
                 <Stars />
                 <p style={{ fontSize:15, color:'#4a6355', lineHeight:1.75, margin:'16px 0 24px', fontWeight:300, fontStyle:'italic' }}>
@@ -620,14 +1407,13 @@ Discover pantries, check hours, and get help when you need it most.
                 </button>
               </div>
             </div>
-
             <div className="reveal-right" style={{ display:'flex', flexDirection:'column', gap:16, minWidth:240 }}>
               {[
                 { icon:'⚡', text:'Live in under 5 minutes' },
                 { icon:'📅', text:'Real-time schedule management' },
-                { icon:'📊', text:'See who\'s visiting your listing' },
+                { icon:'📊', text:"See who's visiting your listing" },
                 { icon:'💸', text:'Completely free, forever' },
-              ].map((f, i) => (
+              ].map((f,i) => (
                 <div key={i} style={{ display:'flex', alignItems:'center', gap:12, padding:'14px 18px', background:'#f0faf4', borderRadius:12 }}>
                   <span style={{ fontSize:20 }}>{f.icon}</span>
                   <span style={{ fontSize:14, color:'#4a6355', fontWeight:500 }}>{f.text}</span>
@@ -649,10 +1435,10 @@ Discover pantries, check hours, and get help when you need it most.
             Start your search now — it takes less than 30 seconds to find a pantry near you.
           </p>
           <div className="reveal" style={{ display:'flex', gap:12, justifyContent:'center', flexWrap:'wrap' }}>
-            <button style={{ background:'white', border:'none', color:'#1e7a47', fontWeight:700, fontSize:15, padding:'14px 32px', borderRadius:14, cursor:'pointer' }}>
+            <button onClick={() => go()} style={{ background:'white', border:'none', color:'#1e7a47', fontWeight:700, fontSize:15, padding:'14px 32px', borderRadius:14, cursor:'pointer' }}>
               Find a Pantry Near Me
             </button>
-            <button onClick={()=>setModal('register')} style={{ background:'rgba(255,255,255,0.12)', border:'1.5px solid rgba(255,255,255,0.3)', color:'white', fontWeight:500, fontSize:15, padding:'14px 28px', borderRadius:14, cursor:'pointer' }}>
+            <button onClick={() => onOpenModal('register')} style={{ background:'rgba(255,255,255,0.12)', border:'1.5px solid rgba(255,255,255,0.3)', color:'white', fontWeight:500, fontSize:15, padding:'14px 28px', borderRadius:14, cursor:'pointer' }}>
               Create Free Account
             </button>
           </div>
@@ -676,7 +1462,7 @@ Discover pantries, check hours, and get help when you need it most.
               { heading:'For Visitors', links:['Find Pantries','Map View','Food Categories','FAQ'] },
               { heading:'For Pantries', links:['Add Your Pantry','Manage Listing','Volunteer','Partner With Us'] },
               { heading:'Organization', links:['About Us','Press','Contact','Privacy Policy'] },
-            ].map((col, i) => (
+            ].map((col,i) => (
               <div key={i}>
                 <h4 style={{ fontSize:12, fontWeight:600, color:'rgba(255,255,255,0.35)', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:16 }}>{col.heading}</h4>
                 <ul style={{ listStyle:'none', display:'flex', flexDirection:'column', gap:10 }}>
@@ -694,10 +1480,110 @@ Discover pantries, check hours, and get help when you need it most.
           </div>
         </div>
       </footer>
+    </div>
+  );
+}
 
-      {/* ══ MODALS ══ */}
+/* ─────────────────────────────────────────────────────────
+   APP
+───────────────────────────────────────────────────────── */
+function App() {
+  const [page,           setPage]          = useState('landing');
+  const [searchQuery,    setSearchQuery]   = useState('Newton, MA');
+  const [isLoggedIn,     setIsLoggedIn]    = useState(false);
+  const [modal,          setModal]         = useState(null);   // 'login' | 'register'
+  const [selectedPantry, setSelectedPantry]= useState(null);
+  const [lovedPantries,  setLovedPantries] = useState(new Set());
+  const [followedPantries,setFollowedPantries]=useState(new Set());
+  const [loveCounts,     setLoveCounts]    = useState({});
+
+  const handleSearch = (q) => { setSearchQuery(q || 'Newton, MA'); setPage('search'); };
+
+  const handleLove = (pantryId) => {
+    if (!isLoggedIn) { setModal('login'); return; }
+    const next = new Set(lovedPantries);
+    const wasLoved = lovedPantries.has(pantryId);
+    wasLoved ? next.delete(pantryId) : next.add(pantryId);
+    setLovedPantries(next);
+    setLoveCounts(c => ({ ...c, [pantryId]: (PANTRIES_DATA.find(p=>p.id===pantryId)?.loves||0) + (wasLoved?0:1) }));
+  };
+
+  const handleFollow = (pantryId) => {
+    if (!isLoggedIn) { setModal('login'); return; }
+    const next = new Set(followedPantries);
+    followedPantries.has(pantryId) ? next.delete(pantryId) : next.add(pantryId);
+    setFollowedPantries(next);
+  };
+
+  return (
+    <div style={{ minHeight:'100vh', position:'relative', zIndex:1 }}>
+
+      {/* ══ HEADER ══ */}
+      <header style={{ position:'fixed', top:0, left:0, right:0, zIndex:50, background:'rgba(253,251,247,0.92)', backdropFilter:'blur(12px)', borderBottom:'1px solid #edf3ef' }}>
+        <div style={{ maxWidth:1120, margin:'0 auto', padding:'0 24px', height:64, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+          <a href="#" onClick={e=>{e.preventDefault();setPage('landing');}} style={{ display:'flex', alignItems:'center', gap:8, textDecoration:'none' }}>
+            <span style={{ fontSize:24 }}>🌿</span>
+            <span style={{ fontFamily:'Playfair Display,Georgia,serif', fontWeight:600, fontSize:20, color:'#1a2e1e' }}>PantryFinder</span>
+          </a>
+          <nav style={{ display:'flex', alignItems:'center', gap:32 }}>
+            <a href="#" className="nav-link" onClick={e=>{e.preventDefault();handleSearch('Newton, MA');}} style={{ fontSize:14, color:'#4a6355', textDecoration:'none', fontWeight:500 }}>Find Pantries</a>
+            {['How It Works','Add a Pantry','Volunteer'].map(l => (
+              <a key={l} href="#" className="nav-link" style={{ fontSize:14, color:'#4a6355', textDecoration:'none', fontWeight:500 }}>{l}</a>
+            ))}
+          </nav>
+          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+            {isLoggedIn ? (
+              <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+                <div style={{ width:34, height:34, borderRadius:'50%', background:'#dcf4e6', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:600, fontSize:12, color:'#1e7a47' }}>JD</div>
+                <button onClick={()=>setIsLoggedIn(false)} style={{ background:'none', border:'none', cursor:'pointer', fontSize:14, color:'#8aab97' }}>Sign out</button>
+              </div>
+            ) : (
+              <>
+                <button onClick={()=>setModal('login')} style={{ background:'none', border:'none', cursor:'pointer', fontSize:14, fontWeight:500, color:'#4a6355', padding:'8px 14px' }}>Sign in</button>
+                <button onClick={()=>setModal('register')} style={{ background:'#1e7a47', border:'none', cursor:'pointer', fontSize:14, fontWeight:600, color:'white', padding:'9px 20px', borderRadius:10 }}>Register free</button>
+              </>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* ══ PAGE CONTENT ══ */}
+      {page === 'landing' && (
+        <div style={{ paddingTop:64 }}>
+          <LandingPage onSearch={handleSearch} onOpenModal={setModal} />
+        </div>
+      )}
+
+      {page === 'search' && (
+        <SearchPage
+          initQuery={searchQuery}
+          onBack={() => setPage('landing')}
+          onSelect={setSelectedPantry}
+          lovedPantries={lovedPantries}
+          followedPantries={followedPantries}
+          loveCounts={loveCounts}
+          onLove={handleLove}
+          onFollow={handleFollow}
+          onOpenModal={setModal}
+        />
+      )}
+
+      {/* ══ PANTRY DETAIL MODAL ══ */}
+      {selectedPantry && (
+        <PantryDetailModal
+          pantry={selectedPantry}
+          loved={lovedPantries.has(selectedPantry.id)}
+          followed={followedPantries.has(selectedPantry.id)}
+          loveCounts={loveCounts}
+          onLove={handleLove}
+          onFollow={handleFollow}
+          onClose={() => setSelectedPantry(null)}
+        />
+      )}
+
+      {/* ══ AUTH MODALS ══ */}
       {modal === 'login'    && <LoginModal    onClose={()=>setModal(null)} onSwitch={()=>setModal('register')} />}
-      {modal === 'register' && <RegisterModal onClose={()=>setModal(null)} onSwitch={()=>setModal('login')} />}
+      {modal === 'register' && <RegisterModal onClose={()=>setModal(null)} onSwitch={()=>setModal('login')}    />}
     </div>
   );
 }

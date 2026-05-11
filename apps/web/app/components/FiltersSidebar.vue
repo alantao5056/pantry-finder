@@ -101,31 +101,21 @@ const clearAll = () => emit('update:modelValue', { ...EMPTY_FILTERS })
         <div class="flex flex-col gap-1.5">
           <button
             type="button"
-            :class="[
-              'px-3 py-2 rounded-lg border-[1.5px] text-[13px] text-left transition-colors',
-              !modelValue.day
-                ? 'border-forest-700 bg-forest-50 text-forest-700 font-semibold'
-                : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300',
-            ]"
+            :class="['filter-btn', { 'is-active': !modelValue.day }]"
             @click="setDay('')"
           >Any day</button>
           <button
             v-for="d in ALL_DAYS"
             :key="d"
             type="button"
-            :class="[
-              'px-3 py-2 rounded-lg border-[1.5px] text-[13px] text-left flex justify-between items-center transition-colors',
-              modelValue.day === d
-                ? 'border-forest-700 bg-forest-50 text-forest-700 font-semibold'
-                : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300',
-            ]"
+            :class="['filter-btn', { 'is-active': modelValue.day === d }]"
             @click="setDay(d)"
           >
             <span>{{ d }}</span>
             <UIcon
               v-if="modelValue.day === d"
               name="i-lucide-check"
-              class="size-[14px] text-forest-700"
+              class="size-[14px]"
             />
           </button>
         </div>
@@ -137,31 +127,21 @@ const clearAll = () => emit('update:modelValue', { ...EMPTY_FILTERS })
         <div class="flex flex-col gap-1.5">
           <button
             type="button"
-            :class="[
-              'px-3 py-2 rounded-lg border-[1.5px] text-[13px] text-left transition-colors',
-              !modelValue.foodType
-                ? 'border-forest-700 bg-forest-50 text-forest-700 font-semibold'
-                : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300',
-            ]"
+            :class="['filter-btn', { 'is-active': !modelValue.foodType }]"
             @click="setFoodType('')"
           >All types</button>
           <button
             v-for="f in foodTypes"
             :key="f"
             type="button"
-            :class="[
-              'px-3 py-2 rounded-lg border-[1.5px] text-[12px] text-left flex justify-between items-center gap-2 transition-colors',
-              modelValue.foodType === f
-                ? 'border-forest-700 bg-forest-50 text-forest-700 font-semibold'
-                : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300',
-            ]"
+            :class="['filter-btn text-[12px]', { 'is-active': modelValue.foodType === f }]"
             @click="setFoodType(f)"
           >
             <span>{{ f }}</span>
             <UIcon
               v-if="modelValue.foodType === f"
               name="i-lucide-check"
-              class="size-[13px] text-forest-700 shrink-0"
+              class="size-[13px] shrink-0"
             />
           </button>
         </div>

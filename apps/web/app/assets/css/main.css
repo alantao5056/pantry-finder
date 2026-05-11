@@ -74,10 +74,15 @@
 .delay-4 { transition-delay: 0.4s; }
 .delay-5 { transition-delay: 0.5s; }
 
-/* Search input glow */
-.search-wrap { transition: box-shadow 0.3s ease; }
+/* Search wrap — focus state mirrors the filter-item hover style */
+.search-wrap {
+  border-color: var(--border-input);
+  background-color: white;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
 .search-wrap:focus-within {
-  box-shadow: 0 0 0 4px rgba(45, 154, 95, 0.18), 0 8px 40px rgba(30, 122, 71, 0.12);
+  border-color: #b8e8cc;
+  background-color: #f8fcf9;
 }
 
 /* Nav link underline */
@@ -212,6 +217,40 @@
     padding: 14px 32px;
     font-size: 15px;
     border-radius: 12px;
+  }
+
+  /* Filter pill button — used in FiltersSidebar (day / food-type lists).
+     Default → white pill with muted text.
+     :hover  → pale-green wash with forest text (matches v2 design).
+     .is-active → solid forest border, light-green wash, semibold. */
+  .filter-btn {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 13px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 400;
+    text-align: left;
+    background: white;
+    color: var(--text-mid);
+    border: 1.5px solid #e5e7eb;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: border-color 0.18s ease, background-color 0.18s ease, color 0.18s ease;
+  }
+  .filter-btn:hover {
+    border-color: #b8e8cc;
+    background-color: #f8fcf9;
+    color: var(--green-dark);
+  }
+  .filter-btn.is-active {
+    border-color: var(--green-dark);
+    background-color: var(--green-light);
+    color: var(--green-dark);
+    font-weight: 600;
   }
 }
 

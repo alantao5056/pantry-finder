@@ -17,7 +17,7 @@ const navLinks = [
     class="sticky top-0 z-50 border-b"
     style="background: rgba(253,251,247,0.88); backdrop-filter: blur(12px); border-color: var(--border-soft);"
   >
-    <div class="max-w-[1120px] mx-auto px-6 h-16 flex items-center justify-between">
+    <div class="max-w-[1120px] mx-auto h-16 flex items-center justify-between">
 
       <!-- Logo -->
       <NuxtLink to="/" class="flex items-center gap-2 no-underline">
