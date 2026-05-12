@@ -252,6 +252,16 @@
     color: var(--green-dark);
     font-weight: 600;
   }
+
+  /* Form input — used in AuthModal. Default border is muted; focus shifts to forest green. */
+  .form-input {
+    @apply w-full bg-white rounded-[12px] px-4 py-[11px] text-sm border-[1.5px] outline-none transition-colors;
+    border-color: var(--border-input);
+    color: var(--text-dark);
+  }
+  .form-input:focus {
+    border-color: var(--green-dark);
+  }
 }
 
 /* Tag pill (section eyebrows) */
@@ -284,6 +294,44 @@
   transform: translateY(-4px);
   box-shadow: 0 12px 40px rgba(30,122,71,0.1);
 }
+
+/* ──────────────────────────────────────────────────────────
+   Modal — backdrop, card, and corner close button.
+   Compose: .modal-backdrop wraps a .modal-card; .modal-close
+   pairs with .btn-icon (e.g. class="btn-icon modal-close").
+   Per-modal sizing (max-w-[...]) and inner padding stay at the
+   call site so different modals can vary.
+   ────────────────────────────────────────────────────────── */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(15, 30, 20, 0.55);
+  backdrop-filter: blur(4px);
+}
+
+.modal-card {
+  position: relative;
+  width: 100%;
+  border-radius: 20px;
+  background: var(--cream-light);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.18);
+}
+
+.modal-close {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.75rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  font-size: 30px;
+  line-height: 1;
+}
+.modal-close:hover { color: var(--green-dark); }
 
 /* CTA band background flourishes */
 .cta-band {

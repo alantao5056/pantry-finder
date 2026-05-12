@@ -11,6 +11,13 @@ const error = ref<string | null>(null)
 const submitting = ref(false)
 const showPassword = ref(false)
 
+const submitLabel = computed(() => {
+  if (submitting.value) {
+    return tab.value === 'login' ? 'Signing in…' : 'Creating account…'
+  }
+  return tab.value === 'login' ? 'Sign In' : 'Create Account'
+})
+
 function resetForm() {
   email.value = ''
   password.value = ''
@@ -35,17 +42,6 @@ function close() {
 watch(open, (isOpen) => {
   if (!isOpen) resetForm()
 })
-
-const mouseDownOnBackdrop = ref(false)
-
-function onBackdropMouseDown(e: MouseEvent) {
-  mouseDownOnBackdrop.value = e.target === e.currentTarget
-}
-
-function onBackdropMouseUp(e: MouseEvent) {
-  if (mouseDownOnBackdrop.value && e.target === e.currentTarget) close()
-  mouseDownOnBackdrop.value = false
-}
 
 function onKeydown(e: KeyboardEvent) {
   if (e.key === 'Escape') close()
@@ -96,16 +92,9 @@ async function onSubmit() {
 
 <template>
   <Teleport to="body">
-    <div
-      v-if="open"
-      class="fixed inset-0 z-[3000] flex items-center justify-center p-4"
-      style="background: rgba(15,30,20,0.55); backdrop-filter: blur(4px);"
-      @mousedown="onBackdropMouseDown"
-      @mouseup="onBackdropMouseUp"
-    >
+    <div v-if="open" class="modal-backdrop">
       <div
-        class="w-full max-w-[400px] rounded-[20px] relative animate-pop-in"
-        style="background: var(--cream-light); box-shadow: 0 24px 80px rgba(0,0,0,0.18);"
+        class="modal-card max-w-[400px] animate-pop-in"
         role="dialog"
         aria-modal="true"
       >
@@ -113,7 +102,7 @@ async function onSubmit() {
         <button
           type="button"
           aria-label="Close"
-          class="btn-icon absolute top-4 right-4 text-[22px] leading-none"
+          class="btn-icon modal-close"
           @click="close"
         >×</button>
 
@@ -138,10 +127,7 @@ async function onSubmit() {
                 autocomplete="given-name"
                 required
                 placeholder="First name"
-                class="w-full bg-white rounded-[12px] px-4 py-[11px] text-sm border-[1.5px] outline-none transition-colors"
-                style="border-color: var(--border-input); color: var(--text-dark);"
-                @focus="(e) => ((e.currentTarget as HTMLElement).style.borderColor = '#1e7a47')"
-                @blur="(e) => ((e.currentTarget as HTMLElement).style.borderColor = '#dde8e2')"
+                class="form-input"
               />
               <input
                 v-model="lastName"
@@ -149,10 +135,7 @@ async function onSubmit() {
                 autocomplete="family-name"
                 required
                 placeholder="Last name"
-                class="w-full bg-white rounded-[12px] px-4 py-[11px] text-sm border-[1.5px] outline-none transition-colors"
-                style="border-color: var(--border-input); color: var(--text-dark);"
-                @focus="(e) => ((e.currentTarget as HTMLElement).style.borderColor = '#1e7a47')"
-                @blur="(e) => ((e.currentTarget as HTMLElement).style.borderColor = '#dde8e2')"
+                class="form-input"
               />
             </template>
 
@@ -162,10 +145,7 @@ async function onSubmit() {
               autocomplete="email"
               required
               placeholder="Email address"
-              class="w-full bg-white rounded-[12px] px-4 py-[11px] text-sm border-[1.5px] outline-none transition-colors"
-              style="border-color: var(--border-input); color: var(--text-dark);"
-              @focus="(e) => ((e.currentTarget as HTMLElement).style.borderColor = '#1e7a47')"
-              @blur="(e) => ((e.currentTarget as HTMLElement).style.borderColor = '#dde8e2')"
+              class="form-input"
             />
 
             <div class="relative">
@@ -175,10 +155,7 @@ async function onSubmit() {
                 :autocomplete="tab === 'login' ? 'current-password' : 'new-password'"
                 required
                 :placeholder="tab === 'login' ? 'Password' : 'Create a password'"
-                class="w-full bg-white rounded-[12px] pl-4 pr-11 py-[11px] text-sm border-[1.5px] outline-none transition-colors"
-                style="border-color: var(--border-input); color: var(--text-dark);"
-                @focus="(e) => ((e.currentTarget as HTMLElement).style.borderColor = '#1e7a47')"
-                @blur="(e) => ((e.currentTarget as HTMLElement).style.borderColor = '#dde8e2')"
+                class="form-input pr-11"
               />
               <button
                 type="button"
@@ -202,10 +179,7 @@ async function onSubmit() {
               type="submit"
               :disabled="submitting"
               class="btn-primary w-full mt-1 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <template v-if="tab === 'login'">{{ submitting ? 'Signing in…' : 'Sign In' }}</template>
-              <template v-else>{{ submitting ? 'Creating account…' : 'Create Account' }}</template>
-            </button>
+            >{{ submitLabel }}</button>
           </form>
 
           <p class="text-center text-[13px] mt-5" style="color: var(--text-soft);">
