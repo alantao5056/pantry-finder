@@ -17,7 +17,27 @@ const allServices = computed(() => getUniqueServices(props.pantry.services))
 const visibleServices = computed(() => allServices.value.slice(0, 3))
 const extraServices = computed(() => Math.max(0, allServices.value.length - 3))
 
-const loveCount = 1
+const { isLoggedIn } = useAuth()
+const { show: showAuthModal } = useAuthModal()
+const { isHearted, toggleHeart } = useHearts()
+
+const hearted = computed(() => isHearted(props.pantry.id))
+const hovered = ref(false)
+const localCount = ref(props.pantry.heartCount ?? 0)
+
+watch(hearted, (newVal, oldVal) => {
+  if (newVal !== oldVal) {
+    localCount.value += newVal ? 1 : -1
+  }
+})
+
+const onHeartClick = async () => {
+  if (!isLoggedIn.value) {
+    showAuthModal('login')
+    return
+  }
+  await toggleHeart(props.pantry.id)
+}
 </script>
 
 <template>
@@ -132,8 +152,19 @@ const loveCount = 1
 
     <!-- Footer: love count -->
     <div class="px-[22px] pb-3.5 flex items-center gap-1.5 shrink-0">
-      <UIcon name="i-heroicons-heart-solid" class="size-3.5 text-rose-600" />
-      <span class="text-[13px] font-semibold text-rose-600">{{ loveCount }}</span>
+      <button
+        class="flex items-center gap-1.5 transition-transform active:scale-90"
+        :aria-label="hearted ? 'Unheart pantry' : 'Heart pantry'"
+        @mouseenter="hovered = true"
+        @mouseleave="hovered = false"
+        @click.stop="onHeartClick"
+      >
+        <UIcon
+          :name="(hearted || hovered) ? 'i-heroicons-heart-solid' : 'i-heroicons-heart'"
+          class="size-3.5 transition-colors text-rose-600"
+        />
+        <span class="text-[13px] font-semibold transition-colors text-rose-600">{{ localCount }}</span>
+      </button>
       <span class="text-[12px] text-gray-400">loves</span>
     </div>
   </div>

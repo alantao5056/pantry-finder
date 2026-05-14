@@ -2,6 +2,7 @@
 const api = useApi()
 const { open, tab, hide } = useAuthModal()
 const { fetchMe } = useAuth()
+const { fetchHearts } = useHearts()
 
 const email = ref('')
 const password = ref('')
@@ -65,6 +66,7 @@ async function onSubmit() {
       })
       close()
       await fetchMe()
+      await fetchHearts()
     } else {
       await api('/auth/register', {
         method: 'POST',
@@ -81,6 +83,7 @@ async function onSubmit() {
       })
       close()
       await fetchMe()
+      await fetchHearts()
     }
   } catch (err: any) {
     error.value = err?.data?.error ?? (tab.value === 'login' ? 'Login failed' : 'Registration failed')

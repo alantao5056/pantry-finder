@@ -27,6 +27,7 @@ export interface Pantry {
   phone?: string;
   about?: string;
   notes?: string;
+  heartCount?: number;
   schedules: Schedule[];
   services: Service[];
 }

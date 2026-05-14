@@ -1,8 +1,12 @@
 <script setup lang="ts">
 const { show } = useAuthModal()
 const { isLoggedIn, initials, logout } = useAuth()
+const { fetchHearts } = useHearts()
 
-const onLogout = () => logout()
+const onLogout = async () => {
+  await logout()
+  await fetchHearts()
+}
 
 const navLinks = [
   { label: 'Find Pantries', href: '/search', type: 'route' as const },

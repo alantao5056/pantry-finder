@@ -27,6 +27,7 @@ export function mapPantryDocumentToDto(
     phone: doc.phone || undefined,
     about: doc.aboutUs || undefined,
     notes: doc.notes || undefined,
+    heartCount: doc.heartCount || 0,
     schedules: (doc.schedules || []).map(mapScheduleToDto),
     services: (doc.services || []).map(mapServiceToDto),
   };

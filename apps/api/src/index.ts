@@ -4,6 +4,7 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import pantryRoutes from './routes/pantry.routes';
 import authRoutes from './routes/auth.routes';
+import heartsRoutes from './routes/hearts.routes';
 
 const app = express();
 const port = process.env.PORT || 8080;
@@ -22,6 +23,7 @@ app.get('/health', (req: Request, res: Response) => {
 
 app.use('/auth', authRoutes);
 app.use('/pantries', pantryRoutes);
+app.use('/hearts', heartsRoutes);
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
