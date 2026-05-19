@@ -342,6 +342,18 @@
   }
 }
 
+/* Quick-tags row enter — staggered fade + slight rise. Per-pill delay is
+   supplied via inline `--enter-delay` and is scoped to the enter phase only,
+   so it does not interfere with the pill's own hover transition. */
+.quick-tag-enter-active {
+  transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+  transition-delay: var(--enter-delay, 0ms);
+}
+.quick-tag-enter-from {
+  opacity: 0;
+  transform: translateY(4px);
+}
+
 /* Tag pill (section eyebrows) */
 .tag-pill {
   display: inline-block; padding: 4px 14px; border-radius: 100px;

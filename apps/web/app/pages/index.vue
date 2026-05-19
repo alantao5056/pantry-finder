@@ -44,7 +44,7 @@ const TESTIMONIALS = [
   },
 ]
 
-const QUICK_TAGS = ['Newton MA', '02458', 'Waltham MA', 'Brighton MA', 'Watertown MA']
+const { tags: quickTags } = useNearbyTags()
 
 const OPERATOR_FEATURES = [
   { icon: '⚡', text: 'Live in under 5 minutes' },
@@ -129,16 +129,29 @@ onUnmounted(() => {
             <SearchBar :show-radius="false" @submit="onSearch" />
           </div>
 
-          <!-- Quick tags -->
-          <div class="flex items-center flex-wrap gap-2">
-            <span class="text-[13px] font-medium" style="color: var(--text-soft);">Try:</span>
-            <button
-              v-for="t in QUICK_TAGS"
-              :key="t"
-              type="button"
-              class="btn-pill"
-              @click="onTagClick(t)"
-            >{{ t }}</button>
+          <!-- Quick tags (fixed height to prevent layout shift) -->
+          <div class="flex items-center flex-wrap gap-2 min-h-[32px]">
+            <TransitionGroup
+              tag="div"
+              class="flex items-center flex-wrap gap-2"
+              enter-active-class="quick-tag-enter-active"
+              enter-from-class="quick-tag-enter-from"
+            >
+              <span
+                v-if="quickTags.length > 0"
+                key="__label"
+                class="text-[13px] font-medium"
+                style="color: var(--text-soft);"
+              >Try:</span>
+              <button
+                v-for="(t, i) in quickTags"
+                :key="t"
+                type="button"
+                class="btn-pill"
+                :style="{ '--enter-delay': `${i * 80}ms` }"
+                @click="onTagClick(t)"
+              >{{ t }}</button>
+            </TransitionGroup>
           </div>
         </div>
       </div>
