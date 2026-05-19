@@ -104,24 +104,27 @@ export function getAllFoodTypes(pantries: Pantry[]): string[] {
 }
 
 export interface PantryFilters {
-  day: string
-  foodType: string
+  day: string[]
+  foodType: string[]
   openNow: boolean
 }
 
-export const EMPTY_FILTERS: PantryFilters = { day: '', foodType: '', openNow: false }
+export const EMPTY_FILTERS: PantryFilters = { day: [], foodType: [], openNow: false }
 
 export function pantryMatchesFilters(
   p: Pantry,
   f: PantryFilters,
   now: Date = new Date(),
 ): boolean {
-  if (f.day && !p.schedules.some(s => s.weekDay === f.day && s.start)) return false
-  if (f.foodType && !p.services.some(s => s.food.includes(f.foodType))) return false
+  if (f.day.length && !p.schedules.some(s => s.start && f.day.includes(s.weekDay))) return false
+  if (
+    f.foodType.length
+    && !p.services.some(s => s.food.some(food => f.foodType.includes(food)))
+  ) return false
   if (f.openNow && !isOpenNow(p.schedules, now)) return false
   return true
 }
 
 export function countActiveFilters(f: PantryFilters): number {
-  return (f.day ? 1 : 0) + (f.foodType ? 1 : 0) + (f.openNow ? 1 : 0)
+  return f.day.length + f.foodType.length + (f.openNow ? 1 : 0)
 }

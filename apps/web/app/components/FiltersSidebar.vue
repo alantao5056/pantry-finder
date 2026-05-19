@@ -24,8 +24,16 @@ const update = (patch: Partial<PantryFilters>) => {
 }
 
 const toggleOpenNow = () => update({ openNow: !props.modelValue.openNow })
-const setDay = (d: string) => update({ day: props.modelValue.day === d ? '' : d })
-const setFoodType = (f: string) => update({ foodType: props.modelValue.foodType === f ? '' : f })
+const toggleDay = (d: string) => {
+  const list = props.modelValue.day
+  update({ day: list.includes(d) ? list.filter(x => x !== d) : [...list, d] })
+}
+const toggleFoodType = (f: string) => {
+  const list = props.modelValue.foodType
+  update({ foodType: list.includes(f) ? list.filter(x => x !== f) : [...list, f] })
+}
+const clearDays = () => update({ day: [] })
+const clearFoodTypes = () => update({ foodType: [] })
 const clearAll = () => emit('update:modelValue', { ...EMPTY_FILTERS })
 </script>
 
@@ -91,19 +99,19 @@ const clearAll = () => emit('update:modelValue', { ...EMPTY_FILTERS })
         <div class="flex flex-col gap-1.5">
           <button
             type="button"
-            :class="['filter-btn', { 'is-active': !modelValue.day }]"
-            @click="setDay('')"
+            :class="['filter-btn', { 'is-active': modelValue.day.length === 0 }]"
+            @click="clearDays"
           >Any day</button>
           <button
             v-for="d in ALL_DAYS"
             :key="d"
             type="button"
-            :class="['filter-btn', { 'is-active': modelValue.day === d }]"
-            @click="setDay(d)"
+            :class="['filter-btn', { 'is-active': modelValue.day.includes(d) }]"
+            @click="toggleDay(d)"
           >
             <span>{{ d }}</span>
             <UIcon
-              v-if="modelValue.day === d"
+              v-if="modelValue.day.includes(d)"
               name="i-lucide-check"
               class="size-[14px]"
             />
@@ -117,19 +125,19 @@ const clearAll = () => emit('update:modelValue', { ...EMPTY_FILTERS })
         <div class="flex flex-col gap-1.5">
           <button
             type="button"
-            :class="['filter-btn', { 'is-active': !modelValue.foodType }]"
-            @click="setFoodType('')"
+            :class="['filter-btn', { 'is-active': modelValue.foodType.length === 0 }]"
+            @click="clearFoodTypes"
           >All types</button>
           <button
             v-for="f in foodTypes"
             :key="f"
             type="button"
-            :class="['filter-btn text-[12px]', { 'is-active': modelValue.foodType === f }]"
-            @click="setFoodType(f)"
+            :class="['filter-btn text-[12px]', { 'is-active': modelValue.foodType.includes(f) }]"
+            @click="toggleFoodType(f)"
           >
             <span>{{ f }}</span>
             <UIcon
-              v-if="modelValue.foodType === f"
+              v-if="modelValue.foodType.includes(f)"
               name="i-lucide-check"
               class="size-[13px] shrink-0"
             />

@@ -43,9 +43,17 @@ const locationNotFound = ref(false)
 // against the latest token and abort their writes if they're stale.
 let searchToken = 0
 
+const parseList = (v: unknown): string[] => {
+  if (Array.isArray(v)) {
+    return v.flatMap(x => (typeof x === 'string' ? x.split(',') : [])).filter(Boolean)
+  }
+  if (typeof v === 'string' && v) return v.split(',').filter(Boolean)
+  return []
+}
+
 const filters = computed<PantryFilters>(() => ({
-  day: String(route.query.day ?? ''),
-  foodType: String(route.query.foodType ?? ''),
+  day: parseList(route.query.day),
+  foodType: parseList(route.query.foodType),
   openNow: route.query.openNow === 'true',
 }))
 
@@ -54,9 +62,9 @@ const onUpdateFilters = (next: PantryFilters) => {
   for (const [k, v] of Object.entries(route.query)) {
     if (typeof v === 'string') q[k] = v
   }
-  if (next.day) q.day = next.day
+  if (next.day.length) q.day = next.day.join(',')
   else delete q.day
-  if (next.foodType) q.foodType = next.foodType
+  if (next.foodType.length) q.foodType = next.foodType.join(',')
   else delete q.foodType
   if (next.openNow) q.openNow = 'true'
   else delete q.openNow
@@ -73,9 +81,8 @@ const activeFilterCount = computed(() => countActiveFilters(filters.value))
 // pantry currently includes it (so the user can still unselect it).
 const allFoodTypes = computed(() => {
   const types = getAllFoodTypes(loadedPantries.value)
-  if (filters.value.foodType && !types.includes(filters.value.foodType)) {
-    return [...types, filters.value.foodType].sort()
-  }
+  const missing = filters.value.foodType.filter(f => !types.includes(f))
+  if (missing.length) return [...types, ...missing].sort()
   return types
 })
 
@@ -161,7 +168,7 @@ const onSearch = (location: string, radius: string) => {
 }
 
 const clearFilters = () => {
-  onUpdateFilters({ day: '', foodType: '', openNow: false })
+  onUpdateFilters({ day: [], foodType: [], openNow: false })
 }
 
 const refresh = () => runSearch()
