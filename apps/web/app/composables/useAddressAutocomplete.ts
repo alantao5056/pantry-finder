@@ -132,6 +132,15 @@ export const useAddressAutocomplete = (initialValue = '') => {
     close()
   }
 
+  const setValue = (value: string) => {
+    suppressNextWatch = true
+    committed = true
+    query.value = value
+    suggestions.value = []
+    if (abortController) abortController.abort()
+    close()
+  }
+
   const moveActive = (delta: number) => {
     if (suggestions.value.length === 0) return
     const next = activeIndex.value + delta
@@ -167,6 +176,7 @@ export const useAddressAutocomplete = (initialValue = '') => {
     close,
     select,
     markCommitted,
+    setValue,
     onKeydown,
   }
 }

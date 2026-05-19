@@ -23,6 +23,7 @@ const {
   close,
   select,
   markCommitted,
+  setValue,
   onKeydown,
 } = useAddressAutocomplete(props.initialAddress)
 
@@ -54,6 +55,10 @@ const onInputKeydown = (e: KeyboardEvent) => {
     onSubmit()
   }
 }
+
+defineExpose({
+  setAddress: setValue,
+})
 </script>
 
 <template>

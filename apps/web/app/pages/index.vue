@@ -53,12 +53,14 @@ const OPERATOR_FEATURES = [
   { icon: '💸', text: 'Completely free, forever' },
 ]
 
+const searchBar = ref<{ setAddress: (value: string) => void } | null>(null)
+
 const onSearch = (location: string) => {
   navigateTo({ path: '/search', query: { location, radius: '5' } })
 }
 
 const onTagClick = (tag: string) => {
-  navigateTo({ path: '/search', query: { location: tag, radius: '5' } })
+  searchBar.value?.setAddress(tag)
 }
 
 let revealObserver: IntersectionObserver | null = null
@@ -126,7 +128,7 @@ onUnmounted(() => {
 
           <!-- Search box -->
           <div class="max-w-[720px] mb-5">
-            <SearchBar :show-radius="false" @submit="onSearch" />
+            <SearchBar ref="searchBar" :show-radius="false" @submit="onSearch" />
           </div>
 
           <!-- Quick tags (fixed height to prevent layout shift) -->
