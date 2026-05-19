@@ -72,27 +72,17 @@ const clearAll = () => emit('update:modelValue', { ...EMPTY_FILTERS })
       </div>
 
       <!-- Open Now toggle -->
-      <div class="mb-5 px-4 py-3.5 bg-cream rounded-xl">
-        <div class="flex justify-between items-center">
-          <span class="text-[14px] font-medium text-gray-900">Open Right Now</span>
-          <button
-            type="button"
-            role="switch"
-            :aria-checked="modelValue.openNow"
-            :class="[
-              'relative w-[42px] h-6 rounded-full border-none transition-colors',
-              modelValue.openNow ? 'bg-forest-700' : 'bg-gray-300',
-            ]"
-            @click="toggleOpenNow"
-          >
-            <span
-              :class="[
-                'absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-[left]',
-                modelValue.openNow ? 'left-[18px]' : 'left-0.5',
-              ]"
-            />
-          </button>
-        </div>
+      <div class="mb-5 toggle-row">
+        <span class="toggle-label">Open Right Now</span>
+        <button
+          type="button"
+          role="switch"
+          :aria-checked="modelValue.openNow"
+          class="toggle-track"
+          @click="toggleOpenNow"
+        >
+          <span class="toggle-knob" />
+        </button>
       </div>
 
       <!-- Day filter -->

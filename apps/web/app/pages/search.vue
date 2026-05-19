@@ -160,6 +160,10 @@ const onSearch = (location: string, radius: string) => {
   router.replace({ path: '/search', query: { ...route.query, location, radius } })
 }
 
+const clearFilters = () => {
+  onUpdateFilters({ day: '', foodType: '', openNow: false })
+}
+
 const refresh = () => runSearch()
 
 const isLocationNotFound = computed(() => locationNotFound.value)
@@ -309,13 +313,20 @@ const isLocationNotFound = computed(() => locationNotFound.value)
             <!-- Empty: filters too restrictive -->
             <div
               v-else-if="filteredPantries.length === 0"
-              class="text-center py-16 px-6"
+              class="text-center py-20 px-6"
             >
-              <div class="w-16 h-16 bg-forest-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                <UIcon name="i-lucide-search" class="size-7 text-forest-400" />
+              <div class="w-[72px] h-[72px] bg-[#f0faf4] border-2 border-[#b8e8cc] rounded-full flex items-center justify-center mx-auto mb-5">
+                <span class="text-[32px] leading-none">🌿</span>
               </div>
-              <h3 class="font-serif text-[22px] text-gray-900 mb-2">No pantries match your filters</h3>
-              <p class="text-gray-500 text-[15px]">Try adjusting your filters or increasing the search radius.</p>
+              <h3 class="font-serif text-[24px] font-semibold text-[var(--text-dark)] mb-2.5">No pantries match your filters</h3>
+              <p class="text-[var(--text-soft)] text-[15px] leading-relaxed max-w-[360px] mx-auto mb-6">
+                Try adjusting your filters or increasing the search radius.
+              </p>
+              <button
+                type="button"
+                class="btn-primary"
+                @click="clearFilters"
+              >Clear Filters</button>
             </div>
 
             <!-- Results grid -->
