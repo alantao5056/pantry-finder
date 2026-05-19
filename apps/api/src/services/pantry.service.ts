@@ -9,12 +9,6 @@ import { PAGE_SIZE } from '../config/constants';
 import { GetPantriesRequestDto } from '../models/dto/pantry.request.dto';
 import { GetPantriesResponseDto } from '../models/dto/pantry.response.dto';
 
-const ZIPCODE_RE = /^\d{5}(?:-\d{4})?$/;
-
-function isZipcode(input: string): boolean {
-  return ZIPCODE_RE.test(input);
-}
-
 export class PantryService {
   private readonly geoService = new GeoService();
 
@@ -27,9 +21,7 @@ export class PantryService {
     dto: GetPantriesRequestDto
   ): Promise<GetPantriesResponseDto | null> {
     const input = dto.location.trim();
-    const coordinates = isZipcode(input)
-      ? await this.geoService.geocodeZipcode(input)
-      : await this.geoService.geocodeAddress(input);
+    const coordinates = await this.geoService.geocodeLocation(input);
 
     if (!coordinates) {
       return null;

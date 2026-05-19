@@ -49,6 +49,7 @@ jobs:
             JWT_SECRET=${{ secrets.JWT_SECRET }}
             COOKIE_DOMAIN=pantryfinder.org
             API_NINJAS_KEY=${{ secrets.API_NINJAS_KEY }}
+            GEOCODIO_API_KEY=${{ secrets.GEOCODIO_API_KEY }}
             EOF
 
             cd ${{ secrets.REMOTE_TARGET }}/apps/web
