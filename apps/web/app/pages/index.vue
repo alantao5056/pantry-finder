@@ -53,12 +53,12 @@ const OPERATOR_FEATURES = [
   { icon: '💸', text: 'Completely free, forever' },
 ]
 
-const onSearch = (address: string) => {
-  navigateTo({ path: '/search', query: { address, radius: '5' } })
+const onSearch = (location: string) => {
+  navigateTo({ path: '/search', query: { location, radius: '5' } })
 }
 
 const onTagClick = (tag: string) => {
-  navigateTo({ path: '/search', query: { address: tag, radius: '5' } })
+  navigateTo({ path: '/search', query: { location: tag, radius: '5' } })
 }
 
 let revealObserver: IntersectionObserver | null = null

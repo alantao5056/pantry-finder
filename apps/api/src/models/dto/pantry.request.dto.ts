@@ -1,5 +1,5 @@
 export interface GetPantriesRequestDto {
-  address: string;
+  location: string;
   radius: number; // in miles
   page: number;
 }

@@ -12,10 +12,10 @@ export class PantryController {
     res: Response<GetPantriesResponseDto | { error: string }>
   ): Promise<void> {
     try {
-      const { address, radius, page } = req.query;
+      const { location, radius, page } = req.query;
 
-      if (!address || typeof address !== 'string') {
-        res.status(400).json({ error: 'Address query parameter is required and must be a string.' });
+      if (!location || typeof location !== 'string') {
+        res.status(400).json({ error: 'Location query parameter is required and must be a string.' });
         return;
       }
 
@@ -38,7 +38,7 @@ export class PantryController {
       }
 
       const requestDto: GetPantriesRequestDto = {
-        address: address,
+        location: location,
         radius: parsedRadius,
         page: parsedPage,
       };
@@ -46,7 +46,7 @@ export class PantryController {
       const responseDto = await pantryService.getPantriesByLocation(requestDto);
 
       if (responseDto === null) {
-        res.status(404).json({ error: 'Address could not be geocoded.' });
+        res.status(404).json({ error: 'Location could not be geocoded.' });
         return;
       }
 

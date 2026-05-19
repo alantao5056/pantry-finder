@@ -29,7 +29,7 @@ const route = useRoute()
 const router = useRouter()
 const api = useApi()
 
-const initialAddress = String(route.query.address ?? '')
+const initialLocation = String(route.query.location ?? '')
 const initialRadius = String(route.query.radius ?? '5')
 
 const loadedPantries = ref<Pantry[]>([])
@@ -37,7 +37,7 @@ const currentPage = ref(0)
 const hasMorePages = ref(false)
 const pending = ref(false)
 const error = ref<unknown>(null)
-const addressNotFound = ref(false)
+const locationNotFound = ref(false)
 
 // Each runSearch call gets a fresh token. Older in-flight requests check
 // against the latest token and abort their writes if they're stale.
@@ -87,12 +87,12 @@ const fetchPage = async (
   page: number,
   token: number,
 ): Promise<PantriesResponse | null> => {
-  const address = String(route.query.address ?? '')
-  if (!address) return null
+  const location = String(route.query.location ?? '')
+  if (!location) return null
   try {
     const res = await api<PantriesResponse>('/pantries', {
       query: {
-        address,
+        location,
         radius: String(route.query.radius ?? '5'),
         page: String(page),
       },
@@ -102,7 +102,7 @@ const fetchPage = async (
   } catch (e) {
     if (token !== searchToken) return null
     const err = e as ApiError
-    if (err.statusCode === 404) addressNotFound.value = true
+    if (err.statusCode === 404) locationNotFound.value = true
     else error.value = e
     return null
   }
@@ -114,9 +114,9 @@ const runSearch = async () => {
   currentPage.value = 0
   hasMorePages.value = false
   error.value = null
-  addressNotFound.value = false
+  locationNotFound.value = false
 
-  if (!route.query.address) return
+  if (!route.query.location) return
 
   pending.value = true
   const first = await fetchPage(1, token)
@@ -152,17 +152,17 @@ onMounted(() => {
   runSearch()
 })
 watch(
-  [() => route.query.address, () => route.query.radius],
+  [() => route.query.location, () => route.query.radius],
   () => { runSearch() },
 )
 
-const onSearch = (address: string, radius: string) => {
-  router.replace({ path: '/search', query: { ...route.query, address, radius } })
+const onSearch = (location: string, radius: string) => {
+  router.replace({ path: '/search', query: { ...route.query, location, radius } })
 }
 
 const refresh = () => runSearch()
 
-const isAddressNotFound = computed(() => addressNotFound.value)
+const isLocationNotFound = computed(() => locationNotFound.value)
 </script>
 
 <template>
@@ -171,7 +171,7 @@ const isAddressNotFound = computed(() => addressNotFound.value)
     <div class="bg-white border-b border-cream-dark px-6 py-3 flex-shrink-0">
       <div class="max-w-[1120px] mx-auto">
         <SearchBar
-          :initial-address="initialAddress"
+          :initial-address="initialLocation"
           :initial-radius="initialRadius"
           @submit="onSearch"
         />
@@ -183,13 +183,13 @@ const isAddressNotFound = computed(() => addressNotFound.value)
       <ClientOnly>
         <!-- Mobile backdrop -->
         <div
-          v-if="route.query.address && showFilters"
+          v-if="route.query.location && showFilters"
           class="md:hidden absolute inset-0 bg-black/40 z-30"
           aria-hidden="true"
           @click="showFilters = false"
         />
         <FiltersSidebar
-          v-if="route.query.address"
+          v-if="route.query.location"
           :model-value="filters"
           :open="showFilters"
           :food-types="allFoodTypes"
@@ -203,7 +203,7 @@ const isAddressNotFound = computed(() => addressNotFound.value)
         <!-- Results header (only spans content area width, per design) -->
         <ClientOnly>
           <div
-            v-if="route.query.address"
+            v-if="route.query.location"
             class="bg-white border-b border-cream-dark px-6 py-3.5 flex items-center gap-3 flex-wrap flex-shrink-0"
           >
             <button
@@ -234,7 +234,7 @@ const isAddressNotFound = computed(() => addressNotFound.value)
           </div>
           <template #fallback>
             <div
-              v-if="route.query.address"
+              v-if="route.query.location"
               class="bg-white border-b border-cream-dark px-6 py-3.5 text-[14px] text-gray-500 flex-shrink-0"
             >
               Searching for pantries…
@@ -244,9 +244,9 @@ const isAddressNotFound = computed(() => addressNotFound.value)
 
         <!-- Scrollable list area -->
         <div class="flex-1 overflow-y-auto">
-          <!-- No address yet -->
+          <!-- No location yet -->
           <div
-            v-if="!route.query.address"
+            v-if="!route.query.location"
             class="text-center px-6 h-full flex flex-col items-center justify-center"
           >
             <div class="w-16 h-16 bg-forest-50 rounded-full flex items-center justify-center mb-4">
@@ -266,9 +266,9 @@ const isAddressNotFound = computed(() => addressNotFound.value)
               <span class="text-[15px]">Loading pantries…</span>
             </div>
 
-            <!-- Error: address not geocoded -->
+            <!-- Error: location not geocoded -->
             <div
-              v-else-if="isAddressNotFound"
+              v-else-if="isLocationNotFound"
               class="text-center py-16 px-6"
             >
               <div class="w-16 h-16 bg-yellow-50 rounded-full flex items-center justify-center mx-auto mb-4">

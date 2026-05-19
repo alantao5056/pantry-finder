@@ -1,18 +1,18 @@
 import { LRUCache } from "lru-cache";
-import type { Geocoder } from "../Geocoder";
+import type { AddressGeocoder } from "../AddressGeocoder";
 import type { Coordinates } from "../types";
 
-const NULL_SENTINEL = Symbol("GEOCODE_NULL");
+const NULL_SENTINEL = Symbol("ADDRESS_GEOCODE_NULL");
 type CacheValue = Coordinates | typeof NULL_SENTINEL;
 
-export class CachedGeocoder implements Geocoder {
-  private readonly inner: Geocoder;
+export class CachedAddressGeocoder implements AddressGeocoder {
+  private readonly inner: AddressGeocoder;
   private readonly cache: LRUCache<string, CacheValue>;
-  private readonly ttlMs: number = 60 * 60 * 1000; // default 1 hour
-  private readonly maxSize: number = 10000; // default max size
+  private readonly ttlMs: number = 60 * 60 * 1000;
+  private readonly maxSize: number = 10000;
   private readonly cacheNullMs?: number;
 
-  constructor(inner: Geocoder) {
+  constructor(inner: AddressGeocoder) {
     this.inner = inner;
 
     this.cache = new LRUCache<string, CacheValue>({
@@ -22,7 +22,7 @@ export class CachedGeocoder implements Geocoder {
   }
 
   public async geocode(address: string): Promise<Coordinates | null> {
-    const key = normalizeAddressKey(address);
+    const key = normalizeKey(address);
 
     const cached = this.cache.get(key);
     if (cached !== undefined) {
@@ -32,7 +32,7 @@ export class CachedGeocoder implements Geocoder {
     const result = await this.inner.geocode(address);
 
     if (result === null) {
-      this.cache.set(key, NULL_SENTINEL, { ttl: this.cacheNullMs });      
+      this.cache.set(key, NULL_SENTINEL, { ttl: this.cacheNullMs });
       return null;
     }
 
@@ -41,6 +41,6 @@ export class CachedGeocoder implements Geocoder {
   }
 }
 
-function normalizeAddressKey(address: string): string {
-  return address.trim().replace(/\s+/g, " ").toLowerCase();
+function normalizeKey(s: string): string {
+  return s.trim().replace(/\s+/g, " ").toLowerCase();
 }

@@ -1,5 +1,5 @@
 import type { Coordinates } from "./types";
 
-export interface Geocoder {
+export interface AddressGeocoder {
   geocode(address: string): Promise<Coordinates | null>;
 }

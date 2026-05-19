@@ -4,6 +4,7 @@ export interface AddressSuggestion {
   secondary: string
   lat: number
   lon: number
+  isPostcode: boolean
 }
 
 interface PhotonProperties {
@@ -16,6 +17,8 @@ interface PhotonProperties {
   postcode?: string
   osm_id: number
   osm_type: string
+  osm_key?: string
+  osm_value?: string
 }
 
 interface PhotonFeature {
@@ -46,8 +49,11 @@ export const useAddressAutocomplete = (initialValue = '') => {
 
   const toSuggestion = (f: PhotonFeature): AddressSuggestion => {
     const p = f.properties
+    const isPostcode = p.osm_key === 'place' && p.osm_value === 'postcode'
     const street = [p.housenumber, p.street].filter(Boolean).join(' ')
-    const primary = street || p.name || p.city || 'Unknown location'
+    const primary = isPostcode
+      ? (p.postcode ?? p.name ?? 'Unknown location')
+      : (street || p.name || p.city || 'Unknown location')
     const secondary = [p.city, p.state, p.country].filter(Boolean).join(', ')
     return {
       id: `${p.osm_type}-${p.osm_id}`,
@@ -55,6 +61,7 @@ export const useAddressAutocomplete = (initialValue = '') => {
       secondary,
       lat: f.geometry.coordinates[1],
       lon: f.geometry.coordinates[0],
+      isPostcode,
     }
   }
 
@@ -110,7 +117,11 @@ export const useAddressAutocomplete = (initialValue = '') => {
   const select = (s: AddressSuggestion) => {
     suppressNextWatch = true
     committed = true
-    query.value = s.secondary ? `${s.primary}, ${s.secondary}` : s.primary
+    query.value = s.isPostcode
+      ? s.primary
+      : s.secondary
+        ? `${s.primary}, ${s.secondary}`
+        : s.primary
     suggestions.value = []
     close()
   }

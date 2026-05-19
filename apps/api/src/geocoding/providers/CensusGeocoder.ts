@@ -1,5 +1,6 @@
-import type { Geocoder } from "../Geocoder";
+import type { AddressGeocoder } from "../AddressGeocoder";
 import type { Coordinates } from "../types";
+import { fetchJsonWithRetry } from "./http";
 
 type CensusCoordinates = { x: number; y: number };
 type CensusAddressMatch = {
@@ -12,7 +13,7 @@ type CensusResponse = {
   };
 };
 
-export class CensusGeocoder implements Geocoder {
+export class CensusGeocoder implements AddressGeocoder {
   private readonly baseUrl: string = "https://geocoding.geo.census.gov/geocoder";
   private readonly benchmark: string = "Public_AR_Current";
 
@@ -53,82 +54,4 @@ function formatAddressForCensus(input: string): string {
   const tokens = collapsed.split(" ");
   const encodedTokens = tokens.map((t) => encodeURIComponent(t));
   return encodedTokens.join("+");
-}
-
-async function fetchJsonWithRetry<T>(
-  url: string,
-  retry: { timeoutMs: number; maxRetries: number; baseDelayMs: number }
-): Promise<T> {
-  let attempt = 0;
-  let lastErr: any;
-
-  while (attempt <= retry.maxRetries) {
-    try {
-      return await fetchJsonOnce<T>(url, retry.timeoutMs);
-    } catch (err: any) {
-      lastErr = err;
-
-      const status = err?.status as number | undefined;
-      const retriable =
-        status === undefined || status === 429 || (status >= 500 && status <= 599);
-
-      if (!retriable || attempt === retry.maxRetries) break;
-
-      const delay = jitterDelay(retry.baseDelayMs * Math.pow(2, attempt));
-      await sleep(delay);
-      attempt++;
-    }
-  }
-
-  throw lastErr;
-}
-
-async function fetchJsonOnce<T>(url: string, timeoutMs: number): Promise<T> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-
-  try {
-    const resp = await fetch(url, {
-      method: "GET",
-      signal: controller.signal,
-      headers: { "Accept": "application/json" },
-    });
-
-    const text = await resp.text();
-
-    if (!resp.ok) {
-      const e: any = new Error(`Upstream request failed: ${resp.status}`);
-      e.status = resp.status;
-      e.bodySnippet = text.slice(0, 300);
-      throw e;
-    }
-
-    try {
-      return JSON.parse(text) as T;
-    } catch {
-      const e: any = new Error("Upstream returned non-JSON response.");
-      e.status = resp.status;
-      e.bodySnippet = text.slice(0, 300);
-      throw e;
-    }
-  } catch (err: any) {
-    if (err?.name === "AbortError") {
-      const e: any = new Error(`Request timed out after ${timeoutMs}ms.`);
-      e.status = undefined;
-      throw e;
-    }
-    throw err;
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((r) => setTimeout(r, ms));
-}
-
-function jitterDelay(ms: number): number {
-  const jitter = 0.2;
-  const delta = ms * jitter;
-  return Math.max(0, Math.round(ms - delta + Math.random() * 2 * delta));
 }
