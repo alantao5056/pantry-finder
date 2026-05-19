@@ -8,7 +8,7 @@ type CacheValue = Coordinates | typeof NULL_SENTINEL;
 export class CachedZipcodeGeocoder implements ZipcodeGeocoder {
   private readonly inner: ZipcodeGeocoder;
   private readonly cache: LRUCache<string, CacheValue>;
-  private readonly ttlMs: number = 60 * 60 * 1000;
+  private readonly ttlMs: number = 24 * 60 * 60 * 1000;
   private readonly maxSize: number = 10000;
   private readonly cacheNullMs?: number;
 
