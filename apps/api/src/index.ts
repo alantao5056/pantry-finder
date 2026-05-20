@@ -7,6 +7,7 @@ import authRoutes from './routes/auth.routes';
 import heartsRoutes from './routes/hearts.routes';
 
 const app = express();
+app.set('trust proxy', 'loopback');
 const port = process.env.PORT || 8080;
 
 const webOrigin = process.env.NODE_ENV === 'production'

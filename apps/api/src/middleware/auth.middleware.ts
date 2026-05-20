@@ -20,3 +20,16 @@ export function requireAuth(req: AuthedRequest, res: Response, next: NextFunctio
     res.status(401).json({ error: 'Invalid or expired session' });
   }
 }
+
+export function optionalAuth(req: AuthedRequest, _res: Response, next: NextFunction): void {
+  const token = req.cookies?.[COOKIE_NAME];
+  if (token) {
+    try {
+      const payload = jwt.verify(token, JWT_SECRET) as { sub: string };
+      req.user = { sub: payload.sub };
+    } catch {
+      // Invalid/expired token: treat as anonymous, don't block the request.
+    }
+  }
+  next();
+}

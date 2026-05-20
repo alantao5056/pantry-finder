@@ -18,8 +18,19 @@ interface PantriesResponse {
 }
 
 interface ApiError {
-  data?: { error?: string }
+  data?: {
+    error?: string
+    message?: string
+    requiresAuth?: boolean
+    retryAfter?: number
+  }
   statusCode?: number
+}
+
+interface RateLimitState {
+  message: string
+  requiresAuth: boolean
+  retryAfter: number
 }
 
 // Auto-load more pages while filtered results stay below this threshold.
@@ -38,6 +49,8 @@ const hasMorePages = ref(false)
 const pending = ref(false)
 const error = ref<unknown>(null)
 const locationNotFound = ref(false)
+const rateLimited = ref<RateLimitState | null>(null)
+const lastSearchSucceeded = ref(false)
 
 // Each runSearch call gets a fresh token. Older in-flight requests check
 // against the latest token and abort their writes if they're stale.
@@ -109,8 +122,17 @@ const fetchPage = async (
   } catch (e) {
     if (token !== searchToken) return null
     const err = e as ApiError
-    if (err.statusCode === 404) locationNotFound.value = true
-    else error.value = e
+    if (err.statusCode === 404) {
+      locationNotFound.value = true
+    } else if (err.statusCode === 429) {
+      rateLimited.value = {
+        message: err.data?.message ?? 'You have reached the search limit. Please try again later.',
+        requiresAuth: !!err.data?.requiresAuth,
+        retryAfter: err.data?.retryAfter ?? 0,
+      }
+    } else {
+      error.value = e
+    }
     return null
   }
 }
@@ -122,6 +144,8 @@ const runSearch = async () => {
   hasMorePages.value = false
   error.value = null
   locationNotFound.value = false
+  rateLimited.value = null
+  lastSearchSucceeded.value = false
 
   if (!route.query.location) return
 
@@ -133,6 +157,7 @@ const runSearch = async () => {
     loadedPantries.value = first.pantries
     currentPage.value = first.pagination.page
     hasMorePages.value = first.pagination.hasNextPage
+    lastSearchSucceeded.value = true
 
     while (
       token === searchToken
@@ -164,6 +189,15 @@ watch(
 )
 
 const onSearch = (location: string, radius: string) => {
+  const sameLocation = location === String(route.query.location ?? '')
+  const sameRadius = radius === String(route.query.radius ?? '5')
+  if (sameLocation && sameRadius) {
+    // URL won't change, so the watcher won't fire. Only re-run if the last
+    // attempt failed (e.g. rate-limited before sign-in) — successful results
+    // should not be re-fetched on a redundant button click.
+    if (!lastSearchSucceeded.value) runSearch()
+    return
+  }
   router.replace({ path: '/search', query: { ...route.query, location, radius } })
 }
 
@@ -233,6 +267,9 @@ const isLocationNotFound = computed(() => locationNotFound.value)
               <template v-if="pending && loadedPantries.length === 0">
                 Searching for pantries…
               </template>
+              <template v-else-if="rateLimited && loadedPantries.length === 0">
+                <span class="text-red-700">Search limit reached.</span>
+              </template>
               <template v-else-if="error && loadedPantries.length === 0">
                 <span class="text-red-700">Could not load pantries.</span>
               </template>
@@ -287,6 +324,20 @@ const isLocationNotFound = computed(() => locationNotFound.value)
               </div>
               <h3 class="font-serif text-[22px] text-gray-900 mb-2">We couldn't find that address</h3>
               <p class="text-gray-500 text-[15px]">Try entering a city, ZIP code, or a more complete street address.</p>
+            </div>
+
+            <!-- Rate limit reached -->
+            <div
+              v-else-if="rateLimited"
+              class="text-center px-6 h-full flex flex-col items-center"
+            >
+              <div style="flex: 2 1 0" />
+              <div class="w-16 h-16 bg-yellow-50 rounded-full flex items-center justify-center mb-4">
+                <UIcon name="i-lucide-clock" class="size-7 text-yellow-600" />
+              </div>
+              <h3 class="font-serif text-[22px] text-gray-900 mb-2">You've hit the search limit</h3>
+              <p class="text-gray-500 text-[15px] max-w-[420px]">{{ rateLimited.message }}</p>
+              <div style="flex: 3 1 0" />
             </div>
 
             <!-- Error: other -->
