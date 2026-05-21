@@ -51,6 +51,7 @@ const error = ref<unknown>(null)
 const locationNotFound = ref(false)
 const rateLimited = ref<RateLimitState | null>(null)
 const lastSearchSucceeded = ref(false)
+const selectedPantry = ref<Pantry | null>(null)
 
 // Each runSearch call gets a fresh token. Older in-flight requests check
 // against the latest token and abort their writes if they're stale.
@@ -140,6 +141,7 @@ const fetchPage = async (
 const runSearch = async () => {
   const token = ++searchToken
   loadedPantries.value = []
+  selectedPantry.value = null
   currentPage.value = 0
   hasMorePages.value = false
   error.value = null
@@ -400,6 +402,7 @@ const isLocationNotFound = computed(() => locationNotFound.value)
                   v-for="p in filteredPantries"
                   :key="p.id"
                   :pantry="p"
+                  @select="selectedPantry = $event"
                 />
               </div>
               <div
@@ -421,5 +424,13 @@ const isLocationNotFound = computed(() => locationNotFound.value)
         </div>
       </div>
     </div>
+
+    <ClientOnly>
+      <PantryPopup
+        v-if="selectedPantry"
+        :pantry="selectedPantry"
+        @close="selectedPantry = null"
+      />
+    </ClientOnly>
   </div>
 </template>

@@ -340,6 +340,245 @@
   .toggle-track[aria-checked="true"] .toggle-knob {
     left: 18px;
   }
+
+  .pantry-popup-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 3000;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    overflow-y: auto;
+    padding: 72px 16px 24px;
+    background: rgba(10, 20, 14, 0.5);
+    backdrop-filter: blur(6px);
+  }
+
+  .pantry-popup-card {
+    width: min(100%, 820px);
+    overflow: hidden;
+    border-radius: 24px;
+    background: white;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.2);
+  }
+
+  .pantry-popup-header {
+    position: relative;
+    padding: 28px 28px 0;
+    background: white;
+  }
+
+  .pantry-popup-close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    display: inline-flex;
+    width: 34px;
+    height: 34px;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 999px;
+    background: #f3f4f6;
+    color: #6b7280;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+  .pantry-popup-close:hover {
+    background: var(--green-light);
+    color: var(--green-dark);
+  }
+
+  .pantry-popup-monogram {
+    display: flex;
+    width: 52px;
+    height: 52px;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border: 1.5px solid #c8e8d4;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #dcf4e6, #b8e8cc);
+    color: var(--green-dark);
+    font-family: var(--font-serif);
+    font-size: 22px;
+    font-weight: 700;
+  }
+
+  .pantry-popup-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 5px;
+    color: #6b7280;
+    font-size: 13px;
+    text-decoration: none;
+  }
+
+  .status-pill {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 5px;
+    border-radius: 999px;
+    padding: 3px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+  }
+  .status-pill--open {
+    border: 1px solid #86efac;
+    background: #f0fdf4;
+    color: #16a34a;
+  }
+  .status-pill--today {
+    border: 1px solid #fcd34d;
+    background: #fffbeb;
+    color: #b45309;
+  }
+  .status-pill--closed {
+    border: 1px solid #e5e7eb;
+    background: #f9fafb;
+    color: #6b7280;
+    font-weight: 600;
+  }
+
+  .pantry-popup-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #f0f4f1;
+  }
+
+  .popup-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 9px;
+    background: #fafafa;
+    padding: 8px 16px;
+    color: #4b5563;
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+  }
+  .popup-action:hover {
+    border-color: var(--green-soft);
+    background: var(--green-light);
+    color: var(--green-dark);
+  }
+  .popup-action--hearted,
+  .popup-action--hearted:hover {
+    border-color: #fca5a5;
+    background: #fff1f2;
+    color: #e11d48;
+  }
+
+  .pantry-popup-body {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding: 22px 28px 28px;
+  }
+
+  .popup-section {
+    border: 1px solid #e8f0eb;
+    border-radius: 12px;
+    background: #f8faf9;
+    padding: 16px 18px;
+  }
+
+  .popup-section-title {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 14px;
+    color: #374151;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .food-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border: 1px solid #c8e8d4;
+    border-radius: 999px;
+    padding: 4px 10px;
+    color: #2a5c3f;
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  .schedule-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    border-bottom: 1px solid #eef2ef;
+    padding: 8px 0;
+  }
+  .schedule-row:last-child {
+    border-bottom: none;
+  }
+
+  .schedule-day {
+    flex-shrink: 0;
+    border-radius: 6px;
+    padding: 2px 7px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+  }
+
+  .service-panel {
+    overflow: hidden;
+    border-width: 1px;
+    border-style: solid;
+    border-radius: 12px;
+  }
+
+  .service-panel-toggle {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 10px;
+    border: none;
+    padding: 10px 14px;
+    text-align: left;
+  }
+
+  .service-panel-body {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: white;
+    padding: 10px 16px 12px;
+  }
+
+  .service-schedule-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid #f0f4f1;
+    padding: 7px 0;
+  }
+  .service-schedule-row:last-child {
+    border-bottom: none;
+  }
+
+  .schedule-note {
+    max-width: 200px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #eef2ef;
+    padding: 2px 10px;
+    color: #374151;
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
 
 /* Quick-tags row enter — staggered fade + slight rise. Per-pill delay is

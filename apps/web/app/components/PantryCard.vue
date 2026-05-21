@@ -5,6 +5,10 @@ const props = defineProps<{
   pantry: Pantry
 }>()
 
+const emit = defineEmits<{
+  select: [pantry: Pantry]
+}>()
+
 const openNow = computed(() => isOpenNow(props.pantry.schedules))
 const openToday = computed(() => isOpenToday(props.pantry.schedules))
 const days = computed(() => getScheduleDays(props.pantry.schedules))
@@ -38,11 +42,23 @@ const onHeartClick = async () => {
   }
   await toggleHeart(props.pantry.id)
 }
+
+const onCardKeydown = (event: KeyboardEvent) => {
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault()
+    emit('select', props.pantry)
+  }
+}
 </script>
 
 <template>
   <div
     class="bg-white rounded-[20px] border-[1.5px] border-[var(--border-soft)] overflow-hidden transition-all duration-200 shadow-[0_2px_12px_rgba(28,69,50,0.06)] hover:shadow-[0_8px_32px_rgba(28,69,50,0.12)] hover:-translate-y-0.5 flex flex-col"
+    role="button"
+    tabindex="0"
+    :aria-label="`View details for ${pantry.name}`"
+    @click="emit('select', pantry)"
+    @keydown="onCardKeydown"
   >
     <!-- Color accent bar -->
     <div class="h-1 shrink-0 bg-linear-to-r from-[var(--text-dark)] via-[var(--green-dark)] to-[var(--green-mid)]" />
@@ -73,7 +89,7 @@ const onHeartClick = async () => {
         :class="pantry.distance !== undefined ? 'mb-1' : 'mb-2.5'"
       >
         <span class="shrink-0 w-[18px] h-[1.4em] flex items-center justify-center">
-          <UIcon name="i-lucide-map-pin" class="size-3 text-[var(--text-soft)]" />
+          <UIcon name="i-lucide-map-pin" class="size-3 text-[var(--green-mid)]" />
         </span>
         <span class="leading-[1.4]">{{ pantry.address }}</span>
       </div>
@@ -84,7 +100,7 @@ const onHeartClick = async () => {
         class="flex items-start text-[12px] text-[var(--text-mid)] font-semibold mb-2.5"
       >
         <span class="shrink-0 w-[18px] h-[1.4em] flex items-center justify-center">
-          <UIcon name="i-lucide-navigation" class="size-3 text-[var(--text-soft)]" />
+          <UIcon name="i-lucide-navigation" class="size-3 text-[var(--green-mid)]" />
         </span>
         <span class="leading-[1.4]">{{ pantry.distance.toFixed(1) }} miles away</span>
       </div>
@@ -99,7 +115,7 @@ const onHeartClick = async () => {
         v-if="days.length > 0"
         class="flex items-start gap-[5px] text-[12px] text-[var(--text-mid)] mb-3 leading-[1.5]"
       >
-        <UIcon name="i-lucide-clock" class="size-3 shrink-0 mt-0.5 text-[var(--text-soft)]" />
+        <UIcon name="i-lucide-clock" class="size-3 shrink-0 mt-0.5 text-[var(--green-mid)]" />
         <div>
           <span v-for="(s, i) in days.slice(0, 2)" :key="i">
             <span v-if="i > 0"> • </span>{{ s.weekDay.slice(0, 3) }} {{ s.start }}–{{ s.end }}
