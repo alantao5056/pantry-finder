@@ -65,7 +65,7 @@ export function getUniqueServices(services: Service[]): Service[] {
 }
 
 export function serviceColorClasses(category: string): string {
-  if (category === 'Food Program') return 'bg-green-50 text-green-800 border-green-200'
+  if (category === 'Food Program') return 'bg-[var(--green-light)] text-[var(--green-dark)] border-[var(--green-soft)]'
   if (category === 'Healthcare Screenings/Referrals') return 'bg-blue-50 text-blue-700 border-blue-200'
   if (category === 'Housing Assistance') return 'bg-orange-50 text-orange-700 border-orange-200'
   return 'bg-violet-50 text-violet-700 border-violet-200'

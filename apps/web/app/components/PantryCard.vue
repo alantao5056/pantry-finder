@@ -42,15 +42,15 @@ const onHeartClick = async () => {
 
 <template>
   <div
-    class="bg-white rounded-[18px] border border-cream-muted overflow-hidden transition-all duration-200 shadow-[0_2px_12px_rgba(28,69,50,0.06)] hover:shadow-[0_8px_32px_rgba(28,69,50,0.12)] hover:-translate-y-0.5 flex flex-col"
+    class="bg-white rounded-[20px] border-[1.5px] border-[var(--border-soft)] overflow-hidden transition-all duration-200 shadow-[0_2px_12px_rgba(28,69,50,0.06)] hover:shadow-[0_8px_32px_rgba(28,69,50,0.12)] hover:-translate-y-0.5 flex flex-col"
   >
     <!-- Color accent bar -->
-    <div class="h-1 shrink-0" style="background: linear-gradient(90deg, #1C4532, #52B788)" />
+    <div class="h-1 shrink-0 bg-linear-to-r from-[var(--text-dark)] via-[var(--green-dark)] to-[var(--green-mid)]" />
 
-    <div class="px-[22px] pt-5 pb-4 flex-1">
+    <div class="px-5 py-[18px] flex-1">
       <!-- Header: name + status -->
-      <div class="flex justify-between items-start gap-3 mb-2.5">
-        <h3 class="font-serif text-[18px] text-gray-900 leading-snug flex-1">{{ pantry.name }}</h3>
+      <div class="flex justify-between items-start gap-2.5 mb-2">
+        <h3 class="font-serif text-[18px] font-semibold text-[var(--text-dark)] leading-[1.3] flex-1">{{ pantry.name }}</h3>
         <div class="flex flex-col items-end gap-1 shrink-0">
           <span
             v-if="openNow"
@@ -69,30 +69,37 @@ const onHeartClick = async () => {
 
       <!-- Address -->
       <div
-        class="flex items-start text-gray-500 text-[13px]"
-        :class="pantry.distance !== undefined ? 'mb-1' : 'mb-3'"
+        class="flex items-start text-[var(--text-mid)] text-[13px]"
+        :class="pantry.distance !== undefined ? 'mb-1' : 'mb-2.5'"
       >
-        <span class="shrink-0 w-[18px] flex justify-center mt-0.5">
-          <UIcon name="i-lucide-map-pin" class="size-3" />
+        <span class="shrink-0 w-[18px] h-[1.4em] flex items-center justify-center">
+          <UIcon name="i-lucide-map-pin" class="size-3 text-[var(--text-soft)]" />
         </span>
-        <span class="leading-snug">{{ pantry.address }}</span>
+        <span class="leading-[1.4]">{{ pantry.address }}</span>
       </div>
 
       <!-- Distance -->
       <div
         v-if="pantry.distance !== undefined"
-        class="flex items-center text-[12px] text-forest-400 font-semibold mb-2.5"
+        class="flex items-start text-[12px] text-[var(--text-mid)] font-semibold mb-2.5"
       >
-        <span class="shrink-0 w-[18px] flex justify-center leading-none">📍</span>
-        <span>{{ pantry.distance.toFixed(1) }} miles away</span>
+        <span class="shrink-0 w-[18px] h-[1.4em] flex items-center justify-center">
+          <UIcon name="i-lucide-navigation" class="size-3 text-[var(--text-soft)]" />
+        </span>
+        <span class="leading-[1.4]">{{ pantry.distance.toFixed(1) }} miles away</span>
       </div>
+
+      <div
+        v-if="days.length > 0 || visibleFoods.length > 0 || visibleServices.length > 0"
+        class="h-px bg-[var(--border-soft)] mt-1.5 mb-3"
+      />
 
       <!-- Hours summary -->
       <div
         v-if="days.length > 0"
-        class="flex items-start gap-1.5 text-[13px] text-gray-600 mb-3"
+        class="flex items-start gap-[5px] text-[12px] text-[var(--text-mid)] mb-3 leading-[1.5]"
       >
-        <UIcon name="i-lucide-clock" class="size-3.5 shrink-0 mt-0.5" />
+        <UIcon name="i-lucide-clock" class="size-3 shrink-0 mt-0.5 text-[var(--text-soft)]" />
         <div>
           <span v-for="(s, i) in days.slice(0, 2)" :key="i">
             <span v-if="i > 0"> • </span>{{ s.weekDay.slice(0, 3) }} {{ s.start }}–{{ s.end }}
@@ -101,57 +108,48 @@ const onHeartClick = async () => {
         </div>
       </div>
 
-      <!-- Phone -->
-      <div
-        v-if="pantry.phone"
-        class="flex items-center gap-1.5 text-[13px] text-gray-600 mb-3"
-      >
-        <UIcon name="i-lucide-phone" class="size-3.5" />
-        {{ pantry.phone }}
-      </div>
-
       <!-- Food chips -->
       <div v-if="visibleFoods.length > 0" class="mb-2.5">
-        <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">
+        <div class="text-[10px] font-bold text-[var(--text-soft)] uppercase tracking-[0.6px] mb-1.5">
           Available Food
         </div>
-        <div class="flex flex-wrap gap-1.5">
+        <div class="flex flex-wrap gap-[5px]">
           <span
             v-for="f in visibleFoods"
             :key="f"
-            class="bg-forest-50 text-forest-700 text-[11px] font-medium px-2 py-0.5 rounded-full inline-flex items-center gap-1"
+            class="bg-[var(--green-light)] text-[var(--green-dark)] border border-[var(--green-soft)] text-[11px] font-medium px-2 py-[3px] rounded-full inline-flex items-center gap-1"
           >
             <span class="inline-flex justify-center w-4 shrink-0 text-[12px]">{{ foodEmoji(f) }}</span>{{ f }}
           </span>
           <span
             v-if="extraFoods > 0"
-            class="bg-gray-100 text-gray-500 text-[11px] px-2 py-0.5 rounded-full"
+            class="bg-[var(--cream-light)] text-[var(--text-soft)] text-[11px] px-2 py-[3px] rounded-full"
           >+{{ extraFoods }} more</span>
         </div>
       </div>
 
       <!-- Services Offered -->
       <div v-if="visibleServices.length > 0">
-        <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">
+        <div class="text-[10px] font-bold text-[var(--text-soft)] uppercase tracking-[0.6px] mb-1.5">
           Services Offered
         </div>
-        <div class="flex flex-wrap gap-1.5">
+        <div class="flex flex-wrap gap-[5px]">
           <span
             v-for="(s, i) in visibleServices"
             :key="i"
-            class="text-[11px] font-medium px-2 py-0.5 rounded-full border"
+            class="text-[11px] font-medium px-[9px] py-[3px] rounded-full border"
             :class="serviceColorClasses(s.category)"
           >{{ s.name }}</span>
           <span
             v-if="extraServices > 0"
-            class="bg-gray-100 text-gray-500 text-[11px] px-2 py-0.5 rounded-full"
+            class="bg-[var(--cream-light)] text-[var(--text-soft)] text-[11px] px-2 py-[3px] rounded-full"
           >+{{ extraServices }} more</span>
         </div>
       </div>
     </div>
 
     <!-- Footer: love count -->
-    <div class="px-[22px] pb-3.5 flex items-center gap-1.5 shrink-0">
+    <div class="px-5 pb-3.5 flex items-center gap-1.5 shrink-0">
       <button
         class="flex items-center gap-1.5 transition-transform active:scale-90"
         :aria-label="hearted ? 'Unheart pantry' : 'Heart pantry'"
