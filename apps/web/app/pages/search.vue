@@ -213,7 +213,7 @@ const isLocationNotFound = computed(() => locationNotFound.value)
 </script>
 
 <template>
-  <div class="h-[calc(100vh-4rem)] flex flex-col bg-cream font-sans overflow-hidden">
+  <div class="h-[calc(100dvh-4rem-1px)] flex flex-col bg-cream font-sans overflow-hidden">
     <!-- Top search bar -->
     <div class="bg-white border-b border-cream-dark px-6 py-3 flex-shrink-0">
       <div class="max-w-[1120px] mx-auto">
