@@ -1,0 +1,513 @@
+<script setup lang="ts">
+import type { Pantry, Service } from '@pantry-finder/types'
+
+const DAY_ORDER = [
+  'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday',
+] as const
+
+const route = useRoute()
+const router = useRouter()
+const api = useApi()
+
+// The route param is the canonical "<slug>-<id>", but we tolerate legacy bare
+// "<id>" params too. The id is the authoritative lookup key.
+const id = computed(() => extractPantryId(String(route.params.id)))
+
+const { data: pantry, pending, error } = await useAsyncData(
+  `pantry-${id.value}`,
+  () => api<Pantry>(`/pantries/${id.value}`),
+  { watch: [id] },
+)
+
+// Upgrade bare-id or stale-slug URLs to the canonical slug URL with a real 301
+// (avoids duplicate-content). Only runs for found pantries; the canonical param
+// is stable, so this can't loop.
+if (pantry.value && String(route.params.id) !== pantrySlugId(pantry.value)) {
+  await navigateTo(pantryPath(pantry.value), { redirectCode: 301, replace: true })
+}
+
+const pageTitle = computed(() =>
+  pantry.value ? `${pantry.value.name} — PantryFinder` : 'Pantry — PantryFinder',
+)
+const metaDescription = computed(() => {
+  if (!pantry.value) return 'Find free food pantries near you on PantryFinder.'
+  if (pantry.value.about) return pantry.value.about.slice(0, 160)
+  return `Hours, available food, and contact info for ${pantry.value.name} at ${pantry.value.address}.`
+})
+// Resolve the request origin once, in setup — useRequestURL() must not be called
+// lazily inside the computed (head resolution runs it outside the setup context).
+const origin = useRequestURL().origin
+const canonicalUrl = computed(() => {
+  const path = pantry.value ? pantryPath(pantry.value) : `/pantries/${route.params.id}`
+  return `${origin}${path}`
+})
+
+useSeoMeta({
+  title: () => pageTitle.value,
+  description: () => metaDescription.value,
+  ogTitle: () => pageTitle.value,
+  ogDescription: () => metaDescription.value,
+  ogType: 'website',
+  ogUrl: () => canonicalUrl.value,
+})
+useHead(() => ({
+  link: [{ rel: 'canonical', href: canonicalUrl.value }],
+}))
+
+const { isLoggedIn } = useAuth()
+const { show: showAuthModal } = useAuthModal()
+const { isHearted, toggleHeart } = useHearts()
+
+const openNow = computed(() => (pantry.value ? isOpenNow(pantry.value.schedules) : false))
+const openToday = computed(() => (pantry.value ? isOpenToday(pantry.value.schedules) : false))
+const allFoods = computed(() => (pantry.value ? getUniqueFoods(pantry.value.services) : []))
+const uniqueServices = computed(() => (pantry.value ? getUniqueServices(pantry.value.services) : []))
+
+const hearted = computed(() => (pantry.value ? isHearted(pantry.value.id) : false))
+const localCount = ref(pantry.value?.heartCount ?? 0)
+
+watch(hearted, (newVal, oldVal) => {
+  if (newVal !== oldVal) localCount.value += newVal ? 1 : -1
+})
+watch(() => pantry.value?.heartCount, (count) => {
+  localCount.value = count ?? 0
+})
+
+const onHeartClick = async () => {
+  if (!pantry.value) return
+  if (!isLoggedIn.value) {
+    showAuthModal('login')
+    return
+  }
+  await toggleHeart(pantry.value.id)
+}
+
+// Follow is not wired to a backend yet — this toggle is presentational only.
+const following = ref(false)
+watch(() => pantry.value?.id, () => { following.value = false })
+
+const goBack = () => {
+  if (import.meta.client && window.history.length > 1) router.back()
+  else router.push('/search')
+}
+
+const mapsUrl = computed(() =>
+  pantry.value
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(pantry.value.address)}`
+    : '#',
+)
+const reportUrl = computed(() => {
+  if (!pantry.value) return '#'
+  const subject = `PantryFinder update: ${pantry.value.name}`
+  const body = `Pantry: ${pantry.value.name}\nAddress: ${pantry.value.address}\n\nWhat needs to be corrected?\n`
+  return `mailto:support@pantryfinder.org?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+})
+const osmEmbedUrl = computed(() => {
+  if (!pantry.value) return ''
+  const { latitude: lat, longitude: lon } = pantry.value
+  const d = 0.008
+  const bbox = `${lon - d},${lat - d},${lon + d},${lat + d}`
+  return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat},${lon}`
+})
+
+// Group the top-level pantry schedules by day, in week order.
+const schedulesByDay = computed(() => {
+  if (!pantry.value) return []
+  return DAY_ORDER
+    .map(day => ({ day, slots: pantry.value!.schedules.filter(s => s.weekDay === day && s.start) }))
+    .filter(group => group.slots.length > 0)
+})
+
+const dayBadgeStyle = (day: string) => {
+  const color = dayColor(day)
+  return { color, backgroundColor: `${color}14` }
+}
+
+const serviceSchedulesByDay = (service: Service) => {
+  const valid = service.schedules.filter(s => (s.weekDay && s.start) || s.notes)
+  return DAY_ORDER
+    .map(day => ({ day, slots: valid.filter(s => s.weekDay === day && s.start) }))
+    .filter(group => group.slots.length > 0)
+}
+const serviceNoDayNote = (service: Service) =>
+  service.schedules.find(s => !s.weekDay && s.notes)?.notes
+const serviceFoods = (service: Service) => [...new Set(service.food)]
+const serviceProgram = (service: Service) =>
+  service.program && service.program !== service.category ? service.program : service.category
+
+const serviceDotClass = (category: string) => {
+  if (category === 'Food Program') return 'bg-[var(--green-mid)]'
+  if (category === 'Healthcare Screenings/Referrals') return 'bg-blue-500'
+  if (category === 'Housing Assistance') return 'bg-orange-500'
+  if (category === 'Tax/Financial Support') return 'bg-violet-500'
+  return 'bg-gray-500'
+}
+const serviceTextClass = (category: string) => {
+  if (category === 'Food Program') return 'text-[var(--green-dark)]'
+  if (category === 'Healthcare Screenings/Referrals') return 'text-blue-700'
+  if (category === 'Housing Assistance') return 'text-orange-700'
+  if (category === 'Tax/Financial Support') return 'text-violet-700'
+  return 'text-gray-700'
+}
+</script>
+
+<template>
+  <div class="min-h-[calc(100dvh-4rem-1px)] bg-[#f5f7f5] font-sans">
+    <!-- Loading -->
+    <div
+      v-if="pending && !pantry"
+      class="flex items-center justify-center py-24 text-gray-500 gap-3"
+    >
+      <UIcon name="i-lucide-loader-2" class="size-6 animate-spin text-forest-500" />
+      <span class="text-[15px]">Loading pantry…</span>
+    </div>
+
+    <!-- Found -->
+    <div v-else-if="pantry">
+      <!-- Breadcrumb bar -->
+      <div class="bg-white border-b border-[var(--border-soft)] px-6">
+        <div class="max-w-[1100px] mx-auto h-11 flex items-center gap-2 text-[13px] text-gray-400">
+          <button
+            type="button"
+            class="flex items-center gap-1.5 text-[var(--text-mid)] font-medium hover:text-[var(--green-dark)] transition-colors"
+            @click="goBack"
+          >
+            <UIcon name="i-lucide-arrow-left" class="size-3.5" />
+            Back to results
+          </button>
+          <span class="text-gray-300">›</span>
+          <NuxtLink to="/search" class="text-gray-400 no-underline hover:text-[var(--green-dark)]">
+            Food Pantries
+          </NuxtLink>
+          <span class="text-gray-300">›</span>
+          <span class="text-gray-700 font-medium truncate max-w-[280px]">{{ pantry.name }}</span>
+        </div>
+      </div>
+
+      <!-- Hero card -->
+      <div class="bg-white border-b border-[var(--border-soft)]">
+        <div class="max-w-[1100px] mx-auto px-6 pt-8 pb-7">
+          <div class="flex items-start gap-5">
+            <div class="hidden sm:flex shrink-0 w-[68px] h-[68px] rounded-[18px] items-center justify-center font-serif text-[28px] font-bold text-[var(--green-dark)] border-2 border-[#c8e8d4] shadow-[0_4px_16px_rgba(30,122,71,0.12)] bg-gradient-to-br from-[#dcf4e6] to-[#a8dbbf]">
+              {{ pantry.name.charAt(0) }}
+            </div>
+
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2.5 flex-wrap mb-1.5">
+                <h1 class="font-serif text-[clamp(22px,3vw,30px)] font-bold text-gray-900 leading-tight">
+                  {{ pantry.name }}
+                </h1>
+                <span v-if="openNow" class="status-pill status-pill--open">
+                  <span class="size-1.5 rounded-full bg-green-500" />
+                  OPEN NOW
+                </span>
+                <span v-else-if="openToday" class="status-pill status-pill--today">OPEN TODAY</span>
+                <span
+                  v-else-if="pantry.schedules.length > 0"
+                  class="status-pill status-pill--closed"
+                >CLOSED TODAY</span>
+              </div>
+
+              <div class="flex flex-wrap gap-x-4 gap-y-1.5 mb-5">
+                <span class="flex items-center gap-1.5 text-[14px] text-gray-600">
+                  <UIcon name="i-lucide-map-pin" class="size-3.5 text-gray-400" />
+                  {{ pantry.address }}
+                </span>
+                <span v-if="pantry.phone" class="flex items-center gap-1.5 text-[14px] text-gray-600">
+                  <UIcon name="i-lucide-phone" class="size-3.5 text-gray-400" />
+                  {{ pantry.phone }}
+                </span>
+                <span
+                  v-if="pantry.distance !== undefined"
+                  class="flex items-center gap-1.5 text-[14px] font-semibold text-[var(--green-mid)]"
+                >
+                  <UIcon name="i-lucide-navigation" class="size-3.5" />
+                  {{ pantry.distance.toFixed(1) }} mi away
+                </span>
+              </div>
+
+              <!-- Action buttons -->
+              <div class="flex flex-wrap gap-2.5">
+                <button
+                  type="button"
+                  class="detail-action detail-action--love"
+                  :class="hearted ? 'is-active' : ''"
+                  @click="onHeartClick"
+                >
+                  <UIcon
+                    :name="hearted ? 'i-heroicons-heart-solid' : 'i-heroicons-heart'"
+                    class="size-4"
+                  />
+                  {{ hearted ? 'Loved' : 'Love' }} &middot; {{ localCount }}
+                </button>
+                <button
+                  type="button"
+                  class="detail-action detail-action--follow"
+                  :class="following ? 'is-active' : ''"
+                  @click="following = !following"
+                >
+                  <UIcon
+                    :name="following ? 'i-lucide-bell-off' : 'i-lucide-bell'"
+                    class="size-4"
+                  />
+                  {{ following ? 'Following' : 'Follow Updates' }}
+                </button>
+                <a
+                  v-if="pantry.phone"
+                  class="detail-action"
+                  :href="`tel:${pantry.phone}`"
+                >
+                  <UIcon name="i-lucide-phone" class="size-4" />
+                  Call Now
+                </a>
+                <a
+                  class="detail-action"
+                  :href="mapsUrl"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <UIcon name="i-lucide-navigation" class="size-4" />
+                  Directions
+                </a>
+                <a class="detail-action" :href="reportUrl">
+                  <UIcon name="i-lucide-flag" class="size-4" />
+                  Report Issue
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Two-column body -->
+      <div class="max-w-[1100px] mx-auto px-6 pt-8 pb-16 grid gap-7 items-start lg:grid-cols-[1fr_360px]">
+        <!-- Left column -->
+        <div class="flex flex-col gap-6">
+          <!-- About -->
+          <section v-if="pantry.about" class="detail-card px-7 py-6">
+            <div class="detail-section-title">
+              <span class="detail-section-icon">
+                <UIcon name="i-lucide-info" class="size-4" />
+              </span>
+              <h2 class="font-serif text-[17px] font-bold text-gray-900">About This Pantry</h2>
+            </div>
+            <p class="text-[15px] leading-[1.75] text-gray-600">{{ pantry.about }}</p>
+          </section>
+
+          <!-- Hours & Schedule -->
+          <section class="detail-card px-7 py-6">
+            <div class="detail-section-title">
+              <span class="detail-section-icon">
+                <UIcon name="i-lucide-calendar" class="size-4" />
+              </span>
+              <h2 class="font-serif text-[17px] font-bold text-gray-900">Hours &amp; Schedule</h2>
+            </div>
+
+            <div v-if="schedulesByDay.length > 0">
+              <div
+                v-for="(group, gi) in schedulesByDay"
+                :key="group.day"
+                class="grid grid-cols-[110px_1fr] gap-4 py-3.5 items-start"
+                :class="gi < schedulesByDay.length - 1 ? 'border-b border-gray-100' : ''"
+              >
+                <span
+                  class="schedule-day w-fit text-[12px]"
+                  :style="dayBadgeStyle(group.day)"
+                >{{ group.day.slice(0, 3).toUpperCase() }}</span>
+                <div class="flex flex-col gap-1.5">
+                  <div
+                    v-for="(s, si) in group.slots"
+                    :key="si"
+                    class="flex items-center gap-2.5 flex-wrap"
+                  >
+                    <span class="text-[14px] font-medium text-gray-800">{{ s.start }} – {{ s.end }}</span>
+                    <span
+                      v-if="s.notes"
+                      class="text-[12px] text-gray-600 bg-gray-100 rounded-full px-2.5 py-0.5"
+                    >{{ s.notes }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div
+              v-else
+              class="flex items-center gap-2.5 px-5 py-4 bg-gray-50 rounded-xl border border-gray-100"
+            >
+              <UIcon name="i-lucide-phone" class="size-[15px] text-gray-400" />
+              <span class="text-[14px] text-gray-500">
+                Please call for current schedule information<template v-if="pantry.phone">: {{ pantry.phone }}</template>.
+              </span>
+            </div>
+          </section>
+
+          <!-- Services Offered -->
+          <section class="detail-card px-7 py-6">
+            <div class="detail-section-title">
+              <span class="detail-section-icon">
+                <UIcon name="i-lucide-star" class="size-4" />
+              </span>
+              <h2 class="font-serif text-[17px] font-bold text-gray-900">Services Offered</h2>
+            </div>
+
+            <div
+              v-for="(service, i) in uniqueServices"
+              :key="`${service.name}-${i}`"
+            >
+              <div v-if="i > 0" class="h-px bg-[#f0f4f1] my-5" />
+
+              <div class="flex items-center gap-2 mb-3 flex-wrap">
+                <span class="size-2 rounded-full shrink-0" :class="serviceDotClass(service.category)" />
+                <span class="font-bold text-[15px] text-gray-900">{{ service.name }}</span>
+                <span class="text-[12.5px]" :class="serviceTextClass(service.category)">
+                  {{ serviceProgram(service) }}
+                </span>
+              </div>
+
+              <div
+                v-for="group in serviceSchedulesByDay(service)"
+                :key="group.day"
+                class="grid grid-cols-[88px_1fr] gap-3 py-1.5 pl-4 items-start"
+              >
+                <span
+                  class="schedule-day w-fit"
+                  :style="dayBadgeStyle(group.day)"
+                >{{ group.day.slice(0, 3).toUpperCase() }}</span>
+                <div class="flex flex-col gap-1">
+                  <div
+                    v-for="(s, si) in group.slots"
+                    :key="si"
+                    class="flex items-center gap-2 flex-wrap"
+                  >
+                    <span class="text-[13.5px] font-medium text-gray-800">{{ s.start }} – {{ s.end }}</span>
+                    <span
+                      v-if="s.notes"
+                      class="text-[12px] text-gray-700 bg-gray-100 rounded-full px-2.5 py-0.5"
+                    >{{ s.notes }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                v-if="serviceNoDayNote(service)"
+                class="flex items-center gap-1.5 py-1 pl-4 text-[13px] italic text-gray-500"
+              >
+                <UIcon name="i-lucide-phone" class="size-3.5 text-gray-400" />
+                {{ serviceNoDayNote(service) }}
+              </div>
+
+              <div
+                v-if="serviceFoods(service).length > 0"
+                class="flex flex-wrap gap-1.5 mt-2.5 pl-4"
+              >
+                <span
+                  v-for="food in serviceFoods(service)"
+                  :key="food"
+                  class="food-pill bg-[var(--green-light)]"
+                >
+                  <span class="text-[13px]">{{ foodEmoji(food) }}</span>{{ food }}
+                </span>
+              </div>
+
+              <div
+                v-if="serviceSchedulesByDay(service).length === 0 && !serviceNoDayNote(service) && serviceFoods(service).length === 0"
+                class="pl-4 text-[13px] italic text-gray-400"
+              >
+                Contact pantry for details.
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <!-- Right sidebar -->
+        <div class="flex flex-col gap-5 lg:sticky lg:top-20">
+          <!-- Map card -->
+          <div class="detail-card overflow-hidden">
+            <iframe
+              :src="osmEmbedUrl"
+              class="w-full h-[240px] block border-0"
+              loading="lazy"
+              :title="`Map showing ${pantry.name}`"
+            />
+            <div class="px-4 py-3.5 border-t border-gray-100">
+              <div class="text-[13px] font-semibold text-gray-800 mb-1">{{ pantry.address }}</div>
+              <a
+                :href="mapsUrl"
+                target="_blank"
+                rel="noreferrer"
+                class="text-[12px] font-semibold text-[var(--green-mid)] no-underline inline-flex items-center gap-1"
+              >
+                Get Directions →
+              </a>
+            </div>
+          </div>
+
+          <!-- Contact card -->
+          <div v-if="pantry.phone" class="detail-card p-5">
+            <div class="detail-eyebrow">Contact</div>
+            <a :href="`tel:${pantry.phone}`" class="detail-contact-row mb-3">
+              <span class="detail-contact-icon">
+                <UIcon name="i-lucide-phone" class="size-[15px]" />
+              </span>
+              <span>
+                <span class="block text-[13px] font-semibold text-gray-800">{{ pantry.phone }}</span>
+                <span class="block text-[11px] text-gray-400">Tap to call</span>
+              </span>
+            </a>
+            <a :href="mapsUrl" target="_blank" rel="noreferrer" class="detail-contact-row">
+              <span class="detail-contact-icon">
+                <UIcon name="i-lucide-map-pin" class="size-[15px]" />
+              </span>
+              <span>
+                <span class="block text-[13px] font-semibold text-gray-800">Get Directions</span>
+                <span class="block text-[11px] text-gray-400">Open in Google Maps</span>
+              </span>
+            </a>
+          </div>
+
+          <!-- Available food card -->
+          <div v-if="allFoods.length > 0" class="detail-card p-5">
+            <div class="detail-eyebrow">Available Food</div>
+            <div class="flex flex-wrap gap-1.5">
+              <span
+                v-for="food in allFoods"
+                :key="food"
+                class="food-pill bg-[var(--green-light)]"
+              >
+                <span class="text-[14px]">{{ foodEmoji(food) }}</span>{{ food }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Community card -->
+          <div class="detail-card p-5">
+            <div class="detail-eyebrow">Community</div>
+            <div class="grid grid-cols-2 gap-3">
+              <div class="text-center px-2.5 py-3.5 bg-[#fff1f2] rounded-xl border border-[#fca5a5]">
+                <div class="font-serif text-[22px] font-bold text-[#e11d48]">{{ localCount }}</div>
+                <div class="text-[11px] font-medium text-[#9b1c3a] mt-0.5">
+                  {{ localCount === 1 ? 'love' : 'loves' }}
+                </div>
+              </div>
+              <div class="text-center px-2.5 py-3.5 bg-[var(--green-light)] rounded-xl border border-[#b8e8cc]">
+                <div class="font-serif text-[22px] font-bold text-[var(--green-dark)]">—</div>
+                <div class="text-[11px] font-medium text-[#1a6038] mt-0.5">followers</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Not found / error -->
+    <div v-else class="text-center px-6 py-24 max-w-[460px] mx-auto">
+      <div class="w-16 h-16 bg-yellow-50 rounded-full flex items-center justify-center mx-auto mb-4">
+        <UIcon name="i-lucide-map-pin-off" class="size-7 text-yellow-500" />
+      </div>
+      <h1 class="font-serif text-[24px] font-semibold text-gray-900 mb-2.5">Pantry not found</h1>
+      <p class="text-gray-500 text-[15px] leading-relaxed mb-6">
+        We couldn't find this pantry. It may have been removed, or the link may be incorrect.
+      </p>
+      <button type="button" class="btn-primary" @click="goBack">Back to results</button>
+    </div>
+  </div>
+</template>

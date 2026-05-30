@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { Pantry } from '@pantry-finder/types';
 import { PantryService } from '../services/pantry.service';
 import { GetPantriesRequestDto } from '../models/dto/pantry.request.dto';
 import { GetPantriesResponseDto } from '../models/dto/pantry.response.dto';
@@ -53,6 +54,32 @@ export class PantryController {
       res.status(200).json(responseDto);
     } catch (error) {
       console.error('Error fetching pantries:', error);
+      res.status(500).json({ error: 'Internal server error.' });
+    }
+  }
+
+  public async getPantryById(
+    req: Request<{ id: string }>,
+    res: Response<Pantry | { error: string }>
+  ): Promise<void> {
+    try {
+      const { id } = req.params;
+
+      if (!id || typeof id !== 'string') {
+        res.status(400).json({ error: 'Pantry id is required.' });
+        return;
+      }
+
+      const pantry = await pantryService.getPantryById(id);
+
+      if (pantry === null) {
+        res.status(404).json({ error: 'Pantry not found.' });
+        return;
+      }
+
+      res.status(200).json(pantry);
+    } catch (error) {
+      console.error('Error fetching pantry:', error);
       res.status(500).json({ error: 'Internal server error.' });
     }
   }

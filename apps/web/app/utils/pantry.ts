@@ -64,6 +64,50 @@ export function getUniqueServices(services: Service[]): Service[] {
   return out
 }
 
+// Builds a URL-friendly slug from arbitrary text (lowercase, accents stripped,
+// non-alphanumerics collapsed to single hyphens).
+export function slugify(text: string): string {
+  return text
+    .normalize('NFKD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
+// Canonical route param for a pantry: "<slug>-<id>". The Firestore id stays the
+// authoritative part — it's a hyphen-free auto-id, so it can always be recovered
+// as the segment after the final hyphen (see extractPantryId).
+export function pantrySlugId(pantry: { name: string; id: string }): string {
+  const slug = slugify(pantry.name)
+  return slug ? `${slug}-${pantry.id}` : pantry.id
+}
+
+// Single source of truth for links to the detail page.
+export function pantryPath(pantry: { name: string; id: string }): string {
+  return `/pantries/${pantrySlugId(pantry)}`
+}
+
+// Recovers the pantry id from a route param. Handles canonical "<slug>-<id>"
+// params and legacy bare-"<id>" params. Assumes ids contain no hyphens.
+export function extractPantryId(param: string): string {
+  const i = param.lastIndexOf('-')
+  return i === -1 ? param : param.slice(i + 1)
+}
+
+export function dayColor(day: string): string {
+  const colors: Record<string, string> = {
+    Monday: '#2563eb',
+    Tuesday: '#7c3aed',
+    Wednesday: '#0891b2',
+    Thursday: '#059669',
+    Friday: '#ca8a04',
+    Saturday: '#dc2626',
+    Sunday: '#9333ea',
+  }
+  return colors[day] ?? '#0e7490'
+}
+
 export function serviceColorClasses(category: string): string {
   if (category === 'Food Program') return 'bg-[var(--green-light)] text-[var(--green-dark)] border-[var(--green-soft)]'
   if (category === 'Healthcare Screenings/Referrals') return 'bg-blue-50 text-blue-700 border-blue-200'

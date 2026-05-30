@@ -1,5 +1,5 @@
 import { GeoPoint } from 'firebase-admin/firestore';
-import { geoFirestore } from '../config/firebase';
+import { db, geoFirestore } from '../config/firebase';
 import { GeoService } from './geo.service';
 import { mapPantryDocumentToDto } from '../utils/pantry.mapper';
 import { milesToKilometers } from '../utils/distance.util';
@@ -71,5 +71,25 @@ export class PantryService {
         nextPage: hasNextPage ? dto.page + 1 : undefined,
       }
     };
+  }
+
+  /**
+   * Fetches a single pantry by its Firestore document id.
+   * A plain Firestore doc lookup is enough here — GeoFirestore stores pantry
+   * fields flat (with only an extra `g` geohash field that the mapper ignores),
+   * so this returns the same shape as the search path without the geo wrapper.
+   * Matches how hearts.service reads this collection.
+   * @param id The pantry document id.
+   * @returns The mapped pantry DTO, or null if no document exists.
+   */
+  public async getPantryById(id: string): Promise<Pantry | null> {
+    const snapshot = await db.collection('pantries').doc(id).get();
+
+    if (!snapshot.exists) {
+      return null;
+    }
+
+    const data = snapshot.data() as PantryDocument;
+    return mapPantryDocumentToDto(data, snapshot.id);
   }
 }

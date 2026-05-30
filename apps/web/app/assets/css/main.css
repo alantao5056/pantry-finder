@@ -476,6 +476,20 @@
     color: #e11d48;
   }
 
+  /* Primary "View Details" action — solid green, pushed to the end of the
+     action strip. Reuses .popup-action sizing; only color + emphasis differ. */
+  .popup-action--primary,
+  .popup-action--primary:hover {
+    margin-left: auto;
+    border-color: var(--green-soft);
+    background: var(--green-light);
+    color: var(--green-dark);
+    font-weight: 600;
+  }
+  .popup-action--primary:hover {
+    border-color: var(--green-dark);
+  }
+
   .pantry-popup-body {
     display: flex;
     flex-direction: column;
@@ -578,6 +592,118 @@
     font-size: 12px;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  /* ──────────────────────────────────────────────────────────
+     Pantry detail page (pages/pantries/[id].vue)
+     ────────────────────────────────────────────────────────── */
+
+  /* White surface used for every content + sidebar card. */
+  .detail-card {
+    border: 1px solid var(--border-soft);
+    border-radius: 16px;
+    background: white;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.04);
+  }
+
+  /* Section heading (icon chip + serif title) inside left-column cards. */
+  .detail-section-title {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin-bottom: 18px;
+  }
+  .detail-section-icon {
+    display: flex;
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #c8e8d4;
+    border-radius: 9px;
+    background: var(--green-light);
+    color: var(--green-mid);
+  }
+
+  /* Uppercase eyebrow label used by the sidebar cards. */
+  .detail-eyebrow {
+    margin-bottom: 14px;
+    color: var(--text-soft);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+
+  /* Hero action buttons (Love / Call / Directions / Report). The base is a
+     white outlined pill; modifiers recolor it. Hover runs the unified
+     green-wash group below unless a modifier opts out. */
+  .detail-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 10px;
+    background: white;
+    padding: 9px 20px;
+    color: #374151;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+  }
+  .detail-action:hover {
+    border-color: var(--green-soft);
+    background: var(--green-light);
+    color: var(--green-dark);
+  }
+
+  .detail-action--primary,
+  .detail-action--primary:hover {
+    border-color: var(--green-dark);
+    background: var(--green-dark);
+    color: white;
+    font-weight: 600;
+  }
+  .detail-action--primary:hover {
+    background: #1a6038;
+  }
+
+  .detail-action--love.is-active,
+  .detail-action--love.is-active:hover {
+    border-color: #fca5a5;
+    background: #fff1f2;
+    color: #e11d48;
+  }
+
+  /* Follow is UI-only for now (no backend). The active state mirrors the
+     unified green-wash so a "Following" toggle reads as selected. */
+  .detail-action--follow.is-active,
+  .detail-action--follow.is-active:hover {
+    border-color: var(--green-soft);
+    background: var(--green-light);
+    color: var(--green-dark);
+  }
+
+  /* Sidebar contact rows (phone / directions) — icon tile + label stack. */
+  .detail-contact-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+  }
+  .detail-contact-icon {
+    display: flex;
+    width: 34px;
+    height: 34px;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #c8e8d4;
+    border-radius: 9px;
+    background: var(--green-light);
+    color: var(--green-dark);
   }
 }
 

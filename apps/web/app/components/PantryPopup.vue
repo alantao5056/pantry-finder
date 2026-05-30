@@ -71,19 +71,6 @@ const dayBadgeStyle = (day: string) => {
   }
 }
 
-const dayColor = (day: string) => {
-  const colors: Record<string, string> = {
-    Monday: '#2563eb',
-    Tuesday: '#7c3aed',
-    Wednesday: '#0891b2',
-    Thursday: '#059669',
-    Friday: '#ca8a04',
-    Saturday: '#dc2626',
-    Sunday: '#9333ea',
-  }
-  return colors[day] ?? '#0e7490'
-}
-
 const serviceTheme = (category: string) => {
   if (category === 'Food Program') {
     return {
@@ -231,6 +218,14 @@ onBeforeUnmount(() => {
               <UIcon name="i-lucide-flag" class="size-[15px]" />
               Report
             </a>
+            <NuxtLink
+              class="popup-action popup-action--primary"
+              :to="pantryPath(pantry)"
+              @click="close"
+            >
+              View Details
+              <UIcon name="i-lucide-arrow-right" class="size-[15px]" />
+            </NuxtLink>
           </div>
         </header>
 
