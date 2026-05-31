@@ -85,14 +85,18 @@ onUnmounted(() => {
 
     <!-- ══ HERO ══ -->
     <section
-      class="relative overflow-hidden flex flex-col justify-center"
+      class="relative flex flex-col justify-center"
       style="background: linear-gradient(160deg, #f0faf4 0%, #fdfbf7 55%, #faf5ec 100%); min-height: 92vh;"
     >
-      <!-- Large decorative word -->
-      <div
-        class="absolute font-serif font-semibold leading-none select-none pointer-events-none"
-        style="top: 8%; right: -2%; font-size: clamp(100px, 15vw, 200px); color: rgba(30,122,71,0.045);"
-      >food</div>
+      <!-- Decorative-word clip layer: scopes overflow-hidden to just the word, so
+           the hero itself doesn't clip the SearchBar dropdown overflowing below it. -->
+      <div class="absolute inset-0 overflow-hidden pointer-events-none">
+        <!-- Large decorative word -->
+        <div
+          class="absolute font-serif font-semibold leading-none select-none"
+          style="top: 8%; right: -2%; font-size: clamp(100px, 15vw, 200px); color: rgba(30,122,71,0.045);"
+        >food</div>
+      </div>
 
       <div class="max-w-[1120px] mx-auto py-[20px] pb-[100px] relative z-[1]">
         <div class="max-w-[760px]">
