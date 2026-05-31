@@ -168,7 +168,7 @@ defineExpose({
       v-if="isOpen && (isLoading || suggestions.length > 0 || query.trim().length >= 3)"
       id="address-suggestions"
       role="listbox"
-      class="absolute top-full left-0 right-0 mt-2 bg-white border border-cream-dark rounded-2xl overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.18)] z-20 text-left"
+      class="absolute top-full left-0 right-0 mt-2 bg-white border border-[var(--border-soft)] rounded-2xl overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.18)] z-20 text-left"
     >
       <!-- Loading -->
       <div
@@ -197,7 +197,7 @@ defineExpose({
           :aria-selected="i === activeIndex"
           :class="[
             'flex items-start gap-2.5 px-4 py-2.5 cursor-pointer transition-colors',
-            i === activeIndex ? 'bg-cream' : 'hover:bg-cream-muted',
+            i === activeIndex ? 'bg-[var(--green-wash)]' : '',
           ]"
           @mousedown.prevent="select(s)"
           @mouseenter="activeIndex = i"

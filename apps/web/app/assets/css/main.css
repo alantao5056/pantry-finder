@@ -28,6 +28,7 @@
   --green-mid: #2d9a5f;
   --green-soft: #82d4a7;
   --green-light: #f8fcf9;
+  --green-wash: #f0faf4;
   --cream-light: #fdfbf7;
   --cream-warm: #faf5ec;
   --soil: #c4a882;
@@ -704,6 +705,56 @@
     border-radius: 9px;
     background: var(--green-light);
     color: var(--green-dark);
+  }
+
+  /* List ⇄ Map view toggle (search results header). Default → white pill;
+     .is-active → light-green wash with forest border + text. */
+  .view-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-mid);
+    background: white;
+    border: 1.5px solid var(--border-soft);
+    border-radius: 9px;
+    cursor: pointer;
+    transition: border-color 0.18s ease, background-color 0.18s ease, color 0.18s ease;
+  }
+  .view-toggle-btn:hover {
+    border-color: var(--green-soft);
+    background: var(--green-light);
+    color: var(--green-dark);
+  }
+  .view-toggle-btn.is-active {
+    border-color: var(--green-dark);
+    background: var(--green-light);
+    color: var(--green-dark);
+  }
+
+  /* Compact location card in the map-view side list (PantryMapList).
+     .is-selected → orange ring matching the highlighted map pin. */
+  .map-list-card {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 14px 16px;
+    background: white;
+    border: 1.5px solid var(--border-soft);
+    border-radius: 14px;
+    cursor: pointer;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .map-list-card:hover {
+    border-color: var(--green-dark);
+    box-shadow: 0 4px 16px rgba(30, 122, 71, 0.08);
+  }
+  .map-list-card.is-selected {
+    border-color: #f97316;
+    box-shadow: 0 4px 16px rgba(249, 115, 22, 0.12);
   }
 }
 

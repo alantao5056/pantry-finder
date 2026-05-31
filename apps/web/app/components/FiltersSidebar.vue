@@ -40,7 +40,7 @@ const clearAll = () => emit('update:modelValue', { ...EMPTY_FILTERS })
 <template>
   <aside
     :class="[
-      'bg-white border-r border-cream-dark overflow-hidden',
+      'bg-white border-r border-[var(--border-soft)] overflow-hidden',
       // Mobile: absolute drawer within the parent (main row)
       'absolute inset-y-0 left-0 w-[272px] z-40 transition-transform duration-300 ease-in-out',
       open ? 'translate-x-0' : '-translate-x-full',

@@ -102,14 +102,6 @@ const reportUrl = computed(() => {
   const body = `Pantry: ${pantry.value.name}\nAddress: ${pantry.value.address}\n\nWhat needs to be corrected?\n`
   return `mailto:support@pantryfinder.org?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
 })
-const osmEmbedUrl = computed(() => {
-  if (!pantry.value) return ''
-  const { latitude: lat, longitude: lon } = pantry.value
-  const d = 0.008
-  const bbox = `${lon - d},${lat - d},${lon + d},${lat + d}`
-  return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat},${lon}`
-})
-
 // Group the top-level pantry schedules by day, in week order.
 const schedulesByDay = computed(() => {
   if (!pantry.value) return []
@@ -422,12 +414,17 @@ const serviceTextClass = (category: string) => {
         <div class="flex flex-col gap-5 lg:sticky lg:top-20">
           <!-- Map card -->
           <div class="detail-card overflow-hidden">
-            <iframe
-              :src="osmEmbedUrl"
-              class="w-full h-[240px] block border-0"
-              loading="lazy"
-              :title="`Map showing ${pantry.name}`"
-            />
+            <ClientOnly>
+              <PantryMap
+                :pantries="[pantry]"
+                :enable-select="false"
+                :scroll-wheel-zoom="false"
+                class="w-full h-[240px] block"
+              />
+              <template #fallback>
+                <div class="w-full h-[240px] bg-[var(--green-light)]" />
+              </template>
+            </ClientOnly>
             <div class="px-4 py-3.5 border-t border-gray-100">
               <div class="text-[13px] font-semibold text-gray-800 mb-1">{{ pantry.address }}</div>
               <a

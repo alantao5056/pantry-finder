@@ -3,7 +3,7 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   ssr: true,
   modules: ['@nuxt/ui'],
-  css: ['~/assets/css/main.css'],
+  css: ['~/assets/css/main.css', 'leaflet/dist/leaflet.css'],
   devtools: { enabled: true },
   runtimeConfig: {
     public: {

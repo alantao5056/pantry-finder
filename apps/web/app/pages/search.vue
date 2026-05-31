@@ -53,6 +53,11 @@ const rateLimited = ref<RateLimitState | null>(null)
 const lastSearchSucceeded = ref(false)
 const selectedPantry = ref<Pantry | null>(null)
 
+// List ⇄ map view. `mapSelectedId` is the pin highlighted on the map (distinct
+// from `selectedPantry`, which drives the detail popup modal).
+const viewMode = ref<'list' | 'map'>('list')
+const mapSelectedId = ref<string | null>(null)
+
 // Each runSearch call gets a fresh token. Older in-flight requests check
 // against the latest token and abort their writes if they're stale.
 let searchToken = 0
@@ -142,6 +147,7 @@ const runSearch = async () => {
   const token = ++searchToken
   loadedPantries.value = []
   selectedPantry.value = null
+  mapSelectedId.value = null
   currentPage.value = 0
   hasMorePages.value = false
   error.value = null
@@ -210,12 +216,24 @@ const clearFilters = () => {
 const refresh = () => runSearch()
 
 const isLocationNotFound = computed(() => locationNotFound.value)
+
+// The results grid (and thus the map) only shows once a search produced at least
+// one matching pantry and isn't in an error / rate-limit / not-found state.
+const resultsReady = computed(() =>
+  !locationNotFound.value
+  && !rateLimited.value
+  && !(error.value && loadedPantries.value.length === 0)
+  && filteredPantries.value.length > 0,
+)
+// When true, the content area becomes a non-scrolling flex row so the map can
+// fill its height and the side list scrolls on its own.
+const mapActive = computed(() => viewMode.value === 'map' && resultsReady.value)
 </script>
 
 <template>
-  <div class="h-[calc(100dvh-4rem-1px)] flex flex-col bg-cream font-sans overflow-hidden">
+  <div class="h-[calc(100dvh-4rem-1px)] flex flex-col bg-[var(--cream-light)] font-sans overflow-hidden">
     <!-- Top search bar -->
-    <div class="bg-white border-b border-cream-dark px-6 py-3 flex-shrink-0">
+    <div class="bg-white border-b border-[var(--border-soft)] px-6 py-3 flex-shrink-0">
       <div class="max-w-[1120px] mx-auto">
         <SearchBar
           :initial-address="initialLocation"
@@ -251,7 +269,7 @@ const isLocationNotFound = computed(() => locationNotFound.value)
         <ClientOnly>
           <div
             v-if="route.query.location"
-            class="bg-white border-b border-cream-dark px-6 py-3.5 flex items-center gap-3 flex-wrap flex-shrink-0"
+            class="bg-white border-b border-[var(--border-soft)] px-6 py-3.5 flex items-center gap-3 flex-wrap flex-shrink-0"
           >
             <button
               type="button"
@@ -265,6 +283,29 @@ const isLocationNotFound = computed(() => locationNotFound.value)
                 class="ml-1 bg-forest-700 text-white rounded-full text-[11px] font-semibold px-1.5"
               >{{ activeFilterCount }}</span>
             </button>
+
+            <!-- List / Map view toggle -->
+            <div class="flex items-center gap-1.5">
+              <button
+                type="button"
+                class="view-toggle-btn"
+                :class="{ 'is-active': viewMode === 'list' }"
+                @click="viewMode = 'list'"
+              >
+                <UIcon name="i-lucide-list" class="size-[14px]" />
+                List
+              </button>
+              <button
+                type="button"
+                class="view-toggle-btn"
+                :class="{ 'is-active': viewMode === 'map' }"
+                @click="viewMode = 'map'"
+              >
+                <UIcon name="i-lucide-map" class="size-[14px]" />
+                Map
+              </button>
+            </div>
+
             <span class="text-[14px] text-gray-500">
               <template v-if="pending && loadedPantries.length === 0">
                 Searching for pantries…
@@ -285,15 +326,19 @@ const isLocationNotFound = computed(() => locationNotFound.value)
           <template #fallback>
             <div
               v-if="route.query.location"
-              class="bg-white border-b border-cream-dark px-6 py-3.5 text-[14px] text-gray-500 flex-shrink-0"
+              class="bg-white border-b border-[var(--border-soft)] px-6 py-3.5 text-[14px] text-gray-500 flex-shrink-0"
             >
               Searching for pantries…
             </div>
           </template>
         </ClientOnly>
 
-        <!-- Scrollable list area -->
-        <div class="flex-1 overflow-y-auto">
+        <!-- Scrollable list area (becomes a flex row in map view so the map
+             fills its height and the side list scrolls independently) -->
+        <div
+          class="flex-1 min-h-0"
+          :class="mapActive ? 'flex overflow-hidden' : 'overflow-y-auto'"
+        >
           <!-- No location yet -->
           <div
             v-if="!route.query.location"
@@ -389,9 +434,9 @@ const isLocationNotFound = computed(() => locationNotFound.value)
               >Clear Filters</button>
             </div>
 
-            <!-- Results grid -->
+            <!-- Results: list grid -->
             <div
-              v-else
+              v-else-if="viewMode === 'list'"
               class="px-6 py-5"
             >
               <div
@@ -411,6 +456,26 @@ const isLocationNotFound = computed(() => locationNotFound.value)
               >
                 <UIcon name="i-lucide-loader-2" class="size-4 animate-spin text-forest-500" />
                 <span>Loading more pantries…</span>
+              </div>
+            </div>
+
+            <!-- Results: map view (map + compact side list) -->
+            <div
+              v-else
+              class="flex-1 flex min-h-0 w-full"
+            >
+              <PantryMap
+                :pantries="filteredPantries"
+                :selected-id="mapSelectedId"
+                class="flex-1 min-w-0"
+                @select="selectedPantry = $event"
+              />
+              <div class="hidden md:block w-[300px] shrink-0 overflow-y-auto border-l border-[var(--border-soft)] bg-[var(--cream-light)]">
+                <PantryMapList
+                  :pantries="filteredPantries"
+                  :selected-id="mapSelectedId"
+                  @select="mapSelectedId = $event"
+                />
               </div>
             </div>
 
