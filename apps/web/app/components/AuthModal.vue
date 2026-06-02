@@ -3,6 +3,7 @@ const api = useApi()
 const { open, tab, hide } = useAuthModal()
 const { fetchMe } = useAuth()
 const { fetchHearts } = useHearts()
+const { renderGoogleButton, enabled: googleEnabled } = useGoogleAuth()
 
 const email = ref('')
 const password = ref('')
@@ -11,6 +12,7 @@ const lastName = ref('')
 const error = ref<string | null>(null)
 const submitting = ref(false)
 const showPassword = ref(false)
+const googleBtn = ref<HTMLElement | null>(null)
 
 const submitLabel = computed(() => {
   if (submitting.value) {
@@ -40,8 +42,33 @@ function close() {
   hide()
 }
 
-watch(open, (isOpen) => {
-  if (!isOpen) resetForm()
+async function onGoogleCredential(idToken: string) {
+  error.value = null
+  submitting.value = true
+  try {
+    await api('/auth/google', { method: 'POST', body: { idToken } })
+    close()
+    await fetchMe()
+    await fetchHearts()
+  } catch (err: any) {
+    error.value = err?.data?.error ?? 'Google sign-in failed'
+  } finally {
+    submitting.value = false
+  }
+}
+
+// The Google button container only exists while the modal is open (v-if), so
+// (re)render it each time the modal opens.
+watch(open, async (isOpen) => {
+  if (!isOpen) {
+    resetForm()
+    return
+  }
+  if (!googleEnabled) return
+  await nextTick()
+  if (googleBtn.value) {
+    await renderGoogleButton(googleBtn.value, onGoogleCredential)
+  }
 })
 
 function onKeydown(e: KeyboardEvent) {
@@ -120,6 +147,12 @@ async function onSubmit() {
               {{ tab === 'login' ? 'Sign in to save pantries & leave reviews' : 'Free forever — no strings attached' }}
             </p>
           </div>
+
+          <!-- Google sign-in -->
+          <template v-if="googleEnabled">
+            <div ref="googleBtn" class="flex justify-center [color-scheme:light]" />
+            <div class="or-divider">or</div>
+          </template>
 
           <!-- Form -->
           <form class="flex flex-col gap-3" @submit.prevent="onSubmit">

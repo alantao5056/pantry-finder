@@ -50,12 +50,14 @@ jobs:
             COOKIE_DOMAIN=pantryfinder.org
             API_NINJAS_KEY=${{ secrets.API_NINJAS_KEY }}
             GEOCODIO_API_KEY=${{ secrets.GEOCODIO_API_KEY }}
+            GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
             EOF
 
             cd ${{ secrets.REMOTE_TARGET }}/apps/web
 
             cat > .env.production << 'EOF'
             NUXT_PUBLIC_API_BASE=${{ secrets.NUXT_PUBLIC_API_BASE }}
+            NUXT_PUBLIC_GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
             EOF
             
             # Install only production dependencies on the server

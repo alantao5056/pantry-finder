@@ -11,6 +11,7 @@ function required(name: string): string {
 export const JWT_SECRET = required('JWT_SECRET');
 export const JWT_EXPIRES_IN = '1h';
 export const COOKIE_NAME = 'session';
+export const GOOGLE_CLIENT_ID = required('GOOGLE_CLIENT_ID');
 
 export const cookieOptions = (): CookieOptions => ({
   httpOnly: true,

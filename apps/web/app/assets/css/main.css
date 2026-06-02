@@ -242,6 +242,26 @@
     border-color: var(--green-dark);
   }
 
+  /* "or" separator between the Google button and the email/password form
+     (AuthModal). Centered label flanked by hairline rules. */
+  .or-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 4px 0;
+    color: var(--text-soft);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+  }
+  .or-divider::before,
+  .or-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #e5ede8;
+  }
+
   /* Search wrap — focus state is unified with the green-wash hover group below. */
   .search-wrap {
     border-color: var(--border-input);

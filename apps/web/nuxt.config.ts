@@ -10,6 +10,7 @@ export default defineNuxtConfig({
       apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:8080',
       photonBase: process.env.NUXT_PUBLIC_PHOTON_BASE || '',
       geonamesUser: process.env.NUXT_PUBLIC_GEONAMES_USER || '',
+      googleClientId: process.env.NUXT_PUBLIC_GOOGLE_CLIENT_ID || '',
     },
   },
   app: {
@@ -21,6 +22,9 @@ export default defineNuxtConfig({
           rel: 'stylesheet',
           href: 'https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap',
         },
+      ],
+      script: [
+        { src: 'https://accounts.google.com/gsi/client', async: true, defer: true },
       ],
     },
   },

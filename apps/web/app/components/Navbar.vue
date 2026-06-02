@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const { show } = useAuthModal()
-const { isLoggedIn, initials, logout } = useAuth()
+const { user, isLoggedIn, initials, logout } = useAuth()
 const { fetchHearts } = useHearts()
 
 const onLogout = async () => {
@@ -50,7 +50,15 @@ const navLinks = [
       <!-- Auth -->
       <div class="flex items-center gap-2">
         <template v-if="isLoggedIn">
+          <img
+            v-if="user?.picture"
+            :src="user.picture"
+            alt="Account"
+            referrerpolicy="no-referrer"
+            class="w-[34px] h-[34px] rounded-full object-cover"
+          />
           <div
+            v-else
             class="w-[34px] h-[34px] rounded-full flex items-center justify-center text-[12px] font-semibold"
             style="background: #dcf4e6; color: var(--green-dark);"
             aria-label="Account"

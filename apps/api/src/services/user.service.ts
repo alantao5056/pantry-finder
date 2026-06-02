@@ -21,6 +21,15 @@ export interface UserProfile {
   email: string;
   firstName: string;
   lastName: string;
+  picture?: string;
+}
+
+export interface GoogleProfile {
+  email: string;
+  firstName: string;
+  lastName: string;
+  googleId: string;
+  picture?: string;
 }
 
 export class UserService {
@@ -33,12 +42,12 @@ export class UserService {
   public async getUserProfile(email: string): Promise<UserProfile | null> {
     const user = await this.getUserByEmail(email);
     if (!user) return null;
-    return { email: user.email, firstName: user.firstName, lastName: user.lastName };
+    return { email: user.email, firstName: user.firstName, lastName: user.lastName, picture: user.picture };
   }
 
   public async verifyUser(email: string, password: string): Promise<VerifyUserResult> {
     const user = await this.getUserByEmail(email);
-    if (!user) {
+    if (!user || !user.passwordHash) {
       return { success: false };
     }
 
@@ -79,5 +88,42 @@ export class UserService {
     }
 
     return { success: true, user };
+  }
+
+  public async findOrCreateGoogleUser(profile: GoogleProfile): Promise<UserDocument> {
+    const { email, firstName, lastName, googleId, picture } = profile;
+    const docRef = db.collection(USERS_COLLECTION).doc(email);
+
+    const existing = await this.getUserByEmail(email);
+    if (existing) {
+      // Link the Google identity to the existing account if not already stored,
+      // and keep the cached profile photo fresh on each sign-in.
+      const updates: Partial<UserDocument> = {};
+      if (existing.googleId !== googleId) updates.googleId = googleId;
+      if (picture && existing.picture !== picture) updates.picture = picture;
+
+      if (Object.keys(updates).length === 0) return existing;
+
+      const now = Timestamp.now();
+      updates.updatedAt = now;
+      await docRef.update(updates);
+      return { ...existing, ...updates };
+    }
+
+    const now = Timestamp.now();
+    const user: UserDocument = {
+      email,
+      firstName,
+      lastName,
+      googleId,
+      provider: 'google',
+      createdAt: now,
+      updatedAt: now,
+    };
+    // Firestore rejects undefined fields, so only set picture when present.
+    if (picture) user.picture = picture;
+
+    await docRef.set(user);
+    return user;
   }
 }

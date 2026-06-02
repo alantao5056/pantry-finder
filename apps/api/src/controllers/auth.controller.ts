@@ -1,7 +1,9 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
+import { OAuth2Client } from 'google-auth-library';
 import {
   COOKIE_NAME,
+  GOOGLE_CLIENT_ID,
   JWT_EXPIRES_IN,
   JWT_SECRET,
   cookieOptions,
@@ -21,6 +23,12 @@ interface RegisterBody {
   lastName?: unknown;
   password?: unknown;
 }
+
+interface GoogleLoginBody {
+  idToken?: unknown;
+}
+
+const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
 export class AuthController {
   private readonly userService = new CachedUserService(new UserService());
@@ -69,6 +77,41 @@ export class AuthController {
     }
 
     const token = jwt.sign({ sub: email }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+    res.cookie(COOKIE_NAME, token, cookieOptions());
+    res.status(200).json({ ok: true });
+  }
+
+  public async googleLogin(req: Request<{}, {}, GoogleLoginBody>, res: Response): Promise<void> {
+    const { idToken } = req.body ?? {};
+
+    if (typeof idToken !== 'string') {
+      res.status(400).json({ error: 'idToken is required.' });
+      return;
+    }
+
+    let payload;
+    try {
+      const ticket = await googleClient.verifyIdToken({ idToken, audience: GOOGLE_CLIENT_ID });
+      payload = ticket.getPayload();
+    } catch {
+      res.status(401).json({ error: 'Invalid Google token' });
+      return;
+    }
+
+    if (!payload || !payload.email || payload.email_verified !== true) {
+      res.status(401).json({ error: 'Invalid Google token' });
+      return;
+    }
+
+    const user = await this.userService.findOrCreateGoogleUser({
+      email: payload.email,
+      firstName: payload.given_name ?? '',
+      lastName: payload.family_name ?? '',
+      googleId: payload.sub,
+      picture: payload.picture,
+    });
+
+    const token = jwt.sign({ sub: user.email }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
     res.cookie(COOKIE_NAME, token, cookieOptions());
     res.status(200).json({ ok: true });
   }
