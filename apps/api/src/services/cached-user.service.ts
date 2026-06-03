@@ -1,5 +1,5 @@
 import { LRUCache } from "lru-cache";
-import { UserService, UserProfile, GoogleProfile } from "./user.service";
+import { UserService, UserProfile, GoogleProfile, MicrosoftProfile } from "./user.service";
 
 export class CachedUserService {
   private readonly inner: UserService;
@@ -39,6 +39,13 @@ export class CachedUserService {
 
   public async findOrCreateGoogleUser(profile: GoogleProfile) {
     const user = await this.inner.findOrCreateGoogleUser(profile);
+    // The cached profile may now be stale (name/link backfill); drop it.
+    this.profileCache.delete(profile.email);
+    return user;
+  }
+
+  public async findOrCreateMicrosoftUser(profile: MicrosoftProfile) {
+    const user = await this.inner.findOrCreateMicrosoftUser(profile);
     // The cached profile may now be stale (name/link backfill); drop it.
     this.profileCache.delete(profile.email);
     return user;

@@ -6,12 +6,14 @@ export interface UserDocument {
   lastName: string;
   passwordHash?: string;
   googleId?: string;
+  microsoftId?: string;
   // Google profile photo URL, refreshed on each Google sign-in. Absent for
-  // password accounts (and Google accounts with no photo).
+  // password accounts, Microsoft accounts (no photo in the ID token), and
+  // Google accounts with no photo.
   picture?: string;
-  // Set to 'google' for accounts created via Google sign-in. Unset (undefined)
-  // means the account was created with custom email/password.
-  provider?: 'google';
+  // Set to the provider an account was created with via social sign-in. Unset
+  // (undefined) means the account was created with custom email/password.
+  provider?: 'google' | 'microsoft';
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }

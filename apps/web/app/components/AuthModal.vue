@@ -4,6 +4,7 @@ const { open, tab, hide } = useAuthModal()
 const { fetchMe } = useAuth()
 const { fetchHearts } = useHearts()
 const { renderGoogleButton, enabled: googleEnabled } = useGoogleAuth()
+const { signIn: microsoftSignIn, enabled: microsoftEnabled } = useMicrosoftAuth()
 
 const email = ref('')
 const password = ref('')
@@ -52,6 +53,23 @@ async function onGoogleCredential(idToken: string) {
     await fetchHearts()
   } catch (err: any) {
     error.value = err?.data?.error ?? 'Google sign-in failed'
+  } finally {
+    submitting.value = false
+  }
+}
+
+async function onMicrosoftClick() {
+  error.value = null
+  submitting.value = true
+  try {
+    const idToken = await microsoftSignIn()
+    if (!idToken) return
+    await api('/auth/microsoft', { method: 'POST', body: { idToken } })
+    close()
+    await fetchMe()
+    await fetchHearts()
+  } catch (err: any) {
+    error.value = err?.data?.error ?? 'Microsoft sign-in failed'
   } finally {
     submitting.value = false
   }
@@ -148,9 +166,26 @@ async function onSubmit() {
             </p>
           </div>
 
-          <!-- Google sign-in -->
-          <template v-if="googleEnabled">
-            <div ref="googleBtn" class="flex justify-center [color-scheme:light]" />
+          <!-- Social sign-in -->
+          <template v-if="googleEnabled || microsoftEnabled">
+            <div class="flex flex-col gap-2.5">
+              <div v-if="googleEnabled" ref="googleBtn" class="flex justify-center [color-scheme:light]" />
+              <button
+                v-if="microsoftEnabled"
+                type="button"
+                :disabled="submitting"
+                class="btn-social"
+                @click="onMicrosoftClick"
+              >
+                <svg width="18" height="18" viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <rect x="1" y="1" width="9" height="9" fill="#f25022" />
+                  <rect x="11" y="1" width="9" height="9" fill="#7fba00" />
+                  <rect x="1" y="11" width="9" height="9" fill="#00a4ef" />
+                  <rect x="11" y="11" width="9" height="9" fill="#ffb900" />
+                </svg>
+                Continue with Microsoft
+              </button>
+            </div>
             <div class="or-divider">or</div>
           </template>
 

@@ -51,6 +51,7 @@ jobs:
             API_NINJAS_KEY=${{ secrets.API_NINJAS_KEY }}
             GEOCODIO_API_KEY=${{ secrets.GEOCODIO_API_KEY }}
             GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
+            MICROSOFT_CLIENT_ID=${{ secrets.MICROSOFT_CLIENT_ID }}
             EOF
 
             cd ${{ secrets.REMOTE_TARGET }}/apps/web
@@ -58,6 +59,7 @@ jobs:
             cat > .env.production << 'EOF'
             NUXT_PUBLIC_API_BASE=${{ secrets.NUXT_PUBLIC_API_BASE }}
             NUXT_PUBLIC_GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
+            NUXT_PUBLIC_MICROSOFT_CLIENT_ID=${{ secrets.MICROSOFT_CLIENT_ID }}
             EOF
             
             # Install only production dependencies on the server

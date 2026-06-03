@@ -12,6 +12,9 @@ export const JWT_SECRET = required('JWT_SECRET');
 export const JWT_EXPIRES_IN = '1h';
 export const COOKIE_NAME = 'session';
 export const GOOGLE_CLIENT_ID = required('GOOGLE_CLIENT_ID');
+export const MICROSOFT_CLIENT_ID = required('MICROSOFT_CLIENT_ID');
+// 'common' covers both personal Microsoft accounts and work/school (Azure AD) accounts.
+export const MICROSOFT_TENANT = 'common';
 
 export const cookieOptions = (): CookieOptions => ({
   httpOnly: true,

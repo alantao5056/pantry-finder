@@ -32,6 +32,13 @@ export interface GoogleProfile {
   picture?: string;
 }
 
+export interface MicrosoftProfile {
+  email: string;
+  firstName: string;
+  lastName: string;
+  microsoftId: string;
+}
+
 export class UserService {
   private async getUserByEmail(email: string): Promise<UserDocument | null> {
     const doc = await db.collection(USERS_COLLECTION).doc(email).get();
@@ -122,6 +129,36 @@ export class UserService {
     };
     // Firestore rejects undefined fields, so only set picture when present.
     if (picture) user.picture = picture;
+
+    await docRef.set(user);
+    return user;
+  }
+
+  public async findOrCreateMicrosoftUser(profile: MicrosoftProfile): Promise<UserDocument> {
+    const { email, firstName, lastName, microsoftId } = profile;
+    const docRef = db.collection(USERS_COLLECTION).doc(email);
+
+    const existing = await this.getUserByEmail(email);
+    if (existing) {
+      // Link the Microsoft identity to the existing account if not already stored.
+      if (existing.microsoftId === microsoftId) return existing;
+
+      const now = Timestamp.now();
+      const updates: Partial<UserDocument> = { microsoftId, updatedAt: now };
+      await docRef.update(updates);
+      return { ...existing, ...updates };
+    }
+
+    const now = Timestamp.now();
+    const user: UserDocument = {
+      email,
+      firstName,
+      lastName,
+      microsoftId,
+      provider: 'microsoft',
+      createdAt: now,
+      updatedAt: now,
+    };
 
     await docRef.set(user);
     return user;

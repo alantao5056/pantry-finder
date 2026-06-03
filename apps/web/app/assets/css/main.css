@@ -242,7 +242,38 @@
     border-color: var(--green-dark);
   }
 
-  /* "or" separator between the Google button and the email/password form
+  /* Social sign-in button (AuthModal "Continue with Microsoft"). Matches the
+     GIS-rendered Google button's pill shape and height so the two stack evenly.
+     Google renders its own button, so this class is only used by Microsoft. */
+  .btn-social {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    height: 40px;
+    padding: 0 16px;
+    border-radius: 100px;
+    background: white;
+    border: 1px solid var(--border-input);
+    color: var(--text-dark);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+  }
+  .btn-social:hover {
+    background: #f8fafb;
+    border-color: var(--green-dark);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  }
+  .btn-social:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* "or" separator between the social buttons and the email/password form
      (AuthModal). Centered label flanked by hairline rules. */
   .or-divider {
     display: flex;

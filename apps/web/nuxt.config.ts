@@ -11,6 +11,7 @@ export default defineNuxtConfig({
       photonBase: process.env.NUXT_PUBLIC_PHOTON_BASE || '',
       geonamesUser: process.env.NUXT_PUBLIC_GEONAMES_USER || '',
       googleClientId: process.env.NUXT_PUBLIC_GOOGLE_CLIENT_ID || '',
+      microsoftClientId: process.env.NUXT_PUBLIC_MICROSOFT_CLIENT_ID || '',
     },
   },
   app: {
