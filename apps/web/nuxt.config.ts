@@ -12,11 +12,14 @@ export default defineNuxtConfig({
       geonamesUser: process.env.NUXT_PUBLIC_GEONAMES_USER || '',
       googleClientId: process.env.NUXT_PUBLIC_GOOGLE_CLIENT_ID || '',
       microsoftClientId: process.env.NUXT_PUBLIC_MICROSOFT_CLIENT_ID || '',
+      siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'https://pantryfinder.org',
     },
   },
   app: {
     head: {
+      htmlAttrs: { lang: 'en' },
       link: [
+        { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
         { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
         { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
         {

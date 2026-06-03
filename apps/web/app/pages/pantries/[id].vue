@@ -26,9 +26,11 @@ if (pantry.value && String(route.params.id) !== pantrySlugId(pantry.value)) {
   await navigateTo(pantryPath(pantry.value), { redirectCode: 301, replace: true })
 }
 
-const pageTitle = computed(() =>
-  pantry.value ? `${pantry.value.name} — PantryFinder` : 'Pantry — PantryFinder',
-)
+// Bare title for the document <title> — the global titleTemplate appends
+// " — PantryFinder". ogTitle is set separately to the fully-qualified string
+// since titleTemplate does not apply to Open Graph tags.
+const bareTitle = computed(() => (pantry.value ? pantry.value.name : 'Pantry'))
+const pageTitle = computed(() => `${bareTitle.value} — PantryFinder`)
 const metaDescription = computed(() => {
   if (!pantry.value) return 'Find free food pantries near you on PantryFinder.'
   if (pantry.value.about) return pantry.value.about.slice(0, 160)
@@ -43,7 +45,7 @@ const canonicalUrl = computed(() => {
 })
 
 useSeoMeta({
-  title: () => pageTitle.value,
+  title: () => bareTitle.value,
   description: () => metaDescription.value,
   ogTitle: () => pageTitle.value,
   ogDescription: () => metaDescription.value,
