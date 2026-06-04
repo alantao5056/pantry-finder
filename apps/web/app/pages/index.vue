@@ -88,14 +88,17 @@ onUnmounted(() => {
       class="relative flex flex-col justify-center"
       style="background: linear-gradient(160deg, #f0faf4 0%, #fdfbf7 55%, #faf5ec 100%); min-height: 92vh;"
     >
-      <!-- Decorative-word clip layer: scopes overflow-hidden to just the word, so
+      <!-- Decorative watermark clip layer: scopes overflow-hidden to just the logo, so
            the hero itself doesn't clip the SearchBar dropdown overflowing below it. -->
       <div class="absolute inset-0 overflow-hidden pointer-events-none">
-        <!-- Large decorative word -->
-        <div
-          class="absolute font-serif font-semibold leading-none select-none"
-          style="top: 8%; right: -2%; font-size: clamp(100px, 15vw, 200px); color: rgba(30,122,71,0.045);"
-        >food</div>
+        <!-- Large faded brand-mark watermark, bleeding off the top-right corner -->
+        <img
+          src="/logo.png"
+          alt=""
+          aria-hidden="true"
+          class="absolute select-none"
+          style="top: -6%; right: -8%; width: clamp(360px, 42vw, 640px); opacity: 0.07;"
+        />
       </div>
 
       <div class="max-w-[1120px] mx-auto py-[20px] pb-[100px] relative z-[1]">
