@@ -37,7 +37,7 @@ const columns = [
         <!-- Brand column -->
         <div>
           <div class="flex items-center gap-2 mb-4">
-            <span class="text-[22px]">🌿</span>
+            <img src="/logo.png" alt="PantryFinder logo" class="w-9 h-9 object-contain" />
             <span class="font-serif font-semibold text-[18px] text-white">PantryFinder</span>
           </div>
           <p class="text-[14px] leading-[1.75] font-light max-w-[280px]" style="color: rgba(255,255,255,0.45);">

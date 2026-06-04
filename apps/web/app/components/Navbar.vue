@@ -25,7 +25,7 @@ const navLinks = [
 
       <!-- Logo -->
       <NuxtLink to="/" class="flex items-center gap-2 no-underline">
-        <span class="text-[24px]">🌿</span>
+        <img src="/logo.png" alt="PantryFinder logo" class="w-10 h-10 object-contain" />
         <span class="font-serif font-semibold text-[20px]" style="color: var(--text-dark);">PantryFinder</span>
       </NuxtLink>
 

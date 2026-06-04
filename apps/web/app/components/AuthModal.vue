@@ -156,14 +156,16 @@ async function onSubmit() {
 
         <div class="px-8 pt-9 pb-8">
           <!-- Header -->
-          <div class="text-center mb-7">
-            <span class="block mb-2.5 text-[36px]">{{ tab === 'login' ? '🌿' : '🌱' }}</span>
-            <h2 class="font-serif font-semibold text-[22px] mb-1.5" style="color: var(--text-dark);">
-              {{ tab === 'login' ? 'Welcome back' : 'Join the community' }}
-            </h2>
-            <p class="text-[14px]" style="color: var(--text-soft);">
-              {{ tab === 'login' ? 'Sign in to save pantries & leave reviews' : 'Free forever — no strings attached' }}
-            </p>
+          <div class="flex items-center gap-4 mb-7">
+            <img src="/logo.png" alt="PantryFinder logo" class="w-16 h-16 object-contain shrink-0" />
+            <div>
+              <h2 class="font-serif font-semibold text-[22px] mb-1.5" style="color: var(--text-dark);">
+                {{ tab === 'login' ? 'Welcome back' : 'Join the community' }}
+              </h2>
+              <p class="text-[14px]" style="color: var(--text-soft);">
+                {{ tab === 'login' ? 'Sign in to save pantries & leave reviews' : 'Free forever — no strings attached' }}
+              </p>
+            </div>
           </div>
 
           <!-- Social sign-in -->

@@ -106,7 +106,7 @@ onUnmounted(() => {
             class="inline-flex items-center gap-2 bg-white border-[1.5px] rounded-[100px] px-4 py-1.5 mb-7"
             style="border-color: #b8e8cc; box-shadow: 0 2px 12px rgba(30,122,71,0.08);"
           >
-            <span class="text-[14px]">🌱</span>
+            <img src="/shopping-bag.png" alt="" class="w-6 h-6 object-contain" />
             <span class="text-[13px] font-semibold tracking-wide" style="color: var(--green-dark);">
               Free • Community-Powered • Always Up-to-Date
             </span>
@@ -372,7 +372,7 @@ onUnmounted(() => {
     <!-- ══ CTA BAND ══ -->
     <section class="cta-band py-[90px] px-6">
       <div class="max-w-[700px] mx-auto text-center relative z-[1]">
-        <span class="block mb-5 text-[48px]">🌿</span>
+        <img src="/logo.png" alt="" class="w-20 h-20 object-contain mx-auto mb-5" />
         <h2
           class="reveal font-serif font-semibold text-white mb-4"
           style="font-size: clamp(30px, 4vw, 54px); letter-spacing: -0.02em; line-height: 1.1;"
