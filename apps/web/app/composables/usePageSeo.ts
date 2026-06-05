@@ -33,6 +33,11 @@ export const usePageSeo = (opts: PageSeoOptions) => {
     ogDescription: () => toValue(opts.description),
     ogType: 'website',
     ogUrl: () => canonicalUrl.value,
+    // Twitter shares mirror the OG tags. 'summary' (not 'summary_large_image')
+    // because the site emits no og:image yet.
+    twitterCard: 'summary',
+    twitterTitle: () => ogTitle.value,
+    twitterDescription: () => toValue(opts.description),
   })
   useHead(() => ({
     // Home page passes brandSuffix:false → drop the global suffix for this route.
