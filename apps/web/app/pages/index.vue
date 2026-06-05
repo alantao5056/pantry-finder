@@ -1,6 +1,14 @@
 <script setup lang="ts">
 const { show } = useAuthModal()
 
+usePageSeo({
+  title: 'PantryFinder - Find Free Food Pantries Near You',
+  description:
+    'Find free food pantries near you with PantryFinder. Search 1,400+ pantries across 60+ cities by address — see hours, available food, and contact info.',
+  path: '/',
+  brandSuffix: false,
+})
+
 const STATS = [
   { number: '1,400+', label: 'Food Pantries Listed', icon: '🏪' },
   { number: '60+',    label: 'Cities Covered',        icon: '📍' },

@@ -40,6 +40,13 @@ const route = useRoute()
 const router = useRouter()
 const api = useApi()
 
+usePageSeo({
+  title: 'Search Food Pantries',
+  description:
+    'Search free food pantries near your address. Filter by food type and distance, then view hours, available food, and contact details for each location.',
+  path: '/search',
+})
+
 const initialLocation = String(route.query.location ?? '')
 const initialRadius = String(route.query.radius ?? '5')
 

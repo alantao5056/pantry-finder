@@ -26,35 +26,15 @@ if (pantry.value && String(route.params.id) !== pantrySlugId(pantry.value)) {
   await navigateTo(pantryPath(pantry.value), { redirectCode: 301, replace: true })
 }
 
-// Bare title for the document <title> — the global titleTemplate appends
-// " — PantryFinder". ogTitle is set separately to the fully-qualified string
-// since titleTemplate does not apply to Open Graph tags.
-const bareTitle = computed(() => (pantry.value ? pantry.value.name : 'Pantry'))
-const pageTitle = computed(() => `${bareTitle.value} — PantryFinder`)
-const metaDescription = computed(() => {
-  if (!pantry.value) return 'Find free food pantries near you on PantryFinder.'
-  if (pantry.value.about) return pantry.value.about.slice(0, 160)
-  return `Hours, available food, and contact info for ${pantry.value.name} at ${pantry.value.address}.`
+usePageSeo({
+  title: () => (pantry.value ? pantry.value.name : 'Pantry'),
+  description: () => {
+    if (!pantry.value) return 'Find free food pantries near you on PantryFinder.'
+    if (pantry.value.about) return pantry.value.about.slice(0, 160)
+    return `Hours, available food, and contact info for ${pantry.value.name} at ${pantry.value.address}.`
+  },
+  path: () => (pantry.value ? pantryPath(pantry.value) : `/pantries/${route.params.id}`),
 })
-// Resolve the request origin once, in setup — useRequestURL() must not be called
-// lazily inside the computed (head resolution runs it outside the setup context).
-const origin = useRequestURL().origin
-const canonicalUrl = computed(() => {
-  const path = pantry.value ? pantryPath(pantry.value) : `/pantries/${route.params.id}`
-  return `${origin}${path}`
-})
-
-useSeoMeta({
-  title: () => bareTitle.value,
-  description: () => metaDescription.value,
-  ogTitle: () => pageTitle.value,
-  ogDescription: () => metaDescription.value,
-  ogType: 'website',
-  ogUrl: () => canonicalUrl.value,
-})
-useHead(() => ({
-  link: [{ rel: 'canonical', href: canonicalUrl.value }],
-}))
 
 const { isLoggedIn } = useAuth()
 const { show: showAuthModal } = useAuthModal()
