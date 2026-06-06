@@ -19,7 +19,8 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import * as admin from 'firebase-admin';
+import { initializeApp, cert, type Credential } from 'firebase-admin/app';
+import { getFirestore, type Timestamp } from 'firebase-admin/firestore';
 import dotenv from 'dotenv';
 import { pantrySlugId } from '@pantry-finder/shared';
 
@@ -40,16 +41,17 @@ const STATIC_PATHS = ['/', '/search'];
 // (e.g. after adding city landing pages), split into a sitemap index.
 const SITEMAP_URL_LIMIT = 50_000;
 
-function loadCredential(): admin.credential.Credential {
+function loadCredential(): Credential {
   const argPath = process.argv[2];
   const credentialPath = argPath || process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
   if (credentialPath) {
-    return admin.credential.cert(path.resolve(credentialPath));
+    return cert(path.resolve(credentialPath));
   }
   const credentialJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
   if (credentialJson) {
     const jsonStr = Buffer.from(credentialJson, 'base64').toString('utf8');
-    return admin.credential.cert(JSON.parse(jsonStr));
+    const json = JSON.parse(jsonStr);
+    return cert(json);
   }
   throw new Error(
     'No credentials. Pass a service-account JSON path as the first argument, or set ' +
@@ -73,8 +75,8 @@ interface UrlEntry {
 
 function toLastmod(updatedAt: unknown): string | undefined {
   // Firestore Timestamps expose toDate(); guard against missing/legacy values.
-  if (updatedAt && typeof (updatedAt as admin.firestore.Timestamp).toDate === 'function') {
-    return (updatedAt as admin.firestore.Timestamp).toDate().toISOString();
+  if (updatedAt && typeof (updatedAt as Timestamp).toDate === 'function') {
+    return (updatedAt as Timestamp).toDate().toISOString();
   }
   return undefined;
 }
@@ -95,8 +97,8 @@ function renderSitemap(entries: UrlEntry[]): string {
 }
 
 async function main(): Promise<void> {
-  admin.initializeApp({ credential: loadCredential() });
-  const db = admin.firestore();
+  initializeApp({ credential: loadCredential() });
+  const db = getFirestore();
 
   const snapshot = await db.collection('pantries').select('name', 'updatedAt').get();
 
