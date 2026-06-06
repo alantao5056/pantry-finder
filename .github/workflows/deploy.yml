@@ -25,6 +25,13 @@ jobs:
           npm install
           npm run build
 
+      - name: Drop default sitemap (uploaded manually, see tools/sitemap/)
+        # nuxt build bakes apps/web/public/sitemap.xml into .output/public/. That committed
+        # file only has the static routes; the real sitemap (static + per-pantry URLs) is
+        # generated out-of-band and scp'd to the server by hand. Remove the baked default
+        # so the additive scp below doesn't overwrite the manually-uploaded one.
+        run: rm -f apps/web/.output/public/sitemap.xml
+
       - name: Copy files to Ubuntu server
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -35,10 +42,10 @@ jobs:
           source: "package.json,package-lock.json,apps/api/dist,apps/api/package.json,apps/api/package-lock.json,apps/web/.output,apps/web/package.json,apps/web/package-lock.json"
           target: ${{ secrets.REMOTE_TARGET }}
           # NOTE: scp-action is additive (no --delete), so files already on the
-          # server that aren't in `source` are preserved. apps/web/.output/public/
-          # sitemap.xml is generated out-of-band (see tools/sitemap/) and uploaded
-          # manually — it is NOT built by this pipeline. Do not add a clean/rm step
-          # against .output/public or the sitemap will be lost on deploy.
+          # server that aren't in `source` are preserved. The build's default
+          # sitemap.xml is deleted in the step above precisely so it stays out of
+          # `source` here, letting the manually-uploaded sitemap (see tools/sitemap/)
+          # survive. Do NOT re-add sitemap.xml to `source`.
 
       - name: Install Production Dependencies & Restart REST API and Web App
         uses: appleboy/ssh-action@v1.0.3

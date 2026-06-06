@@ -2,9 +2,12 @@
  * Standalone sitemap generator for PantryFinder.
  *
  * Connects directly to (prod) Firestore, reads every pantry, and writes an XML
- * sitemap covering the static routes plus one canonical URL per pantry. Run it
- * locally and scp the output onto the server's web `.output/public/sitemap.xml`
- * (the deploy pipeline preserves it — see .github/workflows/deploy.yml).
+ * sitemap. The static routes are NOT generated here — they live in the committed
+ * apps/web/public/sitemap.xml (which Nuxt serves by default). This tool COPIES that
+ * file as its base and appends one canonical <url> per pantry before the closing
+ * </urlset>. Run it locally and scp the output onto the server's web
+ * `.output/public/sitemap.xml`; the deploy pipeline intentionally does NOT ship a
+ * sitemap.xml, so the manually-uploaded one survives — see .github/workflows/deploy.yml.
  *
  * As a side effect it also refreshes the landing-page stats (total pantries +
  * distinct cities) in apps/web/app/data/site-stats.json, which the web app reads
@@ -41,9 +44,11 @@ const OUT_PATH = process.env.SITEMAP_OUT
 // in one source of truth (apps/web/app/data/site-stats.json) instead of index.vue.
 const STATS_PATH = path.resolve(here, '../../apps/web/app/data/site-stats.json');
 
-// Static, indexable routes. Dev-only routes (e.g. /test-geo) are intentionally
-// omitted; auth is modal-based so there are no standalone auth pages to list.
-const STATIC_PATHS = ['/', '/search'];
+// Committed base sitemap that Nuxt bakes into the build and serves by default. It holds
+// the static, indexable routes (/, /search) — the single source of truth for them. This
+// tool copies it verbatim and appends the per-pantry URLs, so the static routes are never
+// duplicated here.
+const PUBLIC_SITEMAP_PATH = path.resolve(here, '../../apps/web/public/sitemap.xml');
 
 // Google's sitemap limit is 50,000 URLs per file. With ~1,400 pantries we are far
 // under it, so a single file is correct. If the dataset ever approaches this
@@ -125,19 +130,39 @@ function updateSiteStats(pantryCount: number, cityCount: number): void {
   fs.writeFileSync(STATS_PATH, `${JSON.stringify(json, null, 2)}\n`, 'utf8');
 }
 
-function renderSitemap(entries: UrlEntry[]): string {
-  const urls = entries
+function renderUrlEntries(entries: UrlEntry[]): string {
+  return entries
     .map((e) => {
       const lastmod = e.lastmod ? `\n    <lastmod>${e.lastmod}</lastmod>` : '';
       return `  <url>\n    <loc>${escapeXml(e.loc)}</loc>${lastmod}\n  </url>`;
     })
     .join('\n');
-  return (
-    '<?xml version="1.0" encoding="UTF-8"?>\n' +
-    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
-    `${urls}\n` +
-    '</urlset>\n'
-  );
+}
+
+// Copy the committed public sitemap (which carries the static routes) and splice the
+// pantry <url> blocks in just before the closing </urlset>. We guard the base file the
+// same way updateSiteStats guards the stats file: fail loudly rather than silently emit a
+// sitemap missing its static routes or its closing tag.
+function appendPantryUrls(entries: UrlEntry[]): string {
+  if (!fs.existsSync(PUBLIC_SITEMAP_PATH)) {
+    throw new Error(
+      `Base sitemap not found at ${PUBLIC_SITEMAP_PATH}. The web app commits it ` +
+        '(apps/web/public/sitemap.xml) as the served default — did it move or get deleted?',
+    );
+  }
+  const base = fs.readFileSync(PUBLIC_SITEMAP_PATH, 'utf8');
+  const closing = '</urlset>';
+  const idx = base.lastIndexOf(closing);
+  if (idx === -1) {
+    throw new Error(
+      `Base sitemap at ${PUBLIC_SITEMAP_PATH} has no closing </urlset> tag — ` +
+        'cannot append pantry URLs. Is it valid XML?',
+    );
+  }
+  // Trim trailing whitespace from the copied head (the committed file has no trailing
+  // newline) so the spliced result stays consistently formatted.
+  const head = base.slice(0, idx).replace(/\s*$/, '\n');
+  return `${head}${renderUrlEntries(entries)}\n${closing}\n`;
 }
 
 async function main(): Promise<void> {
@@ -149,7 +174,9 @@ async function main(): Promise<void> {
     .select('name', 'updatedAt', 'city', 'state')
     .get();
 
-  const entries: UrlEntry[] = STATIC_PATHS.map((p) => ({ loc: `${SITE_URL}${p}` }));
+  // Only pantry URLs are generated here; the static routes come from the copied base
+  // sitemap (PUBLIC_SITEMAP_PATH) in appendPantryUrls below.
+  const entries: UrlEntry[] = [];
 
   // Distinct cities, keyed by "city|state" so same-named cities in different states
   // (Springfield, MA vs Springfield, IL) are counted separately, while a single city's
@@ -175,9 +202,10 @@ async function main(): Promise<void> {
     );
   }
 
-  fs.writeFileSync(OUT_PATH, renderSitemap(entries), 'utf8');
+  fs.writeFileSync(OUT_PATH, appendPantryUrls(entries), 'utf8');
   console.log(
-    `Wrote ${entries.length} URLs (${snapshot.size} pantries + ${STATIC_PATHS.length} static) to ${OUT_PATH}`,
+    `Wrote ${snapshot.size} pantry URLs appended to the static routes from ` +
+      `${PUBLIC_SITEMAP_PATH} → ${OUT_PATH}`,
   );
 
   updateSiteStats(snapshot.size, cities.size);
