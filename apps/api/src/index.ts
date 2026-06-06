@@ -5,6 +5,7 @@ import cookieParser from 'cookie-parser';
 import pantryRoutes from './routes/pantry.routes';
 import authRoutes from './routes/auth.routes';
 import heartsRoutes from './routes/hearts.routes';
+import { trackApiUsage } from './middleware/analytics.middleware';
 
 const app = express();
 app.set('trust proxy', 'loopback');
@@ -17,6 +18,7 @@ const webOrigin = process.env.NODE_ENV === 'production'
 app.use(cors({ origin: webOrigin, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
+app.use(trackApiUsage);
 
 app.get('/health', (req: Request, res: Response) => {
   res.json({ status: 'ok', message: 'Pantry Finder API is running' });
