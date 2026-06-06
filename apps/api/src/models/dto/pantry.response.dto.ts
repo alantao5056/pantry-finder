@@ -1,4 +1,4 @@
-import { Pantry } from '@pantry-finder/types';
+import { Pantry } from '@pantry-finder/shared';
 
 export interface Pagination {
   page: number;

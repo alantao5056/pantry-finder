@@ -1,4 +1,4 @@
-import { Pantry, Schedule, Service } from '@pantry-finder/types';
+import { Pantry, Schedule, Service } from '@pantry-finder/shared';
 import { PantryDocument, ScheduleSchema, ServiceSchema } from '../models/pantry.schema';
 import { kilometersToMiles } from '../utils/distance.util';
 

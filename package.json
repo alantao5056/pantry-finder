@@ -3,16 +3,18 @@
   "private": true,
   "workspaces": [
     "apps/*",
-    "packages/*"
+    "packages/*",
+    "tools/*"
   ],
   "scripts": {
     "build": "npm run build --workspaces --if-present",
-    "build:types": "npm run build -w packages/types",
+    "build:shared": "npm run build -w packages/shared",
     "build:api": "npm run build -w apps/api",
     "build:web": "npm run build -w apps/web",
     "dev:api": "npm run dev -w apps/api",
     "dev:web": "npm run dev -w apps/web",
-    "dev": "concurrently -n api,web -c blue,green \"npm:dev:api\" \"npm:dev:web\""
+    "dev": "concurrently -n api,web -c blue,green \"npm:dev:api\" \"npm:dev:web\"",
+    "sitemap": "npm run build:shared && npm run generate -w @pantry-finder/sitemap"
   },
   "dependencies": {
     "concurrently": "^9.2.1"

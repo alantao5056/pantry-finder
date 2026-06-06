@@ -1,7 +1,8 @@
 {
-  "name": "@pantry-finder/types",
+  "name": "@pantry-finder/shared",
   "version": "1.0.0",
-  "description": "Shared TypeScript interfaces for Pantry Finder",
+  "description": "Shared types and utilities for Pantry Finder",
+  "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {

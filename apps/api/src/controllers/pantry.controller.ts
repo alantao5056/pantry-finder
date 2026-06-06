@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { Pantry } from '@pantry-finder/types';
+import { Pantry } from '@pantry-finder/shared';
 import { PantryService } from '../services/pantry.service';
 import { GetPantriesRequestDto } from '../models/dto/pantry.request.dto';
 import { GetPantriesResponseDto } from '../models/dto/pantry.response.dto';

@@ -4,3 +4,4 @@ dist/
 .env
 tmp
 tsconfig.tsbuildinfo
+sitemap.xml

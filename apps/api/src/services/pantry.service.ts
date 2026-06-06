@@ -4,7 +4,7 @@ import { GeoService } from './geo.service';
 import { mapPantryDocumentToDto } from '../utils/pantry.mapper';
 import { milesToKilometers } from '../utils/distance.util';
 import { PantryDocument } from '../models/pantry.schema';
-import { Pantry } from '@pantry-finder/types';
+import { Pantry } from '@pantry-finder/shared';
 import { PAGE_SIZE } from '../config/constants';
 import { GetPantriesRequestDto } from '../models/dto/pantry.request.dto';
 import { GetPantriesResponseDto } from '../models/dto/pantry.response.dto';

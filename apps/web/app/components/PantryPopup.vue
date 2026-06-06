@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Pantry, Schedule, Service } from '@pantry-finder/types'
+import type { Pantry, Schedule, Service } from '@pantry-finder/shared'
 
 const props = defineProps<{
   pantry: Pantry

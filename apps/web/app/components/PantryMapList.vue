@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Pantry } from '@pantry-finder/types'
+import type { Pantry } from '@pantry-finder/shared'
 
 defineProps<{
   pantries: Pantry[]

@@ -1,4 +1,8 @@
-import type { Pantry, Schedule, Service } from '@pantry-finder/types'
+import type { Pantry, Schedule, Service } from '@pantry-finder/shared'
+// `pantrySlugId` lives in @pantry-finder/shared so the sitemap generator and the site
+// emit byte-identical canonical URLs. Used here only to build/validate detail-page URLs;
+// callers go through pantryPath() / isCanonicalPantryParam() rather than the raw helper.
+import { pantrySlugId } from '@pantry-finder/shared'
 
 const WEEKDAYS = [
   'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday',
@@ -64,25 +68,6 @@ export function getUniqueServices(services: Service[]): Service[] {
   return out
 }
 
-// Builds a URL-friendly slug from arbitrary text (lowercase, accents stripped,
-// non-alphanumerics collapsed to single hyphens).
-export function slugify(text: string): string {
-  return text
-    .normalize('NFKD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-}
-
-// Canonical route param for a pantry: "<slug>-<id>". The Firestore id stays the
-// authoritative part — it's a hyphen-free auto-id, so it can always be recovered
-// as the segment after the final hyphen (see extractPantryId).
-export function pantrySlugId(pantry: { name: string; id: string }): string {
-  const slug = slugify(pantry.name)
-  return slug ? `${slug}-${pantry.id}` : pantry.id
-}
-
 // Single source of truth for links to the detail page.
 export function pantryPath(pantry: { name: string; id: string }): string {
   return `/pantries/${pantrySlugId(pantry)}`
@@ -93,6 +78,13 @@ export function pantryPath(pantry: { name: string; id: string }): string {
 export function extractPantryId(param: string): string {
   const i = param.lastIndexOf('-')
   return i === -1 ? param : param.slice(i + 1)
+}
+
+// True when the route param is already the canonical "<slug>-<id>" for this pantry.
+// The detail page uses this to decide whether to 301-redirect a bare-id or stale-slug
+// param to pantryPath(), without reaching for the slug helper directly.
+export function isCanonicalPantryParam(param: string, pantry: { name: string; id: string }): boolean {
+  return param === pantrySlugId(pantry)
 }
 
 export function dayColor(day: string): string {

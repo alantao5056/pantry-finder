@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Pantry, Service } from '@pantry-finder/types'
+import type { Pantry, Service } from '@pantry-finder/shared'
 
 const DAY_ORDER = [
   'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday',
@@ -22,7 +22,7 @@ const { data: pantry, pending, error } = await useAsyncData(
 // Upgrade bare-id or stale-slug URLs to the canonical slug URL with a real 301
 // (avoids duplicate-content). Only runs for found pantries; the canonical param
 // is stable, so this can't loop.
-if (pantry.value && String(route.params.id) !== pantrySlugId(pantry.value)) {
+if (pantry.value && !isCanonicalPantryParam(String(route.params.id), pantry.value)) {
   await navigateTo(pantryPath(pantry.value), { redirectCode: 301, replace: true })
 }
 

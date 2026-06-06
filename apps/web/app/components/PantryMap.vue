@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Pantry } from '@pantry-finder/types'
+import type { Pantry } from '@pantry-finder/shared'
 import type { DivIcon, Map as LeafletMap, Marker } from 'leaflet'
 
 const props = withDefaults(defineProps<{

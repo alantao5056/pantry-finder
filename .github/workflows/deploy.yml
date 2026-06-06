@@ -34,6 +34,11 @@ jobs:
           # Copy the built output, package.json, and lockfile
           source: "package.json,package-lock.json,apps/api/dist,apps/api/package.json,apps/api/package-lock.json,apps/web/.output,apps/web/package.json,apps/web/package-lock.json"
           target: ${{ secrets.REMOTE_TARGET }}
+          # NOTE: scp-action is additive (no --delete), so files already on the
+          # server that aren't in `source` are preserved. apps/web/.output/public/
+          # sitemap.xml is generated out-of-band (see tools/sitemap/) and uploaded
+          # manually — it is NOT built by this pipeline. Do not add a clean/rm step
+          # against .output/public or the sitemap will be lost on deploy.
 
       - name: Install Production Dependencies & Restart REST API and Web App
         uses: appleboy/ssh-action@v1.0.3
