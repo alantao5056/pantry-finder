@@ -9,11 +9,13 @@ usePageSeo({
   brandSuffix: false,
 })
 
+// pantryCountDisplay / cityCountDisplay come from app/utils/siteStats.ts (auto-imported),
+// which reads app/data/site-stats.json — regenerated from Firestore by `npm run sitemap`.
 const STATS = [
-  { number: '1,400+', label: 'Food Pantries Listed', icon: '🏪' },
-  { number: '60+',    label: 'Cities Covered',        icon: '📍' },
-  { number: '28K+',   label: 'Families Served Monthly', icon: '👨‍👩‍👧‍👦' },
-  { number: '100%',   label: 'Free, Always',          icon: '💚' },
+  { number: pantryCountDisplay, label: 'Food Pantries Listed',   icon: '🏪' },
+  { number: cityCountDisplay,   label: 'Cities Covered',         icon: '📍' },
+  { number: '28K+',             label: 'Families Served Monthly', icon: '👨‍👩‍👧‍👦' },
+  { number: '100%',             label: 'Free, Always',           icon: '💚' },
 ]
 
 const STEPS = [
