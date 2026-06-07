@@ -36,6 +36,17 @@ usePageSeo({
   path: () => (pantry.value ? pantryPath(pantry.value) : `/pantries/${route.params.id}`),
 })
 
+// Per-pantry LocalBusiness JSON-LD. The url/@id matches the canonical detail URL
+// (same origin usePageSeo uses for the canonical link) so the node is self-consistent.
+const origin = useRequestURL().origin
+useHead(() => {
+  if (!pantry.value) return {}
+  const ld = buildPantryJsonLd(pantry.value, `${origin}${pantryPath(pantry.value)}`)
+  return {
+    script: [{ type: 'application/ld+json', innerHTML: JSON.stringify(ld) }],
+  }
+})
+
 const { isLoggedIn } = useAuth()
 const { show: showAuthModal } = useAuthModal()
 const { isHearted, toggleHeart } = useHearts()

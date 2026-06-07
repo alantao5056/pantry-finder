@@ -87,6 +87,84 @@ export function isCanonicalPantryParam(param: string, pantry: { name: string; id
   return param === pantrySlugId(pantry)
 }
 
+// --- LocalBusiness structured data (JSON-LD) ----------------------------------
+
+const SCHEMA_DAY_OF_WEEK: Record<string, string> = {
+  Monday: 'https://schema.org/Monday',
+  Tuesday: 'https://schema.org/Tuesday',
+  Wednesday: 'https://schema.org/Wednesday',
+  Thursday: 'https://schema.org/Thursday',
+  Friday: 'https://schema.org/Friday',
+  Saturday: 'https://schema.org/Saturday',
+  Sunday: 'https://schema.org/Sunday',
+}
+
+// Converts a display time like "9:00 AM" to schema.org's expected 24-hour "HH:MM".
+// Returns null for anything that doesn't parse cleanly so callers can drop it
+// rather than emit a wrong (and penalizable) opening time.
+export function formatTime24(t: string): string | null {
+  const m = t.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i)
+  if (!m) return null
+  let h = Number(m[1])
+  const min = Number(m[2])
+  if (h > 23 || min > 59) return null
+  const period = m[3]?.toUpperCase()
+  if (period === 'PM' && h !== 12) h += 12
+  if (period === 'AM' && h === 12) h = 0
+  return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`
+}
+
+interface OpeningHoursSpecification {
+  '@type': 'OpeningHoursSpecification'
+  dayOfWeek: string
+  opens: string
+  closes: string
+}
+
+// Builds schema.org OpeningHoursSpecification entries from pantry schedules.
+// Every-other-week slots are skipped: a weekly spec can't express them, and
+// claiming weekly hours the pantry doesn't keep would be inaccurate.
+export function pantryOpeningHours(schedules: Schedule[]): OpeningHoursSpecification[] {
+  const out: OpeningHoursSpecification[] = []
+  for (const s of schedules) {
+    if (s.isEveryOtherWeek === 'true') continue
+    const dayOfWeek = SCHEMA_DAY_OF_WEEK[s.weekDay]
+    if (!dayOfWeek) continue
+    const opens = formatTime24(s.start)
+    const closes = formatTime24(s.end)
+    if (!opens || !closes) continue
+    out.push({ '@type': 'OpeningHoursSpecification', dayOfWeek, opens, closes })
+  }
+  return out
+}
+
+// Per-pantry LocalBusiness JSON-LD for rich results and local/map visibility.
+// `url` is the canonical detail-page URL (also used as the node @id). The address
+// is emitted as plain text — the API flattens its parts into one string, and
+// re-splitting it would risk mislabeling fields.
+export function buildPantryJsonLd(pantry: Pantry, url: string): Record<string, unknown> {
+  const ld: Record<string, unknown> = {
+    '@context': 'https://schema.org',
+    '@type': 'LocalBusiness',
+    '@id': `${url}#localbusiness`,
+    name: pantry.name,
+    url,
+    address: pantry.address,
+  }
+  if (Number.isFinite(pantry.latitude) && Number.isFinite(pantry.longitude)) {
+    ld.geo = {
+      '@type': 'GeoCoordinates',
+      latitude: pantry.latitude,
+      longitude: pantry.longitude,
+    }
+  }
+  if (pantry.phone) ld.telephone = pantry.phone
+  if (pantry.about) ld.description = pantry.about
+  const hours = pantryOpeningHours(pantry.schedules)
+  if (hours.length) ld.openingHoursSpecification = hours
+  return ld
+}
+
 export function dayColor(day: string): string {
   const colors: Record<string, string> = {
     Monday: '#2563eb',
