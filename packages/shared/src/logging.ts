@@ -29,6 +29,15 @@ export interface RequestLogEntry {
 
 const LOG_NAME = 'pantry-finder-requests';
 
+// Common crawler/bot User-Agent markers. The UA is self-reported, so this flags
+// honest bots (search engines, social unfurlers, headless tooling) but cannot
+// catch scrapers that spoof a browser UA — adequate for log triage.
+const BOT_UA = /bot|crawl|spider|slurp|mediapartners|facebookexternalhit|embedly|bingpreview|whatsapp|telegrambot|headless|lighthouse/i;
+
+function isBot(userAgent?: string): boolean {
+  return !!userAgent && BOT_UA.test(userAgent);
+}
+
 type ServiceAccount = {
   client_email?: string;
   private_key?: string;
@@ -95,6 +104,7 @@ export function logRequest(entry: RequestLogEntry): void {
     labels: {
       source: entry.source,
       user: entry.user ?? 'anonymous',
+      bot: String(isBot(entry.userAgent)),
     },
     // Native HTTP fields → the Logs Explorer renders these specially.
     httpRequest: {
