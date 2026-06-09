@@ -31,8 +31,11 @@ jobs:
           host: ${{ secrets.REMOTE_HOST }}
           username: ${{ secrets.REMOTE_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          # Copy the built output, package.json, and lockfile
-          source: "package.json,package-lock.json,apps/api/dist,apps/api/package.json,apps/api/package-lock.json,apps/web/.output,apps/web/package.json,apps/web/package-lock.json"
+          # Copy the built output, package.json, and lockfile.
+          # packages/shared/dist is required at runtime by the API, which ships
+          # raw dist and require()s @pantry-finder/shared/logging (the web app
+          # bundles shared into .output, so it doesn't need it shipped).
+          source: "package.json,package-lock.json,apps/api/dist,apps/api/package.json,apps/api/package-lock.json,apps/web/.output,apps/web/package.json,apps/web/package-lock.json,packages/shared/dist,packages/shared/package.json"
           target: ${{ secrets.REMOTE_TARGET }}
 
       - name: Install Production Dependencies & Restart REST API and Web App
@@ -46,6 +49,7 @@ jobs:
 
             cat > .env.production << 'EOF'
             FIREBASE_SERVICE_ACCOUNT_JSON=${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+            LOG_SERVICE_ACCOUNT_JSON=${{ secrets.LOG_SERVICE_ACCOUNT_JSON }}
             JWT_SECRET=${{ secrets.JWT_SECRET }}
             COOKIE_DOMAIN=pantryfinder.org
             API_NINJAS_KEY=${{ secrets.API_NINJAS_KEY }}
@@ -63,6 +67,7 @@ jobs:
             NUXT_PUBLIC_GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
             NUXT_PUBLIC_MICROSOFT_CLIENT_ID=${{ secrets.MICROSOFT_CLIENT_ID }}
             NUXT_PUBLIC_GA_MEASUREMENT_ID=${{ secrets.GA_MEASUREMENT_ID }}
+            LOG_SERVICE_ACCOUNT_JSON=${{ secrets.LOG_SERVICE_ACCOUNT_JSON }}
             EOF
             
             # Install only production dependencies on the server

@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@azure/msal-browser": "^3.28.1",
+    "@google-cloud/logging": "^11.2.0",
     "@nuxt/ui": "^4.6.1",
     "@pantry-finder/shared": "*",
     "@types/leaflet": "^1.9.12",

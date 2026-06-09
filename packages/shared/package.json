@@ -5,8 +5,28 @@
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/cjs/index.js"
+    },
+    "./logging": {
+      "types": "./dist/logging.d.ts",
+      "import": "./dist/logging.js",
+      "require": "./dist/cjs/logging.js"
+    }
+  },
+  "typesVersions": {
+    "*": {
+      "logging": ["dist/logging.d.ts"]
+    }
+  },
   "scripts": {
-    "build": "tsc"
+    "build": "tsc && tsc -p tsconfig.cjs.json && node scripts/write-cjs-pkg.mjs"
+  },
+  "dependencies": {
+    "@google-cloud/logging": "^11.2.0"
   },
   "devDependencies": {
     "typescript": "^5.0.0"
