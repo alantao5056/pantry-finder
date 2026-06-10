@@ -1,4 +1,5 @@
 import { GeoPoint } from 'firebase-admin/firestore';
+import { LRUCache } from 'lru-cache';
 import { db, geoFirestore } from '../config/firebase';
 import { GeoService } from './geo.service';
 import { mapPantryDocumentToDto } from '../utils/pantry.mapper';
@@ -11,6 +12,13 @@ import { GetPantriesResponseDto } from '../models/dto/pantry.response.dto';
 
 export class PantryService {
   private readonly geoService = new GeoService();
+
+  // Pantry data changes rarely, so cache detail lookups by doc id. Note this
+  // also holds heartCount, which can lag up to the TTL behind heart/unheart.
+  private readonly pantryByIdCache = new LRUCache<string, Pantry>({
+    max: 10000,
+    ttl: 24 * 60 * 60 * 1000, // 24 hours
+  });
 
   /**
    * Searches for pantries within a specified radius of a location (street address or US zipcode).
@@ -83,6 +91,11 @@ export class PantryService {
    * @returns The mapped pantry DTO, or null if no document exists.
    */
   public async getPantryById(id: string): Promise<Pantry | null> {
+    const cached = this.pantryByIdCache.get(id);
+    if (cached !== undefined) {
+      return cached;
+    }
+
     const snapshot = await db.collection('pantries').doc(id).get();
 
     if (!snapshot.exists) {
@@ -90,6 +103,8 @@ export class PantryService {
     }
 
     const data = snapshot.data() as PantryDocument;
-    return mapPantryDocumentToDto(data, snapshot.id);
+    const pantry = mapPantryDocumentToDto(data, snapshot.id);
+    this.pantryByIdCache.set(id, pantry);
+    return pantry;
   }
 }

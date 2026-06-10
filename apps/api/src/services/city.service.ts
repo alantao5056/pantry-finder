@@ -43,8 +43,8 @@ export class CityService {
 
   // Full (unpaginated) pantry list per city, keyed by `${stateSlug}|${citySlug}`.
   private readonly cityPantriesCache = new LRUCache<string, Pantry[]>({
-    max: 500,
-    ttl: 60 * 60 * 1000, // 1 hour
+    max: 4000,
+    ttl: 24 * 60 * 60 * 1000, // 24 hours
   });
 
   // Coalesces concurrent index builds so a burst of cold requests triggers a
