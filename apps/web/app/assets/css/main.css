@@ -758,6 +758,103 @@
     color: var(--green-dark);
   }
 
+  /* ──────────────────────────────────────────────────────────
+     Breadcrumb trail bar — pantry detail page and the location
+     directory pages (/food-pantries, /food-pantries/{state}/{city?}).
+     ────────────────────────────────────────────────────────── */
+  .crumb-bar {
+    background: white;
+    border-bottom: 1px solid var(--border-soft);
+    padding: 0 24px;
+  }
+  .crumb-row {
+    max-width: 1100px;
+    margin: 0 auto;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #9ca3af;
+  }
+  .crumb-link {
+    color: #9ca3af;
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+  .crumb-link:hover { color: var(--green-dark); }
+  .crumb-sep { color: #d1d5db; }
+  .crumb-current {
+    color: #374151;
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 280px;
+  }
+
+  /* ──────────────────────────────────────────────────────────
+     Location directory pages (/food-pantries, /food-pantries/{state}/{city?})
+     ────────────────────────────────────────────────────────── */
+
+  /* Linked tile for a state or city in the directory lists, with a
+     muted count on the right. */
+  .loc-tile {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 12px 16px;
+    background: white;
+    border: 1.5px solid var(--border-soft);
+    border-radius: 12px;
+    color: var(--text-dark);
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .loc-tile:hover {
+    border-color: var(--green-soft);
+    background: var(--green-light);
+    box-shadow: 0 4px 16px rgba(45, 154, 95, 0.1);
+  }
+  .loc-tile-count {
+    flex-shrink: 0;
+    color: var(--text-soft);
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  /* Numbered pagination link (city pages). Crawlable <a> elements;
+     .is-active marks the current page. */
+  .page-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    height: 36px;
+    padding: 0 10px;
+    background: white;
+    border: 1.5px solid var(--border-input);
+    border-radius: 10px;
+    color: var(--text-mid);
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: border-color 0.18s ease, background-color 0.18s ease, color 0.18s ease;
+  }
+  .page-link:hover {
+    border-color: var(--green-soft);
+    background: var(--green-light);
+    color: var(--green-dark);
+  }
+  .page-link.is-active {
+    border-color: var(--green-dark);
+    background: var(--green-light);
+    color: var(--green-dark);
+  }
+
   /* List ⇄ Map view toggle (search results header). Default → white pill;
      .is-active → light-green wash with forest border + text. */
   .view-toggle-btn {

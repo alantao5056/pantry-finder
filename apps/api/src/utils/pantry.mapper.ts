@@ -21,6 +21,8 @@ export function mapPantryDocumentToDto(
     id: id,
     name: doc.name || '',
     address: address,
+    city: doc.city || undefined,
+    state: doc.state || undefined,
     latitude: doc.coordinates.latitude,
     longitude: doc.coordinates.longitude,
     distance: distanceKm !== undefined ? Math.round(kilometersToMiles(distanceKm) * 100) / 100 : undefined,

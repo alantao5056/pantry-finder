@@ -27,7 +27,7 @@ import { fileURLToPath } from 'node:url';
 import { initializeApp, cert, type Credential } from 'firebase-admin/app';
 import { getFirestore, type Timestamp } from 'firebase-admin/firestore';
 import dotenv from 'dotenv';
-import { pantrySlugId } from '@pantry-finder/shared';
+import { pantrySlugId, slugify, isValidStateSlug } from '@pantry-finder/shared';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(here, '.env') });
@@ -43,11 +43,11 @@ const STATS_PATH = path.resolve(here, '../../apps/web/app/data/site-stats.json')
 
 // Static, indexable routes. Dev-only routes (e.g. /test-geo) are intentionally
 // omitted; auth is modal-based so there are no standalone auth pages to list.
-const STATIC_PATHS = ['/', '/search'];
+const STATIC_PATHS = ['/', '/search', '/food-pantries'];
 
-// Google's sitemap limit is 50,000 URLs per file. With ~1,400 pantries we are far
-// under it, so a single file is correct. If the dataset ever approaches this
-// (e.g. after adding city landing pages), split into a sitemap index.
+// Google's sitemap limit is 50,000 URLs per file. Pantries + city/state landing
+// pages together stay well under it, so a single file is correct. If the dataset
+// ever approaches this, split into a sitemap index.
 const SITEMAP_URL_LIMIT = 50_000;
 
 function loadCredential(): Credential {
@@ -151,21 +151,38 @@ async function main(): Promise<void> {
 
   const entries: UrlEntry[] = STATIC_PATHS.map((p) => ({ loc: `${SITE_URL}${p}` }));
 
-  // Distinct cities, keyed by "city|state" so same-named cities in different states
-  // (Springfield, MA vs Springfield, IL) are counted separately, while a single city's
-  // many ZIP codes still collapse to one (city names are unique within a state).
-  const cities = new Set<string>();
+  // Distinct cities, keyed by "stateSlug|citySlug" so same-named cities in different
+  // states (Springfield, MA vs Springfield, IL) are counted separately, while raw-casing
+  // variants of one city collapse to a single slug (city names are unique within a
+  // state). Slugs must match the API's cities index (city.service.ts), which uses the
+  // same slugify + 2-letter-state rules, so every emitted landing URL resolves.
+  const cities = new Map<string, { stateSlug: string; citySlug: string }>();
 
   for (const doc of snapshot.docs) {
     const data = doc.data();
     const name = typeof data.name === 'string' ? data.name : '';
     const city = typeof data.city === 'string' ? data.city.trim() : '';
     const state = typeof data.state === 'string' ? data.state.trim() : '';
-    if (city) cities.add(`${city.toLowerCase()}|${state.toLowerCase()}`);
+    const citySlug = slugify(city);
+    const stateSlug = state.toLowerCase();
+    if (citySlug && isValidStateSlug(stateSlug)) {
+      cities.set(`${stateSlug}|${citySlug}`, { stateSlug, citySlug });
+    }
     entries.push({
       loc: `${SITE_URL}/pantries/${pantrySlugId({ name, id: doc.id })}`,
       lastmod: toLastmod(data.updatedAt),
     });
+  }
+
+  // City landing pages (/{state}/{city}) plus one state page (/{state}) per
+  // distinct state.
+  const states = new Set<string>();
+  for (const { stateSlug, citySlug } of cities.values()) {
+    states.add(stateSlug);
+    entries.push({ loc: `${SITE_URL}/food-pantries/${stateSlug}/${citySlug}` });
+  }
+  for (const stateSlug of [...states].sort()) {
+    entries.push({ loc: `${SITE_URL}/food-pantries/${stateSlug}` });
   }
 
   if (entries.length > SITEMAP_URL_LIMIT) {
@@ -177,7 +194,8 @@ async function main(): Promise<void> {
 
   fs.writeFileSync(OUT_PATH, renderSitemap(entries), 'utf8');
   console.log(
-    `Wrote ${entries.length} URLs (${snapshot.size} pantries + ${STATIC_PATHS.length} static) to ${OUT_PATH}`,
+    `Wrote ${entries.length} URLs (${snapshot.size} pantries + ${cities.size} cities + ` +
+      `${states.size} states + ${STATIC_PATHS.length} static) to ${OUT_PATH}`,
   );
 
   updateSiteStats(snapshot.size, cities.size);

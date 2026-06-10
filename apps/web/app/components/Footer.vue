@@ -4,6 +4,7 @@ const columns = [
     heading: 'For Visitors',
     links: [
       { label: 'Find Pantries', to: '/search', type: 'route' as const },
+      { label: 'Browse by City', to: '/food-pantries', type: 'route' as const },
       { label: 'Map View',       to: '#', type: 'anchor' as const },
       { label: 'Food Categories', to: '#', type: 'anchor' as const },
       { label: 'FAQ',            to: '#', type: 'anchor' as const },

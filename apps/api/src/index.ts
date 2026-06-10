@@ -3,6 +3,7 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import pantryRoutes from './routes/pantry.routes';
+import { statesRouter } from './routes/city.routes';
 import authRoutes from './routes/auth.routes';
 import heartsRoutes from './routes/hearts.routes';
 import { trackApiUsage } from './middleware/analytics.middleware';
@@ -28,6 +29,7 @@ app.get('/health', (req: Request, res: Response) => {
 
 app.use('/auth', authRoutes);
 app.use('/pantries', pantryRoutes);
+app.use('/states', statesRouter);
 app.use('/hearts', heartsRoutes);
 
 app.listen(port, () => {
