@@ -1,0 +1,37 @@
+name: Deploy Firestore Indexes
+
+# Deploys firestore.indexes.json to prod whenever it changes on main.
+# Without --force, indexes that exist in prod but are missing from the file
+# are left alone (the CLI only creates new ones), so this is additive-safe.
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - infra/firestore/**
+      - .github/workflows/firestore-indexes.yml
+  workflow_dispatch:
+
+jobs:
+  deploy-indexes:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Write service account credentials
+        run: echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}" | base64 -d > "$RUNNER_TEMP/service-account.json"
+
+      - name: Deploy indexes
+        working-directory: infra/firestore
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/service-account.json
+        run: |
+          PROJECT_ID=$(jq -r .project_id "$GOOGLE_APPLICATION_CREDENTIALS")
+          npx --yes firebase-tools deploy --only firestore:indexes --project "$PROJECT_ID" --non-interactive
