@@ -5,7 +5,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "generate": "tsx generate-sitemap.ts"
+    "generate:dev": "tsx --env-file=.env.dev generate-sitemap.ts",
+    "generate:prod": "tsx --env-file=.env.prod generate-sitemap.ts"
   },
   "dependencies": {
     "@pantry-finder/shared": "*",

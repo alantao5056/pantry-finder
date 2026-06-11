@@ -10,7 +10,7 @@ This is a **manual, on-demand** tool. Re-run it when pantry data changes meaning
 ## Setup
 
 ```sh
-cp tools/sitemap/.env.example tools/sitemap/.env
+cp tools/sitemap/.env.example tools/sitemap/.env.prod
 # edit .env: point FIREBASE_SERVICE_ACCOUNT_PATH at a service-account JSON
 # with read access to PROD Firestore
 ```
@@ -24,8 +24,8 @@ first, so changes to `slugify`/`pantrySlugId` are always picked up.
 From the repo root:
 
 ```sh
-npm run sitemap                       # uses .env for credentials
-npm run sitemap -- ./service-account.json   # or pass the JSON path explicitly
+npm run generate:dev                       # uses .env.dev for credentials
+npm run generate:prod                      # uses .env.prod for credentials
 ```
 
 Writes to `tools/sitemap/sitemap.xml` by default (override with `SITEMAP_OUT`).
