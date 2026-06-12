@@ -758,6 +758,41 @@
     color: var(--green-dark);
   }
 
+  /* Share fallback menu (ShareButton.vue) — only rendered in browsers
+     without the Web Share API. */
+  .share-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    z-index: 30;
+    min-width: 160px;
+    padding: 6px;
+    border: 1px solid var(--border-soft);
+    border-radius: 12px;
+    background: white;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+  }
+  .share-menu-item {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 9px;
+    padding: 8px 10px;
+    border: none;
+    border-radius: 8px;
+    background: none;
+    color: #374151;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+  .share-menu-item:hover {
+    background: var(--green-light);
+    color: var(--green-dark);
+  }
+
   /* ──────────────────────────────────────────────────────────
      Breadcrumb trail bar — pantry detail page and the location
      directory pages (/food-pantries, /food-pantries/{state}/{city?}).

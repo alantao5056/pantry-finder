@@ -89,6 +89,9 @@ const mapsUrl = computed(() =>
     ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(pantry.value.address)}`
     : '#',
 )
+const shareUrl = computed(() =>
+  pantry.value ? `${origin}${pantryPath(pantry.value)}` : '',
+)
 const reportUrl = computed(() => {
   if (!pantry.value) return '#'
   const subject = `PantryFinder update: ${pantry.value.name}`
@@ -254,6 +257,7 @@ const serviceTextClass = (category: string) => {
                   <UIcon name="i-lucide-navigation" class="size-4" />
                   Directions
                 </a>
+                <ShareButton :title="pantry.name" :url="shareUrl" />
                 <a class="detail-action" :href="reportUrl">
                   <UIcon name="i-lucide-flag" class="size-4" />
                   Report Issue
