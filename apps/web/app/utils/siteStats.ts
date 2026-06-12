@@ -1,6 +1,6 @@
 // Site-wide stats (total pantries + distinct cities) shown on the landing page.
 // The raw counts in site-stats.json are generated from Firestore by the sitemap tool
-// (`npm run sitemap`) — see tools/sitemap/generate-sitemap.ts. Read them from here
+// (`npm run generate:prod` in tools/sitemap) — see generate-sitemap.ts there. Read them from here
 // (auto-imported) rather than hardcoding the numbers in components.
 import stats from '~/data/site-stats.json'
 

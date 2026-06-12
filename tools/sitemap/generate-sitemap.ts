@@ -6,15 +6,23 @@
  * locally and scp the output onto the server's web `.output/public/sitemap.xml`
  * (the deploy pipeline preserves it — see .github/workflows/deploy.yml).
  *
+ * The same single scan also rebuilds the precomputed browse index in Firestore:
+ * the `states/{stateSlug}` and `cities/{stateSlug}_{citySlug}` collections that
+ * the API's CityService reads instead of scanning all ~14k pantry docs at
+ * runtime (free-tier read quota). Stale docs (cities/states that disappeared
+ * from the dataset) are deleted. Re-run this tool whenever the pantry dataset
+ * is re-imported, or the browse index and sitemap go stale together.
+ *
  * As a side effect it also refreshes the landing-page stats (total pantries +
  * distinct cities) in apps/web/app/data/site-stats.json, which the web app reads
  * via app/utils/siteStats.ts. This commits to the repo, so re-run it whenever the
  * pantry dataset changes meaningfully and commit the updated JSON.
  *
- *   npm run sitemap -- <path-to-service-account.json>
- *   npx tsx tools/sitemap/generate-sitemap.ts <path-to-service-account.json>
+ *   npm run generate:dev   (from tools/sitemap; uses .env.dev)
+ *   npm run generate:prod  (uses .env.prod)
  *
- * Credentials & config come from tools/sitemap/.env (see .env.example) or env:
+ * Both rebuild @pantry-finder/shared first so slug logic is never stale.
+ * Credentials & config come from those .env files (see .env.example) or env:
  *   FIREBASE_SERVICE_ACCOUNT_PATH  path to a service-account JSON, or
  *   FIREBASE_SERVICE_ACCOUNT_JSON  base64-encoded service-account JSON
  *   SITE_URL                       origin for the URLs (default https://pantryfinder.org)
@@ -25,9 +33,15 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { initializeApp, cert, type Credential } from 'firebase-admin/app';
-import { getFirestore, type Timestamp } from 'firebase-admin/firestore';
+import { getFirestore, type Firestore, type Timestamp } from 'firebase-admin/firestore';
 import dotenv from 'dotenv';
-import { pantrySlugId, slugify, isValidStateSlug } from '@pantry-finder/shared';
+import {
+  pantrySlugId,
+  slugify,
+  isValidStateSlug,
+  type CityIndexDocument,
+  type StateIndexDocument,
+} from '@pantry-finder/shared';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(here, '.env') });
@@ -125,6 +139,48 @@ function updateSiteStats(pantryCount: number, cityCount: number): void {
   fs.writeFileSync(STATS_PATH, `${JSON.stringify(json, null, 2)}\n`, 'utf8');
 }
 
+// Rebuild the `states`/`cities` browse-index collections from the freshly
+// aggregated docs: upsert every current doc, then delete any doc whose ID is no
+// longer in the dataset. listDocuments() returns refs without fetching document
+// data, so the stale-doc diff doesn't burn document reads.
+async function writeBrowseIndex(
+  db: Firestore,
+  cityDocs: Map<string, CityIndexDocument>,
+  stateDocs: Map<string, StateIndexDocument>,
+): Promise<number> {
+  const citiesCol = db.collection('cities');
+  const statesCol = db.collection('states');
+  const writer = db.bulkWriter();
+
+  for (const [id, doc] of cityDocs) {
+    void writer.set(citiesCol.doc(id), doc);
+  }
+  for (const [id, doc] of stateDocs) {
+    void writer.set(statesCol.doc(id), doc);
+  }
+
+  const [cityRefs, stateRefs] = await Promise.all([
+    citiesCol.listDocuments(),
+    statesCol.listDocuments(),
+  ]);
+  let staleCount = 0;
+  for (const ref of cityRefs) {
+    if (!cityDocs.has(ref.id)) {
+      void writer.delete(ref);
+      staleCount += 1;
+    }
+  }
+  for (const ref of stateRefs) {
+    if (!stateDocs.has(ref.id)) {
+      void writer.delete(ref);
+      staleCount += 1;
+    }
+  }
+
+  await writer.close();
+  return staleCount;
+}
+
 function renderSitemap(entries: UrlEntry[]): string {
   const urls = entries
     .map((e) => {
@@ -151,12 +207,16 @@ async function main(): Promise<void> {
 
   const entries: UrlEntry[] = STATIC_PATHS.map((p) => ({ loc: `${SITE_URL}${p}` }));
 
-  // Distinct cities, keyed by "stateSlug|citySlug" so same-named cities in different
-  // states (Springfield, MA vs Springfield, IL) are counted separately, while raw-casing
-  // variants of one city collapse to a single slug (city names are unique within a
-  // state). Slugs must match the API's cities index (city.service.ts), which uses the
-  // same slugify + 2-letter-state rules, so every emitted landing URL resolves.
-  const cities = new Map<string, { stateSlug: string; citySlug: string }>();
+  // Distinct cities, keyed by "stateSlug_citySlug" (the `cities` doc ID) so
+  // same-named cities in different states (Springfield, MA vs Springfield, IL)
+  // are counted separately, while raw-casing variants of one city collapse to a
+  // single slug (city names are unique within a state). The slug rules
+  // (slugify + 2-letter state) gate dirty data out of both the sitemap and the
+  // browse index, so every emitted landing URL resolves on the API. Track how
+  // often each raw casing appears so the most common form becomes the display
+  // value.
+  const updatedAt = new Date().toISOString();
+  const cityAgg = new Map<string, { doc: CityIndexDocument; cityCasings: Map<string, number> }>();
 
   for (const doc of snapshot.docs) {
     const data = doc.data();
@@ -166,7 +226,28 @@ async function main(): Promise<void> {
     const citySlug = slugify(city);
     const stateSlug = state.toLowerCase();
     if (citySlug && isValidStateSlug(stateSlug)) {
-      cities.set(`${stateSlug}|${citySlug}`, { stateSlug, citySlug });
+      const key = `${stateSlug}_${citySlug}`;
+      let record = cityAgg.get(key);
+      if (!record) {
+        record = {
+          doc: {
+            city,
+            state: state.toUpperCase(),
+            citySlug,
+            stateSlug,
+            pantryCount: 0,
+            variants: [],
+            updatedAt,
+          },
+          cityCasings: new Map(),
+        };
+        cityAgg.set(key, record);
+      }
+      record.doc.pantryCount += 1;
+      record.cityCasings.set(city, (record.cityCasings.get(city) ?? 0) + 1);
+      if (!record.doc.variants.some((v) => v.city === city && v.state === state)) {
+        record.doc.variants.push({ city, state });
+      }
     }
     entries.push({
       loc: `${SITE_URL}/pantries/${pantrySlugId({ name, id: doc.id })}`,
@@ -174,14 +255,31 @@ async function main(): Promise<void> {
     });
   }
 
+  // Finalize display casing and roll cities up into per-state summaries.
+  const cityDocs = new Map<string, CityIndexDocument>();
+  const stateDocs = new Map<string, StateIndexDocument>();
+  for (const [key, { doc, cityCasings }] of cityAgg) {
+    doc.city = [...cityCasings.entries()].sort((a, b) => b[1] - a[1])[0][0];
+    cityDocs.set(key, doc);
+
+    const stateDoc = stateDocs.get(doc.stateSlug) ?? {
+      state: doc.state,
+      stateSlug: doc.stateSlug,
+      cityCount: 0,
+      pantryCount: 0,
+      updatedAt,
+    };
+    stateDoc.cityCount += 1;
+    stateDoc.pantryCount += doc.pantryCount;
+    stateDocs.set(doc.stateSlug, stateDoc);
+  }
+
   // City landing pages (/{state}/{city}) plus one state page (/{state}) per
   // distinct state.
-  const states = new Set<string>();
-  for (const { stateSlug, citySlug } of cities.values()) {
-    states.add(stateSlug);
+  for (const { stateSlug, citySlug } of cityDocs.values()) {
     entries.push({ loc: `${SITE_URL}/food-pantries/${stateSlug}/${citySlug}` });
   }
-  for (const stateSlug of [...states].sort()) {
+  for (const stateSlug of [...stateDocs.keys()].sort()) {
     entries.push({ loc: `${SITE_URL}/food-pantries/${stateSlug}` });
   }
 
@@ -194,13 +292,19 @@ async function main(): Promise<void> {
 
   fs.writeFileSync(OUT_PATH, renderSitemap(entries), 'utf8');
   console.log(
-    `Wrote ${entries.length} URLs (${snapshot.size} pantries + ${cities.size} cities + ` +
-      `${states.size} states + ${STATIC_PATHS.length} static) to ${OUT_PATH}`,
+    `Wrote ${entries.length} URLs (${snapshot.size} pantries + ${cityDocs.size} cities + ` +
+      `${stateDocs.size} states + ${STATIC_PATHS.length} static) to ${OUT_PATH}`,
   );
 
-  updateSiteStats(snapshot.size, cities.size);
+  const staleCount = await writeBrowseIndex(db, cityDocs, stateDocs);
   console.log(
-    `Updated site stats (${snapshot.size} pantries, ${cities.size} cities) in ${STATS_PATH}`,
+    `Rebuilt browse index (${cityDocs.size} cities, ${stateDocs.size} states, ` +
+      `${staleCount} stale docs deleted) in Firestore`,
+  );
+
+  updateSiteStats(snapshot.size, cityDocs.size);
+  console.log(
+    `Updated site stats (${snapshot.size} pantries, ${cityDocs.size} cities) in ${STATS_PATH}`,
   );
 
   process.exit(0);

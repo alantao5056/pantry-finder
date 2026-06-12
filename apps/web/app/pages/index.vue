@@ -10,7 +10,7 @@ usePageSeo({
 })
 
 // pantryCountDisplay / cityCountDisplay come from app/utils/siteStats.ts (auto-imported),
-// which reads app/data/site-stats.json — regenerated from Firestore by `npm run sitemap`.
+// which reads app/data/site-stats.json — regenerated from Firestore by the sitemap tool.
 const STATS = [
   { number: pantryCountDisplay, label: 'Food Pantries Listed',   icon: '🏪' },
   { number: cityCountDisplay,   label: 'Cities Covered',         icon: '📍' },

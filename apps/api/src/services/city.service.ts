@@ -1,10 +1,10 @@
 import { LRUCache } from 'lru-cache';
 import {
-  slugify,
-  isValidStateSlug,
   Pantry,
   CitySummary,
   StateSummary,
+  CityIndexDocument,
+  StateIndexDocument,
   GetCityPantriesResponseDto,
 } from '@pantry-finder/shared';
 import { db } from '../config/firebase';
@@ -12,59 +12,76 @@ import { mapPantryDocumentToDto } from '../utils/pantry.mapper';
 import { PantryDocument } from '../models/pantry.schema';
 import { CITY_PAGE_SIZE } from '../config/constants';
 
-// One covered city as derived from the pantry docs. `variants` keeps every raw
-// (city, state) string pair that collapsed into this slug — Firestore stores
-// city names as-is (mixed casing/punctuation), so by-city queries must use the
-// exact stored values rather than the slug.
-interface CityIndexEntry {
-  city: string;
-  state: string;
-  citySlug: string;
-  stateSlug: string;
-  pantryCount: number;
-  variants: { city: string; state: string }[];
-}
+// The browse index lives in the precomputed `states`/`cities` Firestore
+// collections, written by the sitemap tool (tools/sitemap) from a single scan
+// of the pantries collection. This service only ever reads those small
+// collections — never scan `pantries` here: at ~14k docs a full scan burns a
+// third of the free-tier daily read quota per cold start.
+const INDEX_TTL = 48 * 60 * 60 * 1000; // 48 hours
 
-interface CitiesIndex {
-  byKey: Map<string, CityIndexEntry>;
-  cities: CitySummary[];
-  states: StateSummary[];
-}
+const STATES_KEY = 'all';
 
-const INDEX_KEY = 'all';
+// lru-cache values can't be null; same sentinel pattern as the geocoder caches.
+const NULL_SENTINEL = Symbol('CITY_ENTRY_NULL');
 
 export class CityService {
-  // Single-entry cache: building the index reads every pantry doc (city/state
-  // fields only), so refresh at most once per day.
-  private readonly indexCache = new LRUCache<string, CitiesIndex>({
+  private readonly statesCache = new LRUCache<string, StateSummary[]>({
     max: 1,
-    ttl: 24 * 60 * 60 * 1000, // 24 hours
+    ttl: INDEX_TTL,
   });
 
-  // Full (unpaginated) pantry list per city, keyed by `${stateSlug}|${citySlug}`.
+  // All cities of one state, sorted by pantryCount desc, keyed by stateSlug.
+  private readonly citiesByStateCache = new LRUCache<string, CitySummary[]>({
+    max: 60,
+    ttl: INDEX_TTL,
+  });
+
+  // One `cities` doc per covered city, keyed by its doc ID
+  // `${stateSlug}_${citySlug}`. Misses are cached too (as NULL_SENTINEL) so
+  // repeated requests for nonexistent cities (bots, dead links) don't each
+  // cost a Firestore read.
+  private readonly cityEntryCache = new LRUCache<string, CityIndexDocument | typeof NULL_SENTINEL>({
+    max: 4000,
+    ttl: INDEX_TTL,
+  });
+
+  // Full (unpaginated) pantry list per city, keyed by `${stateSlug}_${citySlug}`.
   private readonly cityPantriesCache = new LRUCache<string, Pantry[]>({
     max: 4000,
-    ttl: 24 * 60 * 60 * 1000, // 24 hours
+    ttl: INDEX_TTL,
   });
 
-  // Coalesces concurrent index builds so a burst of cold requests triggers a
-  // single Firestore scan.
-  private indexPromise: Promise<CitiesIndex> | null = null;
+  // Coalesces concurrent fetches per cache key so a burst of cold requests
+  // triggers a single Firestore query.
+  private readonly pending = new Map<string, Promise<unknown>>();
 
   public async getStates(): Promise<StateSummary[]> {
-    const index = await this.getIndex();
-    return index.states;
+    const cached = this.statesCache.get(STATES_KEY);
+    if (cached !== undefined) {
+      return cached;
+    }
+    return this.coalesce(`states:${STATES_KEY}`, async () => {
+      const snapshot = await db.collection('states').get();
+      if (snapshot.empty) {
+        console.warn(
+          'states collection is empty — run the sitemap tool (npm run generate:prod in tools/sitemap) to build the browse index.'
+        );
+      }
+      const states = snapshot.docs
+        .map((doc) => toStateSummary(doc.data() as StateIndexDocument))
+        .sort((a, b) => a.state.localeCompare(b.state));
+      this.statesCache.set(STATES_KEY, states);
+      return states;
+    });
   }
 
   public async getCities(stateSlug: string, limit?: number): Promise<CitySummary[] | null> {
-    const index = await this.getIndex();
-
-    let cities = index.cities.filter((c) => c.stateSlug === stateSlug);
+    const cities = await this.fetchStateCities(stateSlug);
     if (cities.length === 0) {
       return null;
     }
     if (limit !== undefined) {
-      cities = cities.slice(0, limit);
+      return cities.slice(0, limit);
     }
     return cities;
   }
@@ -79,8 +96,7 @@ export class CityService {
     citySlug: string,
     page: number
   ): Promise<GetCityPantriesResponseDto | null> {
-    const index = await this.getIndex();
-    const entry = index.byKey.get(`${stateSlug}|${citySlug}`);
+    const entry = await this.fetchCityEntry(stateSlug, citySlug);
 
     if (!entry) {
       return null;
@@ -104,127 +120,87 @@ export class CityService {
     };
   }
 
-  private async fetchCityPantries(entry: CityIndexEntry): Promise<Pantry[]> {
-    const key = `${entry.stateSlug}|${entry.citySlug}`;
+  private fetchStateCities(stateSlug: string): Promise<CitySummary[]> {
+    const cached = this.citiesByStateCache.get(stateSlug);
+    if (cached !== undefined) {
+      return Promise.resolve(cached);
+    }
+    return this.coalesce(`cities:${stateSlug}`, async () => {
+      // A state's cities fit in one small query (a few hundred docs at most);
+      // sorting in memory avoids needing a composite Firestore index.
+      const snapshot = await db
+        .collection('cities')
+        .where('stateSlug', '==', stateSlug)
+        .get();
+      const cities = snapshot.docs
+        .map((doc) => toCitySummary(doc.data() as CityIndexDocument))
+        .sort((a, b) => b.pantryCount - a.pantryCount);
+      this.citiesByStateCache.set(stateSlug, cities);
+      return cities;
+    });
+  }
+
+  private fetchCityEntry(stateSlug: string, citySlug: string): Promise<CityIndexDocument | null> {
+    const key = `${stateSlug}_${citySlug}`;
+    const cached = this.cityEntryCache.get(key);
+    if (cached !== undefined) {
+      return Promise.resolve(cached === NULL_SENTINEL ? null : cached);
+    }
+    return this.coalesce(`city:${key}`, async () => {
+      const doc = await db.collection('cities').doc(key).get();
+      const entry = doc.exists ? (doc.data() as CityIndexDocument) : null;
+      this.cityEntryCache.set(key, entry ?? NULL_SENTINEL);
+      return entry;
+    });
+  }
+
+  private async fetchCityPantries(entry: CityIndexDocument): Promise<Pantry[]> {
+    const key = `${entry.stateSlug}_${entry.citySlug}`;
     const cached = this.cityPantriesCache.get(key);
     if (cached !== undefined) {
       return cached;
     }
 
-    // Almost always a single variant; dirty data (e.g. "St. Louis" vs
-    // "St Louis") yields a few exact-match queries merged by doc id.
-    const byId = new Map<string, Pantry>();
-    for (const variant of entry.variants) {
-      const snapshot = await db
-        .collection('pantries')
-        .where('state', '==', variant.state)
-        .where('city', '==', variant.city)
-        .get();
-      for (const doc of snapshot.docs) {
-        byId.set(doc.id, mapPantryDocumentToDto(doc.data() as PantryDocument, doc.id));
+    return this.coalesce(`pantries:${key}`, async () => {
+      // Almost always a single variant; dirty data (e.g. "St. Louis" vs
+      // "St Louis") yields a few exact-match queries merged by doc id.
+      const byId = new Map<string, Pantry>();
+      for (const variant of entry.variants) {
+        const snapshot = await db
+          .collection('pantries')
+          .where('state', '==', variant.state)
+          .where('city', '==', variant.city)
+          .get();
+        for (const doc of snapshot.docs) {
+          byId.set(doc.id, mapPantryDocumentToDto(doc.data() as PantryDocument, doc.id));
+        }
       }
-    }
 
-    const pantries = [...byId.values()].sort((a, b) => a.name.localeCompare(b.name));
-    this.cityPantriesCache.set(key, pantries);
-    return pantries;
+      const pantries = [...byId.values()].sort((a, b) => a.name.localeCompare(b.name));
+      this.cityPantriesCache.set(key, pantries);
+      return pantries;
+    });
   }
 
-  private getIndex(): Promise<CitiesIndex> {
-    const cached = this.indexCache.get(INDEX_KEY);
-    if (cached !== undefined) {
-      return Promise.resolve(cached);
+  private coalesce<T>(key: string, fetch: () => Promise<T>): Promise<T> {
+    const existing = this.pending.get(key);
+    if (existing !== undefined) {
+      return existing as Promise<T>;
     }
-    if (this.indexPromise === null) {
-      this.indexPromise = this.buildIndex()
-        .then((index) => {
-          this.indexCache.set(INDEX_KEY, index);
-          return index;
-        })
-        .finally(() => {
-          this.indexPromise = null;
-        });
-    }
-    return this.indexPromise;
+    const promise = fetch().finally(() => {
+      this.pending.delete(key);
+    });
+    this.pending.set(key, promise);
+    return promise;
   }
+}
 
-  private async buildIndex(): Promise<CitiesIndex> {
-    const snapshot = await db.collection('pantries').select('city', 'state').get();
+// The index docs carry extra fields (variants, updatedAt); strip them down to
+// the shared wire shapes so internals never leak into API responses.
+function toStateSummary({ state, stateSlug, cityCount, pantryCount }: StateIndexDocument): StateSummary {
+  return { state, stateSlug, cityCount, pantryCount };
+}
 
-    // Track how often each raw casing appears so the most common form becomes
-    // the display value.
-    const entries = new Map<
-      string,
-      { entry: CityIndexEntry; cityCasings: Map<string, number> }
-    >();
-
-    for (const doc of snapshot.docs) {
-      const data = doc.data();
-      const city = typeof data.city === 'string' ? data.city.trim() : '';
-      const state = typeof data.state === 'string' ? data.state.trim() : '';
-      const citySlug = slugify(city);
-      const stateSlug = state.toLowerCase();
-      // isValidStateSlug keeps dirty state codes (e.g. "HA") out of the index;
-      // the sitemap generator applies the same gate so every emitted landing
-      // URL resolves here.
-      if (!citySlug || !isValidStateSlug(stateSlug)) {
-        continue;
-      }
-
-      const key = `${stateSlug}|${citySlug}`;
-      let record = entries.get(key);
-      if (!record) {
-        record = {
-          entry: {
-            city,
-            state: state.toUpperCase(),
-            citySlug,
-            stateSlug,
-            pantryCount: 0,
-            variants: [],
-          },
-          cityCasings: new Map(),
-        };
-        entries.set(key, record);
-      }
-
-      record.entry.pantryCount += 1;
-      record.cityCasings.set(city, (record.cityCasings.get(city) ?? 0) + 1);
-      if (!record.entry.variants.some((v) => v.city === city && v.state === state)) {
-        record.entry.variants.push({ city, state });
-      }
-    }
-
-    const byKey = new Map<string, CityIndexEntry>();
-    const stateAgg = new Map<string, StateSummary>();
-
-    for (const [key, { entry, cityCasings }] of entries) {
-      entry.city = [...cityCasings.entries()].sort((a, b) => b[1] - a[1])[0][0];
-      byKey.set(key, entry);
-
-      const stateSummary = stateAgg.get(entry.stateSlug) ?? {
-        state: entry.state,
-        stateSlug: entry.stateSlug,
-        cityCount: 0,
-        pantryCount: 0,
-      };
-      stateSummary.cityCount += 1;
-      stateSummary.pantryCount += entry.pantryCount;
-      stateAgg.set(entry.stateSlug, stateSummary);
-    }
-
-    const cities: CitySummary[] = [...byKey.values()]
-      .map(({ city, state, citySlug, stateSlug, pantryCount }) => ({
-        city,
-        state,
-        citySlug,
-        stateSlug,
-        pantryCount,
-      }))
-      .sort((a, b) => b.pantryCount - a.pantryCount);
-
-    const states = [...stateAgg.values()].sort((a, b) => a.state.localeCompare(b.state));
-
-    return { byKey, cities, states };
-  }
+function toCitySummary({ city, state, citySlug, stateSlug, pantryCount }: CityIndexDocument): CitySummary {
+  return { city, state, citySlug, stateSlug, pantryCount };
 }
