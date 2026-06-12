@@ -33,11 +33,19 @@ export const usePageSeo = (opts: PageSeoOptions) => {
     ogDescription: () => toValue(opts.description),
     ogType: 'website',
     ogUrl: () => canonicalUrl.value,
+    // Deliberate compact-thumbnail share layout: the 450×450 logo with declared
+    // dimensions (<600px wide) makes Facebook render a small square thumbnail
+    // beside the title instead of scraping a page image and blowing it up.
+    ogImage: () => `${origin}/logo.png`,
+    ogImageWidth: 450,
+    ogImageHeight: 450,
+    ogImageAlt: 'PantryFinder logo',
     // Twitter shares mirror the OG tags. 'summary' (not 'summary_large_image')
-    // because the site emits no og:image yet.
+    // matches the compact square-thumbnail layout.
     twitterCard: 'summary',
     twitterTitle: () => ogTitle.value,
     twitterDescription: () => toValue(opts.description),
+    twitterImage: () => `${origin}/logo.png`,
   })
   useHead(() => ({
     // Home page passes brandSuffix:false → drop the global suffix for this route.
