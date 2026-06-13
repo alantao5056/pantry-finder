@@ -1,4 +1,3 @@
-import { LRUCache } from 'lru-cache';
 import {
   Pantry,
   CitySummary,
@@ -8,6 +7,7 @@ import {
   GetCityPantriesResponseDto,
 } from '@pantry-finder/shared';
 import { db } from '../config/firebase';
+import { createCache } from '../cache/createCache';
 import { mapPantryDocumentToDto } from '../utils/pantry.mapper';
 import { PantryDocument } from '../models/pantry.schema';
 import { CITY_PAGE_SIZE } from '../config/constants';
@@ -21,46 +21,44 @@ const INDEX_TTL = 48 * 60 * 60 * 1000; // 48 hours
 
 const STATES_KEY = 'all';
 
-// lru-cache values can't be null; same sentinel pattern as the geocoder caches.
-const NULL_SENTINEL = Symbol('CITY_ENTRY_NULL');
-
 export class CityService {
-  private readonly statesCache = new LRUCache<string, StateSummary[]>({
+  private readonly statesCache = createCache<StateSummary[]>('pf:city:states:', {
+    ttlMs: INDEX_TTL,
     max: 1,
-    ttl: INDEX_TTL,
   });
 
   // All cities of one state, sorted by pantryCount desc, keyed by stateSlug.
-  private readonly citiesByStateCache = new LRUCache<string, CitySummary[]>({
+  private readonly citiesByStateCache = createCache<CitySummary[]>('pf:city:list:', {
+    ttlMs: INDEX_TTL,
     max: 60,
-    ttl: INDEX_TTL,
   });
 
   // One `cities` doc per covered city, keyed by its doc ID
-  // `${stateSlug}_${citySlug}`. Misses are cached too (as NULL_SENTINEL) so
-  // repeated requests for nonexistent cities (bots, dead links) don't each
-  // cost a Firestore read.
-  private readonly cityEntryCache = new LRUCache<string, CityIndexDocument | typeof NULL_SENTINEL>({
+  // `${stateSlug}_${citySlug}`. Misses are cached too (as null) so repeated
+  // requests for nonexistent cities (bots, dead links) don't each cost a
+  // Firestore read.
+  private readonly cityEntryCache = createCache<CityIndexDocument>('pf:city:entry:', {
+    ttlMs: INDEX_TTL,
     max: 4000,
-    ttl: INDEX_TTL,
   });
 
   // Full (unpaginated) pantry list per city, keyed by `${stateSlug}_${citySlug}`.
-  private readonly cityPantriesCache = new LRUCache<string, Pantry[]>({
+  private readonly cityPantriesCache = createCache<Pantry[]>('pf:city:pantries:', {
+    ttlMs: INDEX_TTL,
     max: 4000,
-    ttl: INDEX_TTL,
   });
 
   // Coalesces concurrent fetches per cache key so a burst of cold requests
-  // triggers a single Firestore query.
+  // triggers a single cache read + at most one Firestore query. The cache
+  // reads happen inside the coalesced function because they're async now.
   private readonly pending = new Map<string, Promise<unknown>>();
 
-  public async getStates(): Promise<StateSummary[]> {
-    const cached = this.statesCache.get(STATES_KEY);
-    if (cached !== undefined) {
-      return cached;
-    }
+  public getStates(): Promise<StateSummary[]> {
     return this.coalesce(`states:${STATES_KEY}`, async () => {
+      const cached = await this.statesCache.get(STATES_KEY);
+      if (cached != null) {
+        return cached;
+      }
       const snapshot = await db.collection('states').get();
       if (snapshot.empty) {
         console.warn(
@@ -70,7 +68,7 @@ export class CityService {
       const states = snapshot.docs
         .map((doc) => toStateSummary(doc.data() as StateIndexDocument))
         .sort((a, b) => a.state.localeCompare(b.state));
-      this.statesCache.set(STATES_KEY, states);
+      await this.statesCache.set(STATES_KEY, states);
       return states;
     });
   }
@@ -121,11 +119,11 @@ export class CityService {
   }
 
   private fetchStateCities(stateSlug: string): Promise<CitySummary[]> {
-    const cached = this.citiesByStateCache.get(stateSlug);
-    if (cached !== undefined) {
-      return Promise.resolve(cached);
-    }
     return this.coalesce(`cities:${stateSlug}`, async () => {
+      const cached = await this.citiesByStateCache.get(stateSlug);
+      if (cached != null) {
+        return cached;
+      }
       // A state's cities fit in one small query (a few hundred docs at most);
       // sorting in memory avoids needing a composite Firestore index.
       const snapshot = await db
@@ -135,33 +133,32 @@ export class CityService {
       const cities = snapshot.docs
         .map((doc) => toCitySummary(doc.data() as CityIndexDocument))
         .sort((a, b) => b.pantryCount - a.pantryCount);
-      this.citiesByStateCache.set(stateSlug, cities);
+      await this.citiesByStateCache.set(stateSlug, cities);
       return cities;
     });
   }
 
   private fetchCityEntry(stateSlug: string, citySlug: string): Promise<CityIndexDocument | null> {
     const key = `${stateSlug}_${citySlug}`;
-    const cached = this.cityEntryCache.get(key);
-    if (cached !== undefined) {
-      return Promise.resolve(cached === NULL_SENTINEL ? null : cached);
-    }
     return this.coalesce(`city:${key}`, async () => {
+      const cached = await this.cityEntryCache.get(key);
+      if (cached !== undefined) {
+        return cached; // null = known-missing city
+      }
       const doc = await db.collection('cities').doc(key).get();
       const entry = doc.exists ? (doc.data() as CityIndexDocument) : null;
-      this.cityEntryCache.set(key, entry ?? NULL_SENTINEL);
+      await this.cityEntryCache.set(key, entry);
       return entry;
     });
   }
 
-  private async fetchCityPantries(entry: CityIndexDocument): Promise<Pantry[]> {
+  private fetchCityPantries(entry: CityIndexDocument): Promise<Pantry[]> {
     const key = `${entry.stateSlug}_${entry.citySlug}`;
-    const cached = this.cityPantriesCache.get(key);
-    if (cached !== undefined) {
-      return cached;
-    }
-
     return this.coalesce(`pantries:${key}`, async () => {
+      const cached = await this.cityPantriesCache.get(key);
+      if (cached != null) {
+        return cached;
+      }
       // Almost always a single variant; dirty data (e.g. "St. Louis" vs
       // "St Louis") yields a few exact-match queries merged by doc id.
       const byId = new Map<string, Pantry>();
@@ -177,7 +174,7 @@ export class CityService {
       }
 
       const pantries = [...byId.values()].sort((a, b) => a.name.localeCompare(b.name));
-      this.cityPantriesCache.set(key, pantries);
+      await this.cityPantriesCache.set(key, pantries);
       return pantries;
     });
   }

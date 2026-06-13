@@ -1,6 +1,6 @@
 import { GeoPoint } from 'firebase-admin/firestore';
-import { LRUCache } from 'lru-cache';
 import { db, geoFirestore } from '../config/firebase';
+import { createCache } from '../cache/createCache';
 import { GeoService } from './geo.service';
 import { mapPantryDocumentToDto } from '../utils/pantry.mapper';
 import { milesToKilometers } from '../utils/distance.util';
@@ -14,10 +14,11 @@ export class PantryService {
   private readonly geoService = new GeoService();
 
   // Pantry data changes rarely, so cache detail lookups by doc id. Note this
-  // also holds heartCount, which can lag up to the TTL behind heart/unheart.
-  private readonly pantryByIdCache = new LRUCache<string, Pantry>({
+  // also holds heartCount, which can lag up to the TTL behind heart/unheart —
+  // and with the Redis backend that lag survives restarts too.
+  private readonly pantryByIdCache = createCache<Pantry>('pf:pantry:id:', {
+    ttlMs: 24 * 60 * 60 * 1000, // 24 hours
     max: 10000,
-    ttl: 24 * 60 * 60 * 1000, // 24 hours
   });
 
   /**
@@ -91,8 +92,8 @@ export class PantryService {
    * @returns The mapped pantry DTO, or null if no document exists.
    */
   public async getPantryById(id: string): Promise<Pantry | null> {
-    const cached = this.pantryByIdCache.get(id);
-    if (cached !== undefined) {
+    const cached = await this.pantryByIdCache.get(id);
+    if (cached != null) {
       return cached;
     }
 
@@ -104,7 +105,7 @@ export class PantryService {
 
     const data = snapshot.data() as PantryDocument;
     const pantry = mapPantryDocumentToDto(data, snapshot.id);
-    this.pantryByIdCache.set(id, pantry);
+    await this.pantryByIdCache.set(id, pantry);
     return pantry;
   }
 }

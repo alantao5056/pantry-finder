@@ -58,6 +58,7 @@ jobs:
             MICROSOFT_CLIENT_ID=${{ secrets.MICROSOFT_CLIENT_ID }}
             GA_MEASUREMENT_ID=${{ secrets.GA_MEASUREMENT_ID }}
             GA_API_SECRET=${{ secrets.GA_API_SECRET }}
+            REDIS_URL=redis://127.0.0.1:6379
             EOF
 
             cd ${{ secrets.REMOTE_TARGET }}/apps/web

@@ -1,42 +1,31 @@
-import { LRUCache } from "lru-cache";
+import { createCache } from "../../cache/createCache";
+import type { Cache } from "../../cache/Cache";
 import type { AddressGeocoder } from "../AddressGeocoder";
 import type { Coordinates } from "../types";
 
-const NULL_SENTINEL = Symbol("ADDRESS_GEOCODE_NULL");
-type CacheValue = Coordinates | typeof NULL_SENTINEL;
-
 export class CachedAddressGeocoder implements AddressGeocoder {
   private readonly inner: AddressGeocoder;
-  private readonly cache: LRUCache<string, CacheValue>;
-  private readonly ttlMs: number = 24 * 60 * 60 * 1000;
-  private readonly maxSize: number = 10000;
-  private readonly cacheNullMs?: number;
+  private readonly cache: Cache<Coordinates>;
 
   constructor(inner: AddressGeocoder) {
     this.inner = inner;
-
-    this.cache = new LRUCache<string, CacheValue>({
-      max: this.maxSize,
-      ttl: this.ttlMs,
+    this.cache = createCache<Coordinates>("pf:geo:addr:", {
+      ttlMs: 24 * 60 * 60 * 1000,
+      max: 10000,
     });
   }
 
   public async geocode(address: string): Promise<Coordinates | null> {
     const key = normalizeKey(address);
 
-    const cached = this.cache.get(key);
+    const cached = await this.cache.get(key);
     if (cached !== undefined) {
-      return cached === NULL_SENTINEL ? null : cached;
+      return cached;
     }
 
     const result = await this.inner.geocode(address);
-
-    if (result === null) {
-      this.cache.set(key, NULL_SENTINEL, { ttl: this.cacheNullMs });
-      return null;
-    }
-
-    this.cache.set(key, result, { ttl: this.ttlMs });
+    // Failed lookups are cached too (as null) so they don't hit the provider.
+    await this.cache.set(key, result);
     return result;
   }
 }

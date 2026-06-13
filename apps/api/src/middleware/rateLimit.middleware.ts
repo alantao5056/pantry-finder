@@ -1,6 +1,6 @@
 import { Response, NextFunction } from 'express';
-import { LRUCache } from 'lru-cache';
 import { AuthedRequest } from './auth.middleware';
+import { createRateLimiter } from '../cache/rateLimiter';
 import {
   ANON_SEARCH_LIMIT,
   ANON_SEARCH_WINDOW_MS,
@@ -8,18 +8,9 @@ import {
   USER_SEARCH_WINDOW_MS,
 } from '../config/constants';
 
-const userBuckets = new LRUCache<string, number[]>({
-  max: 10_000,
-  ttl: USER_SEARCH_WINDOW_MS,
-});
-
-const ipBuckets = new LRUCache<string, number[]>({
-  max: 50_000,
-  ttl: ANON_SEARCH_WINDOW_MS,
-});
+const limiter = createRateLimiter();
 
 type Bucket = {
-  cache: LRUCache<string, number[]>;
   key: string;
   limit: number;
   windowMs: number;
@@ -29,7 +20,6 @@ type Bucket = {
 function selectBucket(req: AuthedRequest): Bucket | null {
   if (req.user?.sub) {
     return {
-      cache: userBuckets,
       key: `user:${req.user.sub}`,
       limit: USER_SEARCH_LIMIT,
       windowMs: USER_SEARCH_WINDOW_MS,
@@ -39,7 +29,6 @@ function selectBucket(req: AuthedRequest): Bucket | null {
   const ip = req.ip;
   if (!ip) return null;
   return {
-    cache: ipBuckets,
     key: `ip:${ip}`,
     limit: ANON_SEARCH_LIMIT,
     windowMs: ANON_SEARCH_WINDOW_MS,
@@ -53,7 +42,11 @@ function isFirstPage(req: AuthedRequest): boolean {
   return String(raw) === '1';
 }
 
-export function rateLimitSearch(req: AuthedRequest, res: Response, next: NextFunction): void {
+export async function rateLimitSearch(
+  req: AuthedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
   if (!isFirstPage(req)) {
     next();
     return;
@@ -65,15 +58,19 @@ export function rateLimitSearch(req: AuthedRequest, res: Response, next: NextFun
     return;
   }
 
-  const now = Date.now();
-  const cutoff = now - bucket.windowMs;
-  const existing = bucket.cache.get(bucket.key) ?? [];
-  const recent = existing.filter((t) => t > cutoff);
+  // The limiter fails open internally; this catch is a last resort so a bug
+  // here can never block searches.
+  let result;
+  try {
+    result = await limiter.consume(bucket.key, bucket.limit, bucket.windowMs);
+  } catch (err) {
+    console.error('Rate limit check failed, allowing request:', err);
+    next();
+    return;
+  }
 
-  if (recent.length >= bucket.limit) {
-    const oldest = recent[0] ?? now;
-    const retryAfterMs = Math.max(0, oldest + bucket.windowMs - now);
-    const retryAfterSec = Math.ceil(retryAfterMs / 1000);
+  if (!result.allowed) {
+    const retryAfterSec = Math.ceil(result.retryAfterMs / 1000);
     const windowSeconds = Math.round(bucket.windowMs / 1000);
 
     const message = bucket.requiresAuth
@@ -92,7 +89,5 @@ export function rateLimitSearch(req: AuthedRequest, res: Response, next: NextFun
     return;
   }
 
-  recent.push(now);
-  bucket.cache.set(bucket.key, recent);
   next();
 }
