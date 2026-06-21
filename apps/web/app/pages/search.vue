@@ -349,11 +349,12 @@ const mapActive = computed(() => viewMode.value === 'map' && resultsReady.value)
           <!-- No location yet -->
           <div
             v-if="!route.query.location"
-            class="text-center px-6 h-full flex flex-col items-center justify-center"
+            class="px-6 h-full flex items-center justify-center"
           >
-            <img src="/logo.png" alt="" class="w-20 h-20 object-contain mb-4" />
-            <h3 class="font-serif text-[22px] text-gray-900 mb-2">Enter an address to begin</h3>
-            <p class="text-gray-500 text-[15px]">Type a city, address, or ZIP code above to find pantries near you.</p>
+            <LogoMessage
+              title="Enter an address to begin"
+              message="Type a city, address, or ZIP code above to find pantries near you."
+            />
           </div>
 
           <ClientOnly v-else>
@@ -423,18 +424,14 @@ const mapActive = computed(() => viewMode.value === 'map' && resultsReady.value)
             <!-- Empty: filters too restrictive -->
             <div
               v-else-if="filteredPantries.length === 0"
-              class="text-center py-20 px-6"
+              class="px-6 py-20 h-full flex items-center justify-center"
             >
-              <img src="/logo.png" alt="" class="w-20 h-20 object-contain mx-auto mb-5" />
-              <h3 class="font-serif text-[24px] font-semibold text-[var(--text-dark)] mb-2.5">No pantries match your filters</h3>
-              <p class="text-[var(--text-soft)] text-[15px] leading-relaxed max-w-[360px] mx-auto mb-6">
-                Try adjusting your filters or increasing the search radius.
-              </p>
-              <button
-                type="button"
-                class="btn-primary"
-                @click="clearFilters"
-              >Clear Filters</button>
+              <LogoMessage
+                title="No pantries match your filters"
+                message="Try adjusting your filters or increasing the search radius."
+              >
+                <button type="button" class="btn-primary mt-6" @click="clearFilters">Clear Filters</button>
+              </LogoMessage>
             </div>
 
             <!-- Results: list grid -->

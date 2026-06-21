@@ -241,6 +241,122 @@
   .form-input:focus {
     border-color: var(--green-dark);
   }
+  /* Error state for any .form-input / .form-select / .form-textarea — pink
+     border + wash, shown when client-side validation fails. */
+  .form-input.has-error,
+  .form-select.has-error,
+  .form-textarea.has-error {
+    border-color: #fca5a5;
+    background-color: #fff5f5;
+  }
+
+  /* Multiline + select siblings of .form-input, sharing its border/padding so
+     the "Add a Pantry" form reads as one input family. */
+  .form-textarea {
+    @apply w-full bg-white rounded-[12px] px-4 py-[11px] text-sm border-[1.5px] outline-none transition-colors;
+    border-color: var(--border-input);
+    color: var(--text-dark);
+    resize: vertical;
+    line-height: 1.6;
+  }
+  .form-textarea:focus { border-color: var(--green-dark); }
+
+  .form-select {
+    @apply w-full bg-white rounded-[12px] px-4 py-[11px] text-sm border-[1.5px] outline-none transition-colors;
+    border-color: var(--border-input);
+    color: var(--text-dark);
+    cursor: pointer;
+  }
+  .form-select:focus { border-color: var(--green-dark); }
+
+  /* Custom dropdown chevron — matches the radius selector in SearchBar. Shared
+     between the bordered .form-select boxes and the borderless inline selects
+     that opt in via .select-chevron, so the arrow SVG only lives in one place. */
+  .form-select,
+  .select-chevron {
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='16'%20height='16'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%238aab97'%20stroke-width='2.5'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpolyline%20points='6%209%2012%2015%2018%209'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.625rem center;
+    background-size: 16px 16px;
+    padding-right: 2.25rem;
+  }
+
+  /* Field label above a form control. `.field-label-required` adds the red
+     asterisk via ::after so call sites don't repeat the markup. */
+  .field-label {
+    display: block;
+    margin-bottom: 7px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-mid);
+  }
+  .field-label-required::after {
+    content: ' *';
+    color: #e11d48;
+  }
+
+  /* Inline validation message under a field. */
+  .field-error {
+    margin-top: 5px;
+    font-size: 12px;
+    color: #e11d48;
+  }
+
+  /* Card wrapping one section of the Add-a-Pantry form. Mirrors .detail-card
+     with a header row (icon chip + serif title + subtitle). */
+  .form-section-card {
+    border: 1.5px solid var(--border-soft);
+    border-radius: 20px;
+    background: white;
+    box-shadow: 0 2px 12px rgba(30, 122, 71, 0.04);
+    padding: 28px 32px;
+    margin-bottom: 20px;
+  }
+  .form-section-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    margin-bottom: 20px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid #f0f4f1;
+  }
+  .form-section-icon {
+    display: flex;
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    background: var(--green-wash);
+    font-size: 20px;
+  }
+
+  /* Toggleable pill for the Food / Services checkbox groups. `.is-checked`
+     flips to the green-wash selected state. */
+  .check-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 14px;
+    border: 1.5px solid var(--border-input);
+    border-radius: 100px;
+    background: white;
+    color: var(--text-mid);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    user-select: none;
+    transition: border-color 0.18s ease, background-color 0.18s ease, color 0.18s ease;
+  }
+  .check-pill:hover { border-color: var(--green-soft); }
+  .check-pill.is-checked {
+    border-color: var(--green-dark);
+    background: var(--green-wash);
+    color: var(--green-dark);
+  }
 
   /* Social sign-in button (AuthModal "Continue with Microsoft"). Matches the
      GIS-rendered Google button's pill shape and height so the two stack evenly.

@@ -113,28 +113,15 @@ defineExpose({
           class="w-px h-7 self-center shrink-0"
           style="background-color: var(--border-soft);"
         />
-        <!-- Custom-styled select with chevron overlay -->
-        <div class="relative flex items-center shrink-0">
+        <!-- Custom-styled select; chevron comes from the shared .select-chevron. -->
+        <div class="flex items-center shrink-0">
           <select
             v-model="radius"
-            class="appearance-none bg-transparent border-none cursor-pointer outline-none text-[14px] font-medium font-sans pl-4 pr-9 h-full"
+            class="select-chevron bg-transparent border-none cursor-pointer outline-none text-[14px] font-medium font-sans pl-4 h-full"
             style="color: var(--text-mid);"
           >
             <option v-for="r in ['2', '5', '10', '25', '50']" :key="r" :value="r">{{ r }} miles</option>
           </select>
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="#8aab97"
-            stroke-width="2.5"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            class="absolute right-2.5 pointer-events-none"
-          >
-            <polyline points="6 9 12 15 18 9" />
-          </svg>
         </div>
       </template>
 

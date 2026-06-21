@@ -6,6 +6,8 @@ import {
   ANON_SEARCH_WINDOW_MS,
   USER_SEARCH_LIMIT,
   USER_SEARCH_WINDOW_MS,
+  SUBMISSION_LIMIT,
+  SUBMISSION_WINDOW_MS,
 } from '../config/constants';
 
 const limiter = createRateLimiter();
@@ -85,6 +87,47 @@ export async function rateLimitSearch(
       windowSeconds,
       retryAfter: retryAfterSec,
       requiresAuth: bucket.requiresAuth,
+    });
+    return;
+  }
+
+  next();
+}
+
+/**
+ * Throttles "Add a Pantry" submissions. Keyed by user when logged in, else by
+ * IP. Fails open (like rateLimitSearch) so a limiter outage never blocks a
+ * legitimate submission.
+ */
+export async function rateLimitSubmission(
+  req: AuthedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  const key = req.user?.sub ? `submit:user:${req.user.sub}` : req.ip ? `submit:ip:${req.ip}` : null;
+  if (!key) {
+    next();
+    return;
+  }
+
+  let result;
+  try {
+    result = await limiter.consume(key, SUBMISSION_LIMIT, SUBMISSION_WINDOW_MS);
+  } catch (err) {
+    console.error('Submission rate limit check failed, allowing request:', err);
+    next();
+    return;
+  }
+
+  if (!result.allowed) {
+    const retryAfterSec = Math.ceil(result.retryAfterMs / 1000);
+    res.setHeader('Retry-After', String(retryAfterSec));
+    res.status(429).json({
+      error: 'rate_limited',
+      message: `You've reached the limit of ${SUBMISSION_LIMIT} pantry submissions per day. Please try again later.`,
+      limit: SUBMISSION_LIMIT,
+      windowSeconds: Math.round(SUBMISSION_WINDOW_MS / 1000),
+      retryAfter: retryAfterSec,
     });
     return;
   }
