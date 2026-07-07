@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { Pantry } from '@pantry-finder/shared';
+import { AuthedRequest } from '../middleware/auth.middleware';
 import { PantryService } from '../services/pantry.service';
 import { GetPantriesRequestDto } from '../models/dto/pantry.request.dto';
 import { GetPantriesResponseDto } from '../models/dto/pantry.response.dto';
@@ -9,7 +10,9 @@ const pantryService = new PantryService();
 
 export class PantryController {
   public async getPantries(
-    req: Request<{}, {}, {}, Partial<GetPantriesRequestDto>>,
+    // Intersection with AuthedRequest: optionalAuth may have attached the
+    // logged-in user, which the service uses to write a search-log entry.
+    req: Request<{}, {}, {}, Partial<GetPantriesRequestDto>> & Pick<AuthedRequest, 'user'>,
     res: Response<GetPantriesResponseDto | { error: string }>
   ): Promise<void> {
     try {
@@ -44,7 +47,7 @@ export class PantryController {
         page: parsedPage,
       };
 
-      const responseDto = await pantryService.getPantriesByLocation(requestDto);
+      const responseDto = await pantryService.getPantriesByLocation(requestDto, req.user?.sub);
 
       if (responseDto === null) {
         res.status(404).json({ error: 'Location could not be geocoded.' });

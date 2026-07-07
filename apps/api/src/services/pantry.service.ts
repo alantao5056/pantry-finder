@@ -2,6 +2,7 @@ import { GeoPoint } from 'firebase-admin/firestore';
 import { db, geoFirestore } from '../config/firebase';
 import { createCache } from '../cache/createCache';
 import { GeoService } from './geo.service';
+import { searchLogService } from './search-log.service';
 import { mapPantryDocumentToDto } from '../utils/pantry.mapper';
 import { milesToKilometers } from '../utils/distance.util';
 import { PantryDocument } from '../models/pantry.schema';
@@ -24,10 +25,13 @@ export class PantryService {
   /**
    * Searches for pantries within a specified radius of a location (street address or US zipcode).
    * @param dto The request DTO containing location, radius, and page.
+   * @param userEmail The authenticated searcher's email, when logged in. Each
+   *   authenticated search is recorded in the `search_logs` collection.
    * @returns A response DTO with pantries and pagination, or null if location is not found.
    */
   public async getPantriesByLocation(
-    dto: GetPantriesRequestDto
+    dto: GetPantriesRequestDto,
+    userEmail?: string
   ): Promise<GetPantriesResponseDto | null> {
     const input = dto.location.trim();
     const coordinates = await this.geoService.geocodeLocation(input);
@@ -70,6 +74,18 @@ export class PantryService {
       const distanceKm = (doc as any).distance as number | undefined;
       return mapPantryDocumentToDto(data, doc.id, distanceKm);
     });
+
+    if (userEmail) {
+      searchLogService.logSearch({
+        userEmail,
+        location: input,
+        radiusMiles: dto.radius,
+        page: dto.page,
+        totalResults: sortedDocs.length,
+        returnedResults: paginatedPantries.length,
+        searchedAt: new Date().toISOString(),
+      });
+    }
 
     return {
       pantries: paginatedPantries,
