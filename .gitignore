@@ -6,3 +6,5 @@ dist/
 tmp
 tsconfig.tsbuildinfo
 tools/**/sitemap*.xml
+tools/backup/backups/
+firebase/

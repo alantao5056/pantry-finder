@@ -1,0 +1,21 @@
+{
+  "name": "@pantry-finder/backup",
+  "version": "1.0.0",
+  "description": "Backs up and restores Firestore collections for pantryfinder.org",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "backup:dev01": "tsx --env-file=.env.dev01 backup.ts dev01",
+    "backup:dev02": "tsx --env-file=.env.dev02 backup.ts dev02",
+    "backup:prod": "tsx --env-file=.env.prod backup.ts prod",
+    "import:dev01": "tsx --env-file=.env.dev01 import.ts dev01",
+    "import:dev02": "tsx --env-file=.env.dev02 import.ts dev02",
+    "import:prod": "tsx --env-file=.env.prod import.ts prod"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.8.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2"
+  }
+}
