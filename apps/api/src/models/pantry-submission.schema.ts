@@ -1,3 +1,5 @@
+import { Timestamp } from 'firebase-admin/firestore';
+
 // Firestore shape for a user-submitted pantry awaiting review. Stored in the
 // `pantry_submissions` collection (a moderation queue), kept SEPARATE from the
 // live `pantries` collection. The pantry fields intentionally mirror
@@ -51,5 +53,5 @@ export interface PantrySubmissionDocument {
 
   // Moderation metadata.
   status: 'pending';
-  createdAt: string; // ISO timestamp
+  createdAt: Timestamp;
 }

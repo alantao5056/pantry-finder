@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { Pantry } from '@pantry-finder/shared';
 import { AuthedRequest } from '../middleware/auth.middleware';
+import { TrackedRequest } from '../middleware/analytics.middleware';
 import { PantryService } from '../services/pantry.service';
 import { GetPantriesRequestDto } from '../models/dto/pantry.request.dto';
 import { GetPantriesResponseDto } from '../models/dto/pantry.response.dto';
@@ -10,9 +11,12 @@ const pantryService = new PantryService();
 
 export class PantryController {
   public async getPantries(
-    // Intersection with AuthedRequest: optionalAuth may have attached the
-    // logged-in user, which the service uses to write a search-log entry.
-    req: Request<{}, {}, {}, Partial<GetPantriesRequestDto>> & Pick<AuthedRequest, 'user'>,
+    // Intersections carry what the service needs for the search-log entry:
+    // optionalAuth may have attached the logged-in user, and trackApiUsage
+    // always attaches the anonymous client id.
+    req: Request<{}, {}, {}, Partial<GetPantriesRequestDto>> &
+      Pick<AuthedRequest, 'user'> &
+      Pick<TrackedRequest, 'clientId'>,
     res: Response<GetPantriesResponseDto | { error: string }>
   ): Promise<void> {
     try {
@@ -47,7 +51,10 @@ export class PantryController {
         page: parsedPage,
       };
 
-      const responseDto = await pantryService.getPantriesByLocation(requestDto, req.user?.sub);
+      const responseDto = await pantryService.getPantriesByLocation(requestDto, {
+        userEmail: req.user?.sub ?? null,
+        clientId: req.clientId,
+      });
 
       if (responseDto === null) {
         res.status(404).json({ error: 'Location could not be geocoded.' });

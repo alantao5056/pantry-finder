@@ -1,4 +1,4 @@
-import { GeoPoint } from 'firebase-admin/firestore';
+import { GeoPoint, Timestamp } from 'firebase-admin/firestore';
 import { db, geoFirestore } from '../config/firebase';
 import { createCache } from '../cache/createCache';
 import { GeoService } from './geo.service';
@@ -6,6 +6,7 @@ import { searchLogService } from './search-log.service';
 import { mapPantryDocumentToDto } from '../utils/pantry.mapper';
 import { milesToKilometers } from '../utils/distance.util';
 import { PantryDocument } from '../models/pantry.schema';
+import { SearchLogContext } from '../models/search-log.schema';
 import { Pantry } from '@pantry-finder/shared';
 import { PAGE_SIZE } from '../config/constants';
 import { GetPantriesRequestDto } from '../models/dto/pantry.request.dto';
@@ -25,13 +26,14 @@ export class PantryService {
   /**
    * Searches for pantries within a specified radius of a location (street address or US zipcode).
    * @param dto The request DTO containing location, radius, and page.
-   * @param userEmail The authenticated searcher's email, when logged in. Each
-   *   authenticated search is recorded in the `search_logs` collection.
+   * @param searcher Who is searching: the account email when logged in (null
+   *   otherwise) plus the anonymous client id. Every search is recorded in the
+   *   `search_logs` collection.
    * @returns A response DTO with pantries and pagination, or null if location is not found.
    */
   public async getPantriesByLocation(
     dto: GetPantriesRequestDto,
-    userEmail?: string
+    searcher?: SearchLogContext
   ): Promise<GetPantriesResponseDto | null> {
     const input = dto.location.trim();
     const coordinates = await this.geoService.geocodeLocation(input);
@@ -75,15 +77,18 @@ export class PantryService {
       return mapPantryDocumentToDto(data, doc.id, distanceKm);
     });
 
-    if (userEmail) {
+    // Logged whenever we know who is asking — which, thanks to the client-id
+    // cookie, is every search, signed in or not.
+    if (searcher?.clientId) {
       searchLogService.logSearch({
-        userEmail,
+        userEmail: searcher.userEmail,
+        clientId: searcher.clientId,
         location: input,
         radiusMiles: dto.radius,
         page: dto.page,
         totalResults: sortedDocs.length,
         returnedResults: paginatedPantries.length,
-        searchedAt: new Date().toISOString(),
+        searchedAt: Timestamp.now(),
       });
     }
 

@@ -66,6 +66,31 @@ npm run import:dev02 -- ./backups/dev02/2026-07-07_143005 --yes
   counts, warns loudly on cross-environment imports (e.g. prod backup → dev01),
   and asks for a typed `yes` unless `--yes` is passed.
 
+## Timestamp backfill (one-off migration)
+
+`search_logs.searchedAt` and `pantry_submissions.createdAt` were originally
+written as ISO strings instead of Firestore `Timestamp`s. The schemas now
+declare `Timestamp`, so existing documents need converting — Firestore orders
+by type *before* value, so strings and Timestamps form two disjoint ranges and
+an `orderBy`/range query would silently miss one of them.
+
+```sh
+# dry run (default): reports what would change, writes nothing
+npm run backfill:dev01 -- search_logs searchedAt
+
+# actually convert
+npm run backfill:dev01 -- search_logs searchedAt --apply
+npm run backfill:dev01 -- pantry_submissions createdAt --apply
+```
+
+Only the named field is touched (`update()`, not `set()`), and only when its
+current value is a string — so the script is idempotent and a second run is a
+no-op. No document is created or deleted. Values that don't parse as dates are
+reported and skipped rather than written back as `Invalid Date`.
+
+Take a backup before running with `--apply` against prod. Note that restoring
+an older backup reintroduces the string values; just re-run the backfill after.
+
 ## Backup format
 
 One JSONL file per collection; each line is `{"id": "<docId>", "data": {...}}`.

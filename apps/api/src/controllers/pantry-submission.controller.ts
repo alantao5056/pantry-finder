@@ -1,4 +1,5 @@
 import { Response } from 'express';
+import { Timestamp } from 'firebase-admin/firestore';
 import { isValidStateSlug } from '@pantry-finder/shared';
 import { AuthedRequest } from '../middleware/auth.middleware';
 import { SubmitPantryRequestDto } from '../models/dto/pantry-submission.request.dto';
@@ -141,7 +142,7 @@ export class PantrySubmissionController {
       submitterRelationship,
       submitterAccountEmail: req.user?.sub,
       status: 'pending',
-      createdAt: new Date().toISOString(),
+      createdAt: Timestamp.now(),
     };
 
     try {

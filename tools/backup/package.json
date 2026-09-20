@@ -10,7 +10,10 @@
     "backup:prod": "tsx --env-file=.env.prod backup.ts prod",
     "import:dev01": "tsx --env-file=.env.dev01 import.ts dev01",
     "import:dev02": "tsx --env-file=.env.dev02 import.ts dev02",
-    "import:prod": "tsx --env-file=.env.prod import.ts prod"
+    "import:prod": "tsx --env-file=.env.prod import.ts prod",
+    "backfill:dev01": "tsx --env-file=.env.dev01 backfill-timestamps.ts dev01",
+    "backfill:dev02": "tsx --env-file=.env.dev02 backfill-timestamps.ts dev02",
+    "backfill:prod": "tsx --env-file=.env.prod backfill-timestamps.ts prod"
   },
   "dependencies": {
     "firebase-admin": "^13.8.0"
