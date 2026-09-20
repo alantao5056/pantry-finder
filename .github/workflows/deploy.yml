@@ -68,6 +68,7 @@ jobs:
             NUXT_PUBLIC_GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
             NUXT_PUBLIC_MICROSOFT_CLIENT_ID=${{ secrets.MICROSOFT_CLIENT_ID }}
             NUXT_PUBLIC_GA_MEASUREMENT_ID=${{ secrets.GA_MEASUREMENT_ID }}
+            NUXT_PUBLIC_PHOTON_BASE=${{ secrets.PHOTON_BASE }}
             LOG_SERVICE_ACCOUNT_JSON=${{ secrets.LOG_SERVICE_ACCOUNT_JSON }}
             EOF
             
