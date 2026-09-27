@@ -17,12 +17,17 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20' # Using standard LTS Node.js
+          node-version-file: '.nvmrc'
+
+      # Match the npm version pinned in package.json "packageManager" so the
+      # lockfile is read by the same npm that wrote it
+      - name: Pin npm version
+        run: npm install -g "$(node -p "require('./package.json').packageManager")"
 
       - name: Install Dependencies and Build
         working-directory: .
         run: |
-          npm install
+          npm ci
           npm run build
 
       - name: Copy files to Ubuntu server
@@ -80,7 +85,7 @@ jobs:
 
             # Install only production dependencies on the server
             cd ${{ secrets.REMOTE_TARGET }}
-            npm install --omit=dev
+            npm ci --omit=dev
 
             sudo systemctl restart pantry-finder-api
             sudo systemctl restart pantry-finder-web
