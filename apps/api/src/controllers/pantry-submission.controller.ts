@@ -9,19 +9,11 @@ import {
   SubmissionServiceSchema,
 } from '../models/pantry-submission.schema';
 import { PantrySubmissionService } from '../services/pantry-submission.service';
+import { MAX_ABOUT, MAX_ARRAY, MAX_STR, str } from '../utils/validation.util';
 
 const submissionService = new PantrySubmissionService();
 
-// Defensive caps so a malicious payload can't bloat a Firestore doc.
-const MAX_STR = 500;
-const MAX_ABOUT = 2000;
-const MAX_ARRAY = 50;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-/** Trim a value to a string, capped at `max` chars. Non-strings become ''. */
-function str(value: unknown, max = MAX_STR): string {
-  return typeof value === 'string' ? value.trim().slice(0, max) : '';
-}
 
 /** Narrow + trim a single schedule row; returns null for fully-empty rows. */
 function parseSchedule(raw: unknown): SubmissionScheduleSchema | null {

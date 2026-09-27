@@ -1,6 +1,16 @@
-# Firestore backup / import
+# Firestore ops
 
-Manual, on-demand backup and restore for the PantryFinder Firestore databases.
+Manual, on-demand operations against the PantryFinder Firestore databases,
+run from your machine against one environment at a time:
+
+- **Backup / import** — dump and restore whole databases (below)
+- **Deploying indexes** — push `infra/firestore/firestore.indexes.json` to an environment
+- **One-off migrations** — timestamp and review-item backfills
+
+Options go after a bare `--` (`npm run deploy-indexes:dev01 -- --apply`).
+Without it npm swallows them (`--apply` never reaches the script, which just
+dry-runs again); dry runs print the exact command to apply.
+
 Backup dumps **every top-level collection** (discovered via `listCollections()`,
 nothing hardcoded) into a timestamped folder; import restores a backup folder
 into the chosen environment, optionally as an exact mirror.
@@ -11,16 +21,16 @@ There are three environments: `dev01`, `dev02`, and `prod`, each with its own
 env file:
 
 ```sh
-cp tools/backup/.env.example tools/backup/.env.dev01
-cp tools/backup/.env.example tools/backup/.env.dev02
-cp tools/backup/.env.example tools/backup/.env.prod
+cp tools/firestore/.env.example tools/firestore/.env.dev01
+cp tools/firestore/.env.example tools/firestore/.env.dev02
+cp tools/firestore/.env.example tools/firestore/.env.prod
 # edit each: point FIREBASE_SERVICE_ACCOUNT_PATH at the service-account JSON
 # for that environment (or set base64 FIREBASE_SERVICE_ACCOUNT_JSON)
 ```
 
 ## Backup
 
-From `tools/backup`:
+From `tools/firestore`:
 
 ```sh
 npm run backup:dev01   # dev01 Firestore -> backups/dev01/<YYYY-MM-DD_HHmmss>/
@@ -37,7 +47,7 @@ self-contained. The `backups/` tree is git-ignored.
 
 ## Import
 
-From `tools/backup`:
+From `tools/firestore`:
 
 ```sh
 # upsert everything in a prod backup into dev01
@@ -90,6 +100,37 @@ reported and skipped rather than written back as `Invalid Date`.
 
 Take a backup before running with `--apply` against prod. Note that restoring
 an older backup reintroduces the string values; just re-run the backfill after.
+
+## Deploying indexes
+
+CI deploys `infra/firestore/firestore.indexes.json` to **prod** when it changes
+on `main`. To push the file to a dev project (or to prod ahead of a merge):
+
+```sh
+npm run deploy-indexes:dev01              # dry run: shows indexes to add / extra in project
+npm run deploy-indexes:dev01 -- --apply   # deploy
+npm run deploy-indexes:prod -- --apply    # asks for a typed "yes" (add --yes to skip)
+```
+
+Additive only, same as CI: indexes that exist in the project but not in the
+file are listed and left alone, never deleted. Deploying only starts the index
+build — see *Index backfill takes time* below.
+
+## Review-item backfill (one-off migration)
+
+The admin review queue lists `review_items`; since crawler/admin M1 the submit
+endpoint creates one alongside every `pantry_submissions` doc. Submissions made
+before that have none and would never appear in the admin. This creates the
+missing `review_items` entry for each pending submission:
+
+```sh
+npm run backfill-review-items:dev01             # dry run
+npm run backfill-review-items:dev01 -- --apply
+```
+
+Idempotent (submissions already queued are skipped) and create-only. Run the
+timestamp backfill first if any `pantry_submissions.createdAt` is still a
+string — such submissions are reported and skipped.
 
 ## Backup format
 

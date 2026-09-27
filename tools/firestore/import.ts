@@ -14,7 +14,7 @@
  *   npm run import:prod  -- <backup-folder> [--collections a,b] [--replace] [--yes]
  *
  * <backup-folder>  path to a backups/<env>/<timestamp>/ folder (relative paths
- *                  resolve from tools/backup, npm's working directory)
+ *                  resolve from tools/firestore, npm's working directory)
  * --collections    comma-separated subset to import; defaults to every
  *                  <name>.jsonl in the folder
  * --replace        mirror restore: after upserting, delete target docs whose

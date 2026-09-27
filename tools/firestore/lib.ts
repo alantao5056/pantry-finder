@@ -55,6 +55,18 @@ export function requireEnvArg(): Env {
   return env as Env;
 }
 
+/**
+ * The exact command to re-run the current npm script with --apply, for the
+ * dry-run hint. Spelled out because `npm run <script> --apply` (without the
+ * separating `--`) silently drops the flag — npm 11 even expands it into its
+ * own single-letter configs — so the script just dry-runs again.
+ */
+export function applyCommand(): string {
+  const script = process.env.npm_lifecycle_event ?? '<script>';
+  const args = process.argv.slice(3).filter((a) => a !== '--apply');
+  return ['npm run', script, '--', ...args, '--apply'].join(' ');
+}
+
 export function loadCredential(): LoadedCredential {
   const credentialPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
   if (credentialPath) {
@@ -68,7 +80,7 @@ export function loadCredential(): LoadedCredential {
   }
   throw new Error(
     'No credentials. Set FIREBASE_SERVICE_ACCOUNT_PATH or FIREBASE_SERVICE_ACCOUNT_JSON ' +
-      'in the tools/backup/.env.<env> file for this environment (see .env.example).',
+      'in the tools/firestore/.env.<env> file for this environment (see .env.example).',
   );
 }
 
@@ -90,7 +102,7 @@ function credentialFile(): { path: string; cleanup: () => void } {
   }
   throw new Error(
     'No credentials. Set FIREBASE_SERVICE_ACCOUNT_PATH or FIREBASE_SERVICE_ACCOUNT_JSON ' +
-      'in the tools/backup/.env.<env> file for this environment (see .env.example).',
+      'in the tools/firestore/.env.<env> file for this environment (see .env.example).',
   );
 }
 

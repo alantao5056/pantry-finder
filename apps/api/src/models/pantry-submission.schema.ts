@@ -52,6 +52,12 @@ export interface PantrySubmissionDocument {
   submitterAccountEmail?: string;
 
   // Moderation metadata.
-  status: 'pending';
+  // Kept in sync with the linked `review_items` doc, which owns the review.
+  status: 'pending' | 'approved' | 'rejected';
   createdAt: Timestamp;
+  reviewedAt?: Timestamp;
+  reviewedBy?: string;
+  // The created pantry, once approved.
+  pantryId?: string;
+  rejectionReason?: string;
 }

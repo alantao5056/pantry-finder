@@ -35,10 +35,10 @@ jobs:
           # packages/shared/dist is required at runtime by the API, which ships
           # raw dist and require()s @pantry-finder/shared/logging (the web app
           # bundles shared into .output, so it doesn't need it shipped).
-          source: "package.json,package-lock.json,apps/api/dist,apps/api/package.json,apps/api/package-lock.json,apps/web/.output,apps/web/package.json,apps/web/package-lock.json,packages/shared/dist,packages/shared/package.json"
+          source: "package.json,package-lock.json,apps/api/dist,apps/api/package.json,apps/api/package-lock.json,apps/web/.output,apps/web/package.json,apps/web/package-lock.json,apps/admin/.output,apps/admin/package.json,packages/shared/dist,packages/shared/package.json"
           target: ${{ secrets.REMOTE_TARGET }}
 
-      - name: Install Production Dependencies & Restart REST API and Web App
+      - name: Install Production Dependencies & Restart REST API, Web App and Admin
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.REMOTE_HOST }}
@@ -71,12 +71,19 @@ jobs:
             NUXT_PUBLIC_PHOTON_BASE=${{ secrets.PHOTON_BASE }}
             LOG_SERVICE_ACCOUNT_JSON=${{ secrets.LOG_SERVICE_ACCOUNT_JSON }}
             EOF
-            
+
+            cd ${{ secrets.REMOTE_TARGET }}/apps/admin
+
+            cat > .env.production << 'EOF'
+            NUXT_PUBLIC_API_BASE=${{ secrets.NUXT_PUBLIC_API_BASE }}
+            EOF
+
             # Install only production dependencies on the server
             cd ${{ secrets.REMOTE_TARGET }}
             npm install --omit=dev
 
             sudo systemctl restart pantry-finder-api
             sudo systemctl restart pantry-finder-web
+            sudo systemctl restart pantry-finder-admin
             
             echo "Deployment files synced and dependencies installed."

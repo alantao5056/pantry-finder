@@ -52,6 +52,12 @@ export class UserService {
     return { email: user.email, firstName: user.firstName, lastName: user.lastName, picture: user.picture };
   }
 
+  /** Always reads Firestore (never cached) so revoking admin takes effect immediately. */
+  public async isAdmin(email: string): Promise<boolean> {
+    const user = await this.getUserByEmail(email);
+    return user?.role === 'admin';
+  }
+
   public async verifyUser(email: string, password: string): Promise<VerifyUserResult> {
     const user = await this.getUserByEmail(email);
     if (!user || !user.passwordHash) {

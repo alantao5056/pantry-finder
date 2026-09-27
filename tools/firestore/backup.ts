@@ -13,7 +13,7 @@
  * Output goes to backups/<env>/<YYYY-MM-DD_HHmmss>/ so backups never collide
  * and their source environment is always visible.
  *
- *   npm run backup:dev01   (from tools/backup; uses .env.dev01)
+ *   npm run backup:dev01   (from tools/firestore; uses .env.dev01)
  *   npm run backup:dev02   (uses .env.dev02)
  *   npm run backup:prod    (uses .env.prod)
  *

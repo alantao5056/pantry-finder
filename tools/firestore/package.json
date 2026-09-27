@@ -1,0 +1,30 @@
+{
+  "name": "@pantry-finder/firestore-tools",
+  "version": "1.0.0",
+  "description": "Firestore ops for pantryfinder.org: backup, import, migrations, index deploy",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "backup:dev01": "tsx --env-file=.env.dev01 backup.ts dev01",
+    "backup:dev02": "tsx --env-file=.env.dev02 backup.ts dev02",
+    "backup:prod": "tsx --env-file=.env.prod backup.ts prod",
+    "import:dev01": "tsx --env-file=.env.dev01 import.ts dev01",
+    "import:dev02": "tsx --env-file=.env.dev02 import.ts dev02",
+    "import:prod": "tsx --env-file=.env.prod import.ts prod",
+    "backfill:dev01": "tsx --env-file=.env.dev01 backfill-timestamps.ts dev01",
+    "backfill:dev02": "tsx --env-file=.env.dev02 backfill-timestamps.ts dev02",
+    "backfill:prod": "tsx --env-file=.env.prod backfill-timestamps.ts prod",
+    "backfill-review-items:dev01": "tsx --env-file=.env.dev01 backfill-review-items.ts dev01",
+    "backfill-review-items:dev02": "tsx --env-file=.env.dev02 backfill-review-items.ts dev02",
+    "backfill-review-items:prod": "tsx --env-file=.env.prod backfill-review-items.ts prod",
+    "deploy-indexes:dev01": "tsx --env-file=.env.dev01 deploy-indexes.ts dev01",
+    "deploy-indexes:dev02": "tsx --env-file=.env.dev02 deploy-indexes.ts dev02",
+    "deploy-indexes:prod": "tsx --env-file=.env.prod deploy-indexes.ts prod"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.8.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2"
+  }
+}

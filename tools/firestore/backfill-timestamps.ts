@@ -29,7 +29,7 @@ import {
   Timestamp,
   type QueryDocumentSnapshot,
 } from 'firebase-admin/firestore';
-import { loadCredential, requireEnvArg } from './lib.js';
+import { applyCommand, loadCredential, requireEnvArg } from './lib.js';
 
 /** How many converted values to print as a sample in the dry-run report. */
 const SAMPLE_SIZE = 3;
@@ -149,7 +149,7 @@ async function main(): Promise<void> {
     console.error(`  FAILED WRITES: ${failed}`);
   }
   if (!apply && converted > 0) {
-    console.log('\n  Dry run only. Re-run with --apply to write these changes.');
+    console.log(`\n  Dry run only. To write these changes:\n    ${applyCommand()}`);
   }
 
   if (errors.length || failed) process.exitCode = 1;
