@@ -12,10 +12,10 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version-file: '.nvmrc'
 
@@ -52,6 +52,8 @@ jobs:
           username: ${{ secrets.REMOTE_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            set -e
+
             cd ${{ secrets.REMOTE_TARGET }}/apps/api
 
             cat > .env.production << 'EOF'
@@ -96,14 +98,14 @@ jobs:
             REDIS_URL=redis://127.0.0.1:6379
             EOF
 
-            # Install only production dependencies on the server
+            # Install only production dependencies on the server, with the npm
+            # version pinned in package.json "packageManager" (same as CI)
             cd ${{ secrets.REMOTE_TARGET }}
-            npm ci --omit=dev
+            npx -y "$(node -p "require('./package.json').packageManager")" ci --omit=dev
 
             sudo systemctl restart pantry-finder-api
             sudo systemctl restart pantry-finder-web
             sudo systemctl restart pantry-finder-admin
-            # Aborts a run in progress (marked `aborted`); the next run picks up the rest.
             sudo systemctl restart pantry-finder-crawler
             
             echo "Deployment files synced and dependencies installed."
