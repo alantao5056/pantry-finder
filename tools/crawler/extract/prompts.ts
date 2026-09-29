@@ -13,7 +13,7 @@ const FIELD_GUIDE = `Targets:
 - "phone": the pantry's main phone number, as written.
 - "email": the pantry's (or its organization's) contact email address. Not a webmaster, web designer or site-builder address.
 - "contactName": a named contact person for the pantry (not the organization name).
-- "aboutUs": a short description of the organization/pantry and its mission, as written on the site (may be condensed from several sentences, max ~600 characters).
+- "aboutUs": a short description of the food pantry / food ministry itself: what it does, who it serves, how long it has run, who runs it (as written on the site, may be condensed, max ~600 characters). When the pantry is run by a church or other larger organization, prefer text about the food program over the organization's general "About Us". Don't use church history, beliefs, worship, denominational statements or unrelated ministries. Fall back to the host organization's description only if it clearly mentions its food assistance, and set uncertain to true in that case.
 - "notes": practical information for people seeking food: eligibility, what to bring, registration, service area, drive-through, etc. Condense to max ~600 characters.
 - "schedules": the pantry's general hours for food distribution / visiting the pantry.
 - "services.<i>.schedules": hours of one specific service listed below, when the site gives hours for that service specifically.
