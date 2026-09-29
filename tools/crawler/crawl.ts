@@ -3,7 +3,10 @@
  * default: fetches and calls the LLM, prints what it would do, writes nothing.
  *
  *   npm run crawl:dev01 -- [--limit N] [--pantry <id>] [--concurrency N] [--apply]
- *   npm run crawl:dev01 -- --resume <runId> --apply
+ *
+ * Each run takes the `--limit` (default 100) least recently crawled pantries,
+ * so repeated runs rotate through all of them; an interrupted run's leftovers
+ * are simply picked up by the next one.
  */
 import PQueue from 'p-queue';
 import { Timestamp } from 'firebase-admin/firestore';
@@ -24,11 +27,11 @@ import { PantryCrawler, emptyStats } from './pipeline.js';
 import { selectPantries } from './select.js';
 import { SiteCache } from './site-cache.js';
 
-const CHECKPOINT_EVERY = 10;
+const DEFAULT_LIMIT = 100;
+const SAVE_EVERY = 10;
 
 const env = requireEnvArg();
 const apply = hasFlag('apply');
-const resumeId = flag('resume');
 const concurrency = intFlag('concurrency') ?? 8;
 const { db, projectId } = initFirestore();
 
@@ -40,21 +43,10 @@ peakHourWarning();
 
 // ---- run bookkeeping ----
 
-let options: CrawlRunDocument['options'] = { limit: intFlag('limit'), pantryId: flag('pantry') };
-let checkpoint: string | undefined;
+const options: CrawlRunDocument['options'] = { limit: intFlag('limit') ?? DEFAULT_LIMIT, pantryId: flag('pantry') };
 let runRef: FirebaseFirestore.DocumentReference | null = null;
 
-if (resumeId) {
-  if (!apply) throw new Error('--resume only makes sense with --apply.');
-  runRef = db.collection(COLLECTIONS.crawlRuns).doc(resumeId);
-  const run = (await runRef.get()).data() as CrawlRunDocument | undefined;
-  if (!run) throw new Error(`No crawl run ${resumeId}.`);
-  if (run.env !== env) throw new Error(`Run ${resumeId} was for ${run.env}, not ${env}.`);
-  options = run.options ?? {};
-  checkpoint = run.checkpoint;
-  await runRef.update({ status: 'running', finishedAt: null });
-  console.log(`Resuming run ${resumeId} after ${checkpoint ?? '(start)'}`);
-} else if (apply) {
+if (apply) {
   const run: CrawlRunDocument = {
     env,
     mode: 'apply',
@@ -70,9 +62,7 @@ if (resumeId) {
 
 // ---- pick pantries ----
 
-let todo = await selectPantries(db, options.pantryId);
-if (options.limit) todo = todo.slice(0, options.limit);
-if (checkpoint) todo = todo.filter((p) => p.id > checkpoint!);
+const todo = (await selectPantries(db, options.pantryId)).slice(0, options.limit);
 
 console.log(`${todo.length} pantr${todo.length === 1 ? 'y' : 'ies'} to crawl (concurrency ${concurrency}).`);
 
@@ -84,31 +74,17 @@ const siteCache = apply ? SiteCache.fromEnv() : SiteCache.disabled();
 await siteCache.check();
 const crawler = new PantryCrawler(db, fetcher, extractor, runRef?.id ?? null, apply, stats, siteCache);
 
-// Checkpoint = the highest id with every id before it done (tasks finish out of order).
-const done = new Set<string>();
-let nextIndex = 0;
 let completed = 0;
-const advanceCheckpoint = () => {
-  while (nextIndex < todo.length && done.has(todo[nextIndex].id)) {
-    checkpoint = todo[nextIndex].id;
-    nextIndex++;
-  }
-};
-
-// Counts and errors accumulate across resumed sessions.
-const initialRun = runRef ? ((await runRef.get()).data() as CrawlRunDocument) : null;
 const saveProgress = async (status?: CrawlRunDocument['status']) => {
-  if (!runRef || !initialRun) return;
-  const base = initialRun.counts;
+  if (!runRef) return;
   await runRef.update({
     counts: {
-      fetched: base.fetched + stats.fetched,
-      failed: base.failed + stats.failed,
-      autoUpdated: base.autoUpdated + stats.autoUpdated,
-      reviewItemsCreated: base.reviewItemsCreated + stats.reviewItemsCreated,
+      fetched: stats.fetched,
+      failed: stats.failed,
+      autoUpdated: stats.autoUpdated,
+      reviewItemsCreated: stats.reviewItemsCreated,
     },
-    errors: [...(initialRun.errors ?? []), ...stats.errors].slice(-100),
-    ...(checkpoint ? { checkpoint } : {}),
+    errors: stats.errors,
     ...(status ? { status, finishedAt: Timestamp.now() } : {}),
   });
 };
@@ -117,10 +93,9 @@ let aborting = false;
 process.on('SIGINT', () => {
   if (aborting) process.exit(130);
   aborting = true;
-  console.warn('\nInterrupted: saving checkpoint (Ctrl+C again to force quit)…');
+  console.warn('\nInterrupted: saving progress (Ctrl+C again to force quit)…');
   void saveProgress('aborted').then(async () => {
     await siteCache.close();
-    if (runRef) console.warn(`Resume with: npm run ${process.env.npm_lifecycle_event} -- --resume ${runRef.id} --apply`);
     process.exit(130);
   });
 });
@@ -131,10 +106,8 @@ for (const p of todo) {
     if (aborting) return;
     console.log(`${p.id} ${p.pantry.name} — ${p.url}`);
     await crawler.process(p.id, p.pantry);
-    done.add(p.id);
     completed++;
-    advanceCheckpoint();
-    if (completed % CHECKPOINT_EVERY === 0) await saveProgress();
+    if (completed % SAVE_EVERY === 0) await saveProgress();
   });
 }
 await queue.onIdle();

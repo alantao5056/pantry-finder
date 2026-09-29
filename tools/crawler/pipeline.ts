@@ -123,6 +123,15 @@ export class PantryCrawler {
     } catch (err) {
       this.error(id, errorMessage(err));
     }
+    // Stamped on failures too, so a dead site moves to the back of the rotation
+    // (select.ts) instead of taking a slot in every run.
+    if (this.apply) {
+      try {
+        await this.db.collection(COLLECTIONS.pantries).doc(id).update({ lastCrawledAt: Timestamp.now() });
+      } catch (err) {
+        this.error(id, `lastCrawledAt: ${errorMessage(err)}`);
+      }
+    }
   }
 
   private async processInner(id: string, pantry: StoredPantry): Promise<void> {
@@ -164,10 +173,6 @@ export class PantryCrawler {
     for (const m of mappings.values()) {
       if (m.status !== 'active' && m.status !== 'needs_recheck') continue;
       await this.refresh(id, pantry, m, pages);
-    }
-
-    if (this.apply) {
-      await this.db.collection(COLLECTIONS.pantries).doc(id).update({ lastCrawledAt: Timestamp.now() });
     }
   }
 

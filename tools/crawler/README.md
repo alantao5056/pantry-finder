@@ -45,11 +45,17 @@ change log uses: `npm run deploy-indexes:dev01 -- --apply` from `tools/firestore
 From `tools/crawler`:
 
 ```sh
-npm run crawl:dev01 -- --limit 5                 # dry run on the first 5 eligible pantries (by id)
-npm run crawl:dev01 -- --limit 5 --apply         # same, writing results
-npm run crawl:dev01 -- --pantry <pantryId>       # one pantry (any site)
-npm run crawl:dev01 -- --resume <runId> --apply  # continue an interrupted run
+npm run crawl:dev01                          # dry run on the 100 least recently crawled pantries
+npm run crawl:dev01 -- --limit 5 --apply     # 5 of them, writing results
+npm run crawl:dev01 -- --pantry <pantryId>   # one pantry (any site)
 ```
+
+Each run takes the `--limit` (default 100) eligible pantries with the oldest
+`lastCrawledAt` (never-crawled first, then by id), so repeated `--apply` runs
+rotate through every site. `lastCrawledAt` is stamped on every visit in
+`--apply` mode — whatever the outcome (pending review, failed fetch, …) — so
+dead sites go to the back of the line. Dry runs stamp nothing and pick the
+same pantries each time.
 
 Other options: `--concurrency N` (pantries in parallel, default 8; each host
 still gets at most one request per second).
@@ -75,8 +81,8 @@ What a run does per pantry:
    for `website`; the website is never changed automatically.
 
 Each `--apply` run is recorded in `crawl_runs` (admin → Crawler) with counts,
-recent errors, and a checkpoint. Ctrl+C saves the checkpoint and prints the
-`--resume` command.
+and recent errors. Ctrl+C saves progress and marks the run `aborted`; the
+pantries it didn't reach are first in line for the next run.
 
 Review items, the change log (with per-change and per-run revert) and the tier
 comparison live in the admin site.

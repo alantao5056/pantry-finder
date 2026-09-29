@@ -18,7 +18,11 @@ export interface CrawlTarget {
   url: string;
 }
 
-/** Sorted by id. With `pantryId`, just that pantry (the caller vouches it's single-site). */
+/**
+ * Least recently crawled first (never-crawled before all), then by id, so
+ * successive limited runs rotate through every site. With `pantryId`, just
+ * that pantry (the caller vouches it's single-site).
+ */
 export async function selectPantries(db: Firestore, pantryId?: string): Promise<CrawlTarget[]> {
   // Only pantries with a website are read (~3.8k docs, not the whole collection).
   const docs = pantryId
@@ -36,5 +40,9 @@ export async function selectPantries(db: Firestore, pantryId?: string): Promise<
   for (const p of withSite) perSite.set(siteOf(p.url), (perSite.get(siteOf(p.url)) ?? 0) + 1);
   return withSite
     .filter((p) => pantryId || perSite.get(siteOf(p.url)) === 1)
-    .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+    .sort((a, b) => crawledMs(a) - crawledMs(b) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+}
+
+function crawledMs(p: CrawlTarget): number {
+  return p.pantry.lastCrawledAt?.toMillis() ?? 0;
 }

@@ -176,10 +176,7 @@ export interface CrawlRunDocument {
   counts: CrawlRunCounts;
   // Most recent error messages, capped by the crawler.
   errors: string[];
-  // Resume point: pantries are processed in id order; everything up to and
-  // including this id is done.
-  checkpoint?: string;
-  // CLI filters the run was started with, reused on --resume.
+  // CLI filters the run was started with.
   options?: { limit?: number; pantryId?: string };
 }
 

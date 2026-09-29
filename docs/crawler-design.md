@@ -125,7 +125,7 @@ New collections:
 
 | Collection | One doc per | Key contents |
 |---|---|---|
-| `crawl_runs` | crawler run | status, start/end, env, counts (fetched, failed, auto-updated, new review items), errors, resume checkpoint |
+| `crawl_runs` | crawler run | status, start/end, env, counts (fetched, failed, auto-updated, new review items), errors, CLI options |
 | `crawl_sources` | URL | `needsBrowser`, robots result, last fetch time / HTTP status, consecutive-miss count |
 | `field_mappings` | pantry × field | URL, selector, text anchor, row key, target (field or service index), status `active` / `broken` / `needs_recheck`, confirmedBy / confirmedAt |
 | `extraction_cache` | raw-text hash | confirmed parsed value, confirmedBy / confirmedAt |
@@ -154,7 +154,9 @@ HTML snapshots. The admin links to the live URL for context.
   Playwright only when needed
 - p-queue with per-host rate limiting
 - env files `.env.dev01` / `.env.dev02` / `.env.prod`
-- progress checkpointed in `crawl_runs`; interrupted runs resume
+- each run takes the N (default 100) least recently crawled pantries
+  (`pantries.lastCrawledAt`), so runs rotate through all sites and an
+  interrupted run's leftovers go first next time
 - run **manually** by the maintainer (no cron in phase 1)
 - run summary reminds to re-run `tools/sitemap` when pantries were added or
   addresses changed
@@ -304,9 +306,10 @@ Decisions made while building M2, on top of the design above. Usage:
   `llm_evals/{id}/items`, with A/B shuffled per site; the admin grades each
   target per side (correct / partial / wrong) and shows accuracy, tokens and
   estimated cost per model.
-- **Runs:** only `--apply` runs are recorded in `crawl_runs`. `checkpoint` is
-  the highest pantry id with every earlier id finished; `--resume` continues
-  from it with the run's original options.
+- **Runs:** only `--apply` runs are recorded in `crawl_runs`. There is no
+  resume: every visit in `--apply` mode stamps `pantries.lastCrawledAt`
+  (failures included, so dead sites don't hog slots), and each run picks the
+  oldest-stamped pantries.
 - **Indexes:** `pantry_changes (runId ASC, createdAt DESC)` and
   `(pantryId ASC, createdAt DESC)` for the change log.
 - **API cache invalidation:** the API caches pantry detail (24h) and city
