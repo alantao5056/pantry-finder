@@ -15,11 +15,21 @@
       "types": "./dist/logging.d.ts",
       "import": "./dist/logging.js",
       "require": "./dist/cjs/logging.js"
+    },
+    "./firestore": {
+      "types": "./dist/firestore/index.d.ts",
+      "import": "./dist/firestore/index.js",
+      "require": "./dist/cjs/firestore/index.js"
     }
   },
   "typesVersions": {
     "*": {
-      "logging": ["dist/logging.d.ts"]
+      "logging": [
+        "dist/logging.d.ts"
+      ],
+      "firestore": [
+        "dist/firestore/index.d.ts"
+      ]
     }
   },
   "scripts": {
@@ -28,7 +38,16 @@
   "dependencies": {
     "@google-cloud/logging": "^11.2.0"
   },
+  "peerDependencies": {
+    "firebase-admin": "^13.8.0"
+  },
+  "peerDependenciesMeta": {
+    "firebase-admin": {
+      "optional": true
+    }
+  },
   "devDependencies": {
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "firebase-admin": "^13.8.0"
   }
 }

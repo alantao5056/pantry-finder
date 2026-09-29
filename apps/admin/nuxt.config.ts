@@ -12,7 +12,11 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:8080',
-      siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'https://pantryfinder.org',
+      // Public site for "view pantry" links. Pantry ids differ per Firestore
+      // environment, so under `nuxt dev` link to the local web app (same local
+      // API, same database) rather than prod.
+      siteUrl: process.env.NUXT_PUBLIC_SITE_URL
+        || (process.env.NODE_ENV === 'production' ? 'https://pantryfinder.org' : 'http://localhost:3000'),
     },
   },
   app: {

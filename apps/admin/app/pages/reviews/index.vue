@@ -32,10 +32,7 @@ const columns: TableColumn<ReviewItemSummary>[] = [
   { accessorKey: 'resolvedBy', header: 'Resolved by' },
 ]
 
-// Only user submissions have a detail page in M1.
-const open = (_e: Event, row: TableRow<ReviewItemSummary>) => {
-  if (row.original.type === 'user_submission') navigateTo(`/reviews/${row.original.id}`)
-}
+const open = (_e: Event, row: TableRow<ReviewItemSummary>) => navigateTo(`/reviews/${row.original.id}`)
 </script>
 
 <template>

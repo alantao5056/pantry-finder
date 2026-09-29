@@ -7,6 +7,7 @@ import type {
   ReviewItemSummary,
   SubmissionReviewDetail,
 } from '@pantry-finder/shared';
+import { isEmpty, stableStringify } from '@pantry-finder/shared';
 import { db, geoFirestore } from '../config/firebase';
 import { GeoService } from './geo.service';
 import { ReviewItemDocument } from '../models/review-item.schema';
@@ -19,6 +20,8 @@ import {
   TrackedPantryField,
 } from '../models/pantry.schema';
 import { pruneUndefined } from '../utils/firestore.util';
+import { invalidatePantryCaches } from '../cache/pantryCaches';
+import { COLLECTIONS, mappingId, type FieldMappingDocument } from '@pantry-finder/shared/firestore';
 
 // Existing pantries within this distance of a submission are flagged as
 // possible duplicates.
@@ -30,7 +33,7 @@ const TRACKED_FIELDS: TrackedPantryField[] = [
   'website', 'aboutUs', 'contactName', 'notes', 'schedules', 'services',
 ];
 
-export type ReviewErrorCode = 'not_found' | 'wrong_type' | 'not_pending' | 'geocode_failed';
+export type ReviewErrorCode = 'not_found' | 'wrong_type' | 'not_pending' | 'geocode_failed' | 'invalid';
 
 export class ReviewError extends Error {
   constructor(public readonly code: ReviewErrorCode) {
@@ -42,7 +45,7 @@ function toIso(ts?: Timestamp): string | undefined {
   return ts ? ts.toDate().toISOString() : undefined;
 }
 
-function toSummary(id: string, doc: ReviewItemDocument): ReviewItemSummary {
+export function toSummary(id: string, doc: ReviewItemDocument): ReviewItemSummary {
   return {
     id,
     type: doc.type,
@@ -77,24 +80,12 @@ function oneLineAddress(d: Pick<PantryDraft, 'address1' | 'city' | 'state' | 'zi
   return `${d.address1}, ${d.city}, ${d.state} ${d.zipCode}`;
 }
 
-/** JSON with sorted object keys, so field comparisons ignore key order. */
-function stableStringify(value: unknown): string {
-  return JSON.stringify(value, (_k, v) =>
-    v && typeof v === 'object' && !Array.isArray(v)
-      ? Object.fromEntries(Object.entries(v).sort(([a], [b]) => a.localeCompare(b)))
-      : v
-  );
-}
-
-function isEmpty(value: unknown): boolean {
-  return value === undefined || value === '' || (Array.isArray(value) && value.length === 0);
-}
-
 export class ReviewService {
   private readonly reviewItemsCol = db.collection('review_items');
   private readonly submissionsCol = db.collection('pantry_submissions');
   private readonly changesCol = db.collection('pantry_changes');
   private readonly pantriesCol = db.collection('pantries');
+  private readonly mappingsCol = db.collection(COLLECTIONS.fieldMappings);
   private readonly geoService = new GeoService();
 
   public async listItems(status: ReviewItemStatus): Promise<ReviewItemSummary[]> {
@@ -104,6 +95,12 @@ export class ReviewService {
       .limit(LIST_LIMIT)
       .get();
     return snapshot.docs.map((d) => toSummary(d.id, d.data() as ReviewItemDocument));
+  }
+
+  public async getItem(id: string): Promise<ReviewItemSummary> {
+    const snap = await this.reviewItemsCol.doc(id).get();
+    if (!snap.exists) throw new ReviewError('not_found');
+    return toSummary(snap.id, snap.data() as ReviewItemDocument);
   }
 
   public async getSubmissionDetail(id: string): Promise<SubmissionReviewDetail> {
@@ -152,7 +149,7 @@ export class ReviewService {
     if (!location) throw new ReviewError('geocode_failed');
 
     const itemRef = this.reviewItemsCol.doc(id);
-    return db.runTransaction(async (tx) => {
+    const pantryId = await db.runTransaction(async (tx) => {
       const itemSnap = await tx.get(itemRef);
       if (!itemSnap.exists) throw new ReviewError('not_found');
       const item = itemSnap.data() as ReviewItemDocument;
@@ -230,6 +227,9 @@ export class ReviewService {
 
       return pantryRef.id;
     });
+    // The new pantry belongs in its city's cached list.
+    await invalidatePantryCaches({ id: pantryId, state: draft.state, city: draft.city });
+    return pantryId;
   }
 
   public async rejectItem(id: string, reason: string, adminEmail: string): Promise<void> {
@@ -240,7 +240,18 @@ export class ReviewService {
       const item = itemSnap.data() as ReviewItemDocument;
       if (item.status !== 'pending') throw new ReviewError('not_pending');
 
+      // A rejected mapping proposal frees its targets; the crawler proposes
+      // again only once the site's content changes.
+      const proposedRefs =
+        item.type === 'new_mapping' && item.pantryId && item.newMapping
+          ? item.newMapping.proposals.map((p) => this.mappingsCol.doc(mappingId(item.pantryId!, p.target)))
+          : [];
+      const proposedSnaps = proposedRefs.length ? await tx.getAll(...proposedRefs) : [];
+
       const now = Timestamp.now();
+      for (const snap of proposedSnaps) {
+        if (snap.exists && (snap.data() as FieldMappingDocument).status === 'proposed') tx.delete(snap.ref);
+      }
       tx.update(itemRef, {
         status: 'rejected',
         resolvedAt: now,

@@ -1,2 +1,16 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
+
+@layer components {
+  /* A selectable option card in crawler reviews (mapping candidates). */
+  .candidate {
+    @apply block rounded-md border border-(--ui-border) p-3 cursor-pointer;
+  }
+  .candidate-picked {
+    @apply border-(--ui-primary) bg-(--ui-bg-elevated);
+  }
+  /* Page text a crawler value was read from. */
+  .raw-text {
+    @apply text-xs font-mono whitespace-pre-wrap bg-(--ui-bg-muted) rounded p-2 max-h-48 overflow-auto;
+  }
+}

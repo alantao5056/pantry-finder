@@ -23,6 +23,22 @@
         { "fieldPath": "status", "order": "ASCENDING" },
         { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "pantry_changes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "runId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "pantry_changes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "pantryId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

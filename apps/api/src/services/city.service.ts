@@ -8,6 +8,7 @@ import {
 } from '@pantry-finder/shared';
 import { db } from '../config/firebase';
 import { createCache } from '../cache/createCache';
+import { cityPantriesCache } from '../cache/pantryCaches';
 import { mapPantryDocumentToDto } from '../utils/pantry.mapper';
 import { PantryDocument } from '../models/pantry.schema';
 import { CITY_PAGE_SIZE } from '../config/constants';
@@ -43,10 +44,8 @@ export class CityService {
   });
 
   // Full (unpaginated) pantry list per city, keyed by `${stateSlug}_${citySlug}`.
-  private readonly cityPantriesCache = createCache<Pantry[]>('pf:city:pantries:', {
-    ttlMs: INDEX_TTL,
-    max: 4000,
-  });
+  // Shared with the admin/crawler write paths, which invalidate it.
+  private readonly cityPantriesCache = cityPantriesCache();
 
   // Coalesces concurrent fetches per cache key so a burst of cold requests
   // triggers a single cache read + at most one Firestore query. The cache

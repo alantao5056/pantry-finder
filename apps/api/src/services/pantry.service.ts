@@ -1,6 +1,6 @@
 import { GeoPoint, Timestamp } from 'firebase-admin/firestore';
 import { db, geoFirestore } from '../config/firebase';
-import { createCache } from '../cache/createCache';
+import { pantryByIdCache } from '../cache/pantryCaches';
 import { GeoService } from './geo.service';
 import { searchLogService } from './search-log.service';
 import { mapPantryDocumentToDto } from '../utils/pantry.mapper';
@@ -17,11 +17,9 @@ export class PantryService {
 
   // Pantry data changes rarely, so cache detail lookups by doc id. Note this
   // also holds heartCount, which can lag up to the TTL behind heart/unheart —
-  // and with the Redis backend that lag survives restarts too.
-  private readonly pantryByIdCache = createCache<Pantry>('pf:pantry:id:', {
-    ttlMs: 24 * 60 * 60 * 1000, // 24 hours
-    max: 10000,
-  });
+  // and with the Redis backend that lag survives restarts too. Admin and
+  // crawler writes invalidate it (see cache/pantryCaches.ts).
+  private readonly pantryByIdCache = pantryByIdCache();
 
   /**
    * Searches for pantries within a specified radius of a location (street address or US zipcode).

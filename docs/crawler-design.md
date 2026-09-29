@@ -1,7 +1,8 @@
 # Pantry Crawler & Admin — Design
 
-Status: agreed design, decided 2026-09-26. M1 implemented (see
-[M1 implementation notes](#m1-implementation-notes)); M2–M5 not started.
+Status: agreed design, decided 2026-09-26. M1 and M2 implemented (see
+[M1](#m1-implementation-notes) and [M2 implementation notes](#m2-implementation-notes));
+M3–M5 not started.
 
 ## Goal
 
@@ -239,3 +240,81 @@ Decisions made while building M1, on top of the design above:
   `infra/firestore/firestore.indexes.json` (auto-deployed to prod on merge;
   deploy to dev with `npm run deploy-indexes:<env> -- --apply` from
   `tools/firestore`).
+
+## M2 implementation notes
+
+Decisions made while building M2, on top of the design above. Usage:
+[`tools/crawler/README.md`](../tools/crawler/README.md).
+
+- **Scope of a run:** pantries whose website host (ignoring `www.`) is used by
+  no other pantry, minus facebook.com / instagram.com. Pantries are read with
+  `where('website', '>', '')`, not a full collection scan.
+- **Pages:** the homepage plus up to 5 same-site links whose URL or link text
+  suggests hours / pantry / contact / about. Playwright is not in M2: a page
+  with under 200 characters of text and script bundles is flagged
+  `needsBrowser` in `crawl_sources` and skipped.
+- **Block ids instead of LLM selectors:** pages are split into numbered text
+  blocks (`[p0b12] text`); the LLM answers with block ids and the crawler
+  derives the CSS selector (unique ids only, then `tag:nth-of-type` steps) and
+  the text anchor (nearest heading, `<h1–6>` or a short all-bold block). A
+  candidate's raw text is read back through its selector, exactly as later runs
+  read it, so the stored `lastRawHash` matches.
+- **Targets:** `phone`, `contactName`, `aboutUs`, `notes`, `schedules`,
+  `services.<i>.schedules` (`MappingTarget` in `packages/shared/src/crawl.ts`).
+  `website` is not extracted; it is only proposed (as `suspicious_value`, reason
+  `redirect`) when the homepage redirects to another site.
+- **Normalization:** values are compared and stored in the existing formats —
+  phone `555-123-4567`, times `9:00 AM`, full weekday names,
+  `everyOtherWeekIndicator` always set — so formatting differences are not
+  changes. Patterns the schema can't express (e.g. "2nd & 4th Tuesday") go in
+  the schedule entry's `notes`, flagged uncertain.
+- **Mapping states:** `field_mappings/{pantryId}_{target}` adds `proposed`
+  (waiting in a review item; the pantry isn't re-proposed meanwhile) and
+  `rejected` (admin said "not on this site"; never re-proposed) to the design's
+  `active` / `broken` / `needs_recheck`. Rejecting a whole `new_mapping` item
+  deletes its `proposed` mappings; the site is proposed again only once its
+  content changes (`proposalHash` on the homepage's `crawl_sources` doc).
+- **Review payloads** live on the review item itself (`newMapping` /
+  `suspicious` fields of `review_items`), not in a separate collection.
+- **Confirming** a mapping (or approving a suspicious value) writes, in one
+  transaction: the mapping (`active`, selector, anchor, `lastRawHash`), the
+  `extraction_cache` entry for that raw text, the pantry update, and one
+  `pantry_changes` entry per changed target. `fieldSources` says `crawler`, or
+  `admin` when the admin edited the parsed value.
+- **Minimal guardrails** (the rest is M3): hours going from non-empty to
+  empty; closure wording (narrowed to *permanently*, *temporarily closed*,
+  *closed until further notice*, *cancelled*, *suspended*, *no longer open*… —
+  plain "closed" appears in ordinary hours text); the LLM flagging its parse
+  uncertain; the mapping being `needs_recheck`. Any of these files a
+  `suspicious_value` item instead of applying. A region that can't be located
+  marks the mapping `broken`; broken-mapping review is M3.
+- **Rollback:** `pantry_changes` entries gain `target`, `mappingId`,
+  `revertOf`, `revertedAt` / `revertedBy`. A revert refuses (409) when the
+  field no longer holds the value the change wrote. Reverting a run walks its
+  changes newest first and reports the ones it skipped. Only field updates are
+  revertible (not `create` entries from submissions).
+- **Shared code:** Firestore document shapes and the write/revert logic moved to
+  the server-only subpath `@pantry-finder/shared/firestore` (firebase-admin is
+  a peer dependency); the API's `models/*.schema.ts` re-export them.
+  `normalize*` / `sameTargetValue` / `stableStringify` are in the main barrel.
+- **LLM:** DeepSeek's OpenAI-compatible `/chat/completions` in JSON mode via
+  Node's built-in fetch (no SDK); responses validated with zod. Model ids as of
+  2026-09: `deepseek-flash` (V4.1 Flash), `deepseek-v4-pro` (V4 Pro).
+- **Tier comparison:** `compare-tiers` stores both models' proposals per site in
+  `llm_evals/{id}/items`, with A/B shuffled per site; the admin grades each
+  target per side (correct / partial / wrong) and shows accuracy, tokens and
+  estimated cost per model.
+- **Runs:** only `--apply` runs are recorded in `crawl_runs`. `checkpoint` is
+  the highest pantry id with every earlier id finished; `--resume` continues
+  from it with the run's original options.
+- **Indexes:** `pantry_changes (runId ASC, createdAt DESC)` and
+  `(pantryId ASC, createdAt DESC)` for the change log.
+- **API cache invalidation:** the API caches pantry detail (24h) and city
+  pantry lists (48h) in Redis. Every admin write (confirm mapping, approve
+  value, revert, approve submission) deletes that pantry's entries; the
+  crawler does the same for its automatic updates when `REDIS_URL` is set
+  (keys from `pantryCacheKeys` in `packages/shared/src/cache-keys.ts`). For
+  writes the API can't see otherwise (a local crawler run against an API with
+  in-process caches), the change log has a per-pantry **Clear cache** action
+  (`POST /admin/pantries/:id/evict-cache`). Name or
+  address changes (M3) will also need the *old* city's list cleared.

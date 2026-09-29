@@ -24,6 +24,7 @@ const columns: TableColumn<CrawlRunSummary>[] = [
   { accessorKey: 'status', header: 'Status' },
   { accessorKey: 'counts', header: 'Fetched / failed / auto-updated / to review' },
   { accessorKey: 'errors', header: 'Errors' },
+  { id: 'changes', header: '' },
 ]
 
 const expanded = ref<string | null>(null)
@@ -68,6 +69,16 @@ const expanded = ref<string | null>(null)
               <li v-for="(e, i) in row.original.errors" :key="i">{{ e }}</li>
             </ul>
           </div>
+        </template>
+        <template #changes-cell="{ row }">
+          <UButton
+            :to="{ path: '/changes', query: { runId: row.original.id } }"
+            label="Changes"
+            icon="i-lucide-history"
+            color="neutral"
+            variant="ghost"
+            size="xs"
+          />
         </template>
       </UTable>
     </UCard>

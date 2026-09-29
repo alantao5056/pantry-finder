@@ -5,6 +5,8 @@
 // stored record itself, so there is no public-facing remapping to hide behind.
 // Timestamps travel as ISO strings.
 
+import type { MappingTarget, TargetValue } from './crawl.js';
+
 export type ReviewItemType =
   | 'new_mapping'
   | 'broken_mapping'
@@ -122,9 +124,12 @@ export interface CrawlRunCounts {
   reviewItemsCreated: number;
 }
 
+export type CrawlRunMode = 'dry-run' | 'apply';
+
 export interface CrawlRunSummary {
   id: string;
   env: string;
+  mode: CrawlRunMode;
   status: CrawlRunStatus;
   startedAt: string;
   finishedAt?: string;
@@ -134,4 +139,180 @@ export interface CrawlRunSummary {
 
 export interface ListCrawlRunsResponse {
   runs: CrawlRunSummary[];
+}
+
+// ---- Crawler mappings (review types `new_mapping` / `suspicious_value`) ----
+
+/** One place on a crawled page that a target's value could come from. */
+export interface MappingCandidate {
+  url: string;
+  selector: string;
+  /** Heading text the region sits under; used when the selector stops matching. */
+  textAnchor?: string;
+  rawText: string;
+  /** The LLM's parse of `rawText`, normalized to the stored format. */
+  value: TargetValue;
+  /** The LLM flagged its own parse as unsure. */
+  uncertain: boolean;
+}
+
+export interface TargetProposal {
+  target: MappingTarget;
+  candidates: MappingCandidate[];
+}
+
+export interface MappingReviewField {
+  target: MappingTarget;
+  currentValue: TargetValue;
+  candidates: MappingCandidate[];
+  /** Once resolved: the candidate that was confirmed (null = rejected). */
+  confirmedCandidate?: number | null;
+}
+
+export interface MappingReviewDetail {
+  item: ReviewItemSummary;
+  pantryId: string;
+  pantryName: string;
+  website: string;
+  fetchedAt: string;
+  /** Service names by index, for labelling `services.<i>.schedules` targets. */
+  serviceNames: string[];
+  fields: MappingReviewField[];
+  rejectionReason?: string;
+}
+
+export interface ConfirmMappingField {
+  target: MappingTarget;
+  /** Index into that target's candidates; null rejects the target. */
+  candidateIndex: number | null;
+  /** The (possibly admin-edited) value to apply; required when a candidate is picked. */
+  value?: TargetValue;
+}
+
+export interface ConfirmMappingRequest {
+  fields: ConfirmMappingField[];
+}
+
+export interface ConfirmMappingResponse {
+  /** Number of pantry fields that changed. */
+  applied: number;
+}
+
+export type SuspiciousReason =
+  | 'emptied_schedules'
+  | 'closure_words'
+  | 'uncertain'
+  | 'needs_recheck'
+  | 'redirect';
+
+export interface SuspiciousReviewDetail {
+  item: ReviewItemSummary;
+  pantryId: string;
+  pantryName: string;
+  target: MappingTarget;
+  url: string;
+  rawText: string;
+  reasons: SuspiciousReason[];
+  currentValue: TargetValue;
+  proposedValue: TargetValue;
+  /** Service names by index, for labelling `services.<i>.schedules` targets. */
+  serviceNames: string[];
+  rejectionReason?: string;
+}
+
+export interface ApproveValueRequest {
+  value: TargetValue;
+}
+
+// ---- Change log ----
+
+export type PantryChangeKind = 'create' | 'update' | 'archive' | 'restore';
+
+export interface PantryChangeSummary {
+  id: string;
+  pantryId: string;
+  kind: PantryChangeKind;
+  field?: string;
+  target?: MappingTarget;
+  oldValue?: unknown;
+  newValue?: unknown;
+  source: string;
+  actor: string;
+  runId?: string;
+  reviewItemId?: string;
+  createdAt: string;
+  /** This entry is itself a revert of that change. */
+  revertOf?: string;
+  revertedAt?: string;
+  revertedBy?: string;
+}
+
+export interface ListChangesResponse {
+  changes: PantryChangeSummary[];
+  /** Pass back as `cursor` for the next page; absent on the last page. */
+  nextCursor?: string;
+}
+
+export interface RevertConflict {
+  changeId: string;
+  reason: string;
+}
+
+export interface RevertRunResponse {
+  reverted: number;
+  conflicts: RevertConflict[];
+}
+
+// ---- LLM tier comparison ----
+
+export type EvalGrade = 'correct' | 'partial' | 'wrong';
+export type EvalVariantKey = 'A' | 'B';
+
+export interface LlmEvalVariant {
+  model: string;
+  proposals: TargetProposal[];
+  inputTokens: number;
+  outputTokens: number;
+  error?: string;
+}
+
+export interface LlmEvalItem {
+  id: string;
+  pantryId: string;
+  pantryName: string;
+  url: string;
+  /** Which model is A / B is shuffled per item so grading stays blind. */
+  variants: Record<EvalVariantKey, LlmEvalVariant>;
+  /** Per variant, per target. */
+  grades: Record<EvalVariantKey, Partial<Record<MappingTarget, EvalGrade>>>;
+}
+
+export interface LlmEvalModelStats {
+  model: string;
+  inputTokens: number;
+  outputTokens: number;
+  grades: Record<EvalGrade, number>;
+}
+
+export interface LlmEvalSummary {
+  id: string;
+  env: string;
+  createdAt: string;
+  itemCount: number;
+  models: LlmEvalModelStats[];
+}
+
+export interface ListLlmEvalsResponse {
+  evals: LlmEvalSummary[];
+}
+
+export interface LlmEvalDetail {
+  summary: LlmEvalSummary;
+  items: LlmEvalItem[];
+}
+
+export interface GradeLlmEvalRequest {
+  variant: EvalVariantKey;
+  target: MappingTarget;
+  grade: EvalGrade;
 }

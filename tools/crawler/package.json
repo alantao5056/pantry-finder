@@ -1,0 +1,29 @@
+{
+  "name": "@pantry-finder/crawler",
+  "version": "1.0.0",
+  "description": "Crawls pantry websites to keep pantry data current (docs/crawler-design.md)",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "crawl:dev01": "npm --prefix ../../packages/shared run build && tsx --env-file=.env.dev01 crawl.ts dev01",
+    "crawl:dev02": "npm --prefix ../../packages/shared run build && tsx --env-file=.env.dev02 crawl.ts dev02",
+    "crawl:prod": "npm --prefix ../../packages/shared run build && tsx --env-file=.env.prod crawl.ts prod",
+    "compare-tiers:dev01": "npm --prefix ../../packages/shared run build && tsx --env-file=.env.dev01 compare-tiers.ts dev01",
+    "compare-tiers:dev02": "npm --prefix ../../packages/shared run build && tsx --env-file=.env.dev02 compare-tiers.ts dev02",
+    "compare-tiers:prod": "npm --prefix ../../packages/shared run build && tsx --env-file=.env.prod compare-tiers.ts prod",
+    "inspect": "tsx inspect.ts",
+    "typecheck": "tsc -p ."
+  },
+  "dependencies": {
+    "@pantry-finder/shared": "*",
+    "cheerio": "^1.2.0",
+    "firebase-admin": "^13.8.0",
+    "ioredis": "^5.11.1",
+    "p-queue": "^9.3.3",
+    "robots-parser": "^3.0.1",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2"
+  }
+}

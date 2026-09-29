@@ -4,6 +4,8 @@ const { admin, logout } = useAdminAuth()
 const links = [
   { label: 'Review queue', to: '/reviews', icon: 'i-lucide-inbox' },
   { label: 'Crawler', to: '/crawler', icon: 'i-lucide-bot' },
+  { label: 'Change log', to: '/changes', icon: 'i-lucide-history' },
+  { label: 'LLM eval', to: '/llm-evals', icon: 'i-lucide-scale' },
 ]
 </script>
 

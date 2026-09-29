@@ -15,6 +15,8 @@ export class CrawlRunService {
       return {
         id: doc.id,
         env: run.env,
+        // Runs are only recorded in apply mode; older docs predate the field.
+        mode: run.mode ?? 'apply',
         status: run.status,
         startedAt: run.startedAt.toDate().toISOString(),
         finishedAt: run.finishedAt?.toDate().toISOString(),
