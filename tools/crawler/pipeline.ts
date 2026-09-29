@@ -35,6 +35,7 @@ import type { Fetcher } from './fetch/fetcher.js';
 import { errorMessage, hostOf, siteOf } from './fetch/fetcher.js';
 import type { Extractor, PantryContext, Usage } from './extract/Extractor.js';
 import { suspiciousReasons } from './guardrails.js';
+import type { Logger } from './logger.js';
 import type { SiteCache } from './site-cache.js';
 import { locateRegion } from './page/locate.js';
 import {
@@ -115,6 +116,7 @@ export class PantryCrawler {
     private readonly apply: boolean,
     readonly stats: RunStats,
     private readonly siteCache: SiteCache,
+    private readonly logger: Logger,
   ) {}
 
   async process(id: string, pantry: StoredPantry): Promise<void> {
@@ -208,7 +210,7 @@ export class PantryCrawler {
       this.log(id, `would propose ${proposals.length} target(s):`);
       for (const p of proposals) {
         const c = p.candidates[0];
-        console.log(`    ${p.target} ← ${JSON.stringify(c.value).slice(0, 160)}${c.uncertain ? ' (uncertain)' : ''}\n      ${c.url} :: ${c.textAnchor ?? c.selector}`);
+        this.logger.info(`    ${p.target} ← ${JSON.stringify(c.value).slice(0, 160)}${c.uncertain ? ' (uncertain)' : ''}\n      ${c.url} :: ${c.textAnchor ?? c.selector}`);
       }
       return;
     }
@@ -452,11 +454,11 @@ export class PantryCrawler {
   }
 
   private log(id: string, message: string): void {
-    console.log(`  ${id}: ${message}`);
+    this.logger.info(`  ${id}: ${message}`);
   }
 
   private error(id: string, message: string): void {
-    console.warn(`  ${id}: ERROR ${message}`);
+    this.logger.warn(`  ${id}: ERROR ${message}`);
     this.stats.errors.push(`${id}: ${message}`);
     if (this.stats.errors.length > MAX_ERRORS) this.stats.errors.shift();
   }

@@ -19,6 +19,10 @@ router.post('/review-items/:id/confirm-mapping', adminController.confirmMapping.
 router.get('/review-items/:id/suspicious', adminController.getSuspiciousReview.bind(adminController));
 router.post('/review-items/:id/approve-value', adminController.approveValue.bind(adminController));
 router.get('/crawl-runs', adminController.listCrawlRuns.bind(adminController));
+router.post('/crawl-runs', adminController.startCrawlRun.bind(adminController));
+router.get('/crawl-runs/:id', adminController.getCrawlRun.bind(adminController));
+router.get('/crawl-runs/:id/log', adminController.getCrawlRunLog.bind(adminController));
+router.post('/crawl-runs/:id/abort', adminController.abortCrawlRun.bind(adminController));
 router.post('/crawl-runs/:id/revert', adminController.revertRun.bind(adminController));
 router.get('/changes', adminController.listChanges.bind(adminController));
 router.post('/changes/:id/revert', adminController.revertChange.bind(adminController));

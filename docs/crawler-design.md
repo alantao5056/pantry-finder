@@ -157,7 +157,9 @@ HTML snapshots. The admin links to the live URL for context.
 - each run takes the N (default 100) least recently crawled pantries
   (`pantries.lastCrawledAt`), so runs rotate through all sites and an
   interrupted run's leftovers go first next time
-- run **manually** by the maintainer (no cron in phase 1)
+- run **manually** by the maintainer (no cron in phase 1): from the CLI, or
+  from the admin's Crawler page, executed by a worker service (see
+  [worker notes](#crawler-worker-notes))
 - run summary reminds to re-run `tools/sitemap` when pantries were added or
   addresses changed
 
@@ -166,8 +168,8 @@ HTML snapshots. The admin links to the live URL for context.
 - reuses the API `session` cookie (`COOKIE_DOMAIN=pantryfinder.org` already
   covers subdomains)
 - third systemd service added to `.github/workflows/deploy.yml`
-- pages: crawler status (`crawl_runs`), review queue, change log with rollback,
-  seed-list management
+- pages: crawler status and start/stop (`crawl_runs`), review queue, change
+  log with rollback, seed-list management
 
 **`apps/api`**
 
@@ -192,7 +194,7 @@ parsed value. Visual click-to-map on a rendered page snapshot is deferred to M5.
 Develop and validate entirely on **dev01**, seeded from prod with
 `tools/firestore`. Only after a full end-to-end pass on dev01 has been reviewed in
 the admin does the maintainer run the crawler against prod — every prod run is
-started by hand.
+started by hand (CLI or the admin's Start crawl button).
 
 ## Milestones
 
@@ -321,3 +323,29 @@ Decisions made while building M2, on top of the design above. Usage:
   in-process caches), the change log has a per-pantry **Clear cache** action
   (`POST /admin/pantries/:id/evict-cache`). Name or
   address changes (M3) will also need the *old* city's list cleared.
+
+## Crawler worker notes
+
+Added after M2 (2026-09-28): runs can be started from the admin instead of the
+CLI. Usage: [`tools/crawler/README.md`](../tools/crawler/README.md).
+
+- **Queue in Firestore:** `POST /admin/crawl-runs` writes a `crawl_runs` doc
+  with status `queued` (plus `mode`, `options`, `requestedBy`). A separate
+  long-running process, `tools/crawler/worker.ts` (systemd unit
+  `pantry-finder-crawler` in prod), listens for queued runs, claims one in a
+  transaction (→ `running`, `env` filled in) and executes it. The API never
+  imports crawler code (ESM vs. the API's CJS), and a crashing crawl can't take
+  the API down.
+- **One run at a time:** starting a run is refused (409) while another is
+  queued or running.
+- **Stop:** sets `abortRequested`; the worker finishes the pantries in progress
+  and marks the run `aborted`. A queued run is cancelled at once.
+- **Liveness:** the worker refreshes `heartbeatAt` every 30 s (CLI runs too).
+  After 2 minutes without it a running run is shown as stale and is marked
+  `failed` when a new run is started or the worker restarts. SIGTERM (deploys)
+  marks the current run `aborted`.
+- **Log:** worker runs stream their log into `crawl_runs/{id}/log` (chunks of
+  up to 200 lines, capped at 5,000 lines per run), which the admin shows and
+  polls. Admin dry runs are therefore recorded too (mode `dry-run`).
+- **Quota:** while a run is active the admin polls only that run's doc and new
+  log chunks every 5 s, not the run list.

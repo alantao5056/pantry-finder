@@ -7,6 +7,8 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { cert, initializeApp, type Credential } from 'firebase-admin/app';
 import { getFirestore, type Firestore } from 'firebase-admin/firestore';
+import { isPeakHour } from '@pantry-finder/shared';
+import { consoleLogger, type Logger } from './logger.js';
 
 export const ENVS = ['dev01', 'dev02', 'prod'] as const;
 export type Env = (typeof ENVS)[number];
@@ -80,19 +82,9 @@ export function initFirestore(): { db: Firestore; projectId: string } {
   return { db: getFirestore(), projectId };
 }
 
-/**
- * DeepSeek doubles prices Mon–Fri 01:00–04:00 and 06:00–10:00 UTC
- * (docs/crawler-design.md); runs are best started outside those windows.
- */
-export function isPeakHour(now = new Date()): boolean {
-  const day = now.getUTCDay();
-  const hour = now.getUTCHours();
-  if (day === 0 || day === 6) return false;
-  return (hour >= 1 && hour < 4) || (hour >= 6 && hour < 10);
-}
-
-export function peakHourWarning(): void {
+/** DeepSeek prices double at peak time (`isPeakHour`); runs are best started outside it. */
+export function peakHourWarning(logger: Logger = consoleLogger): void {
   if (isPeakHour()) {
-    console.warn('WARNING: this is DeepSeek peak time (Mon–Fri 01–04 / 06–10 UTC), when prices double.');
+    logger.warn('WARNING: this is DeepSeek peak time (Mon–Fri 01–04 / 06–10 UTC), when prices double.');
   }
 }

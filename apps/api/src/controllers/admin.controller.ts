@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import type {
   ConfirmMappingField,
+  CrawlRunMode,
   EvalGrade,
   EvalVariantKey,
   MappingTarget,
@@ -10,11 +11,17 @@ import type {
   ServiceDraft,
   TargetValue,
 } from '@pantry-finder/shared';
-import { isMappingTarget, isValidStateSlug, parseTarget } from '@pantry-finder/shared';
+import {
+  DEFAULT_CRAWL_LIMIT,
+  MAX_CRAWL_LIMIT,
+  isMappingTarget,
+  isValidStateSlug,
+  parseTarget,
+} from '@pantry-finder/shared';
 import { PantryWriteError, type PantryWriteErrorCode } from '@pantry-finder/shared/firestore';
 import { AuthedRequest } from '../middleware/auth.middleware';
 import { ReviewError, ReviewService } from '../services/review.service';
-import { CrawlRunService } from '../services/crawl-run.service';
+import { CrawlRunError, CrawlRunService, type CrawlRunErrorCode } from '../services/crawl-run.service';
 import { MappingReviewService } from '../services/mapping-review.service';
 import { ChangeLogService } from '../services/change-log.service';
 import { LlmEvalService } from '../services/llm-eval.service';
@@ -71,7 +78,13 @@ function parseService(raw: unknown): ServiceDraft | null {
   };
 }
 
-const PANTRY_WRITE_ERROR_STATUS: Record<PantryWriteErrorCode, number> = {
+const CRAWL_RUN_ERROR_STATUS: Record<CrawlRunErrorCode, { status: number; error: string }> = {
+  not_found: { status: 404, error: 'Crawl run not found.' },
+  active_run: { status: 409, error: 'A crawl run is already queued or running.' },
+  not_active: { status: 409, error: 'This run has already finished.' },
+};
+
+const PANTRY_WRITE_ERROR_STATUS:Record<PantryWriteErrorCode, number> = {
   not_found: 404,
   bad_target: 400,
   not_revertible: 400,
@@ -215,6 +228,47 @@ export class AdminController {
     res.json({ runs: await this.crawlRunService.listRuns() });
   }
 
+  public async getCrawlRun(req: AuthedRequest, res: Response): Promise<void> {
+    await this.handleCrawlRunErrors(res, async () => {
+      res.json(await this.crawlRunService.getRun(String(req.params.id)));
+    });
+  }
+
+  public async startCrawlRun(req: AuthedRequest, res: Response): Promise<void> {
+    const body = (req.body ?? {}) as Record<string, unknown>;
+    const mode = body.mode as CrawlRunMode;
+    if (mode !== 'dry-run' && mode !== 'apply') {
+      res.status(400).json({ error: 'mode must be dry-run or apply.' });
+      return;
+    }
+    const pantryId = str(body.pantryId, 100);
+    const limit = body.limit ?? DEFAULT_CRAWL_LIMIT;
+    if (!pantryId && (!Number.isInteger(limit) || (limit as number) < 1 || (limit as number) > MAX_CRAWL_LIMIT)) {
+      res.status(400).json({ error: `limit must be a whole number from 1 to ${MAX_CRAWL_LIMIT}.` });
+      return;
+    }
+    await this.handleCrawlRunErrors(res, async () => {
+      const options = pantryId ? { pantryId, limit: 1 } : { limit: limit as number };
+      res.json(await this.crawlRunService.startRun(mode, options, req.user!.sub));
+    });
+  }
+
+  public async abortCrawlRun(req: AuthedRequest, res: Response): Promise<void> {
+    await this.handleCrawlRunErrors(res, async () => {
+      await this.crawlRunService.abortRun(String(req.params.id));
+      res.json({ ok: true });
+    });
+  }
+
+  public async getCrawlRunLog(req: AuthedRequest, res: Response): Promise<void> {
+    const afterSeq = Number(req.query.afterSeq ?? 0);
+    if (!Number.isInteger(afterSeq) || afterSeq < 0) {
+      res.status(400).json({ error: 'afterSeq must be a non-negative integer.' });
+      return;
+    }
+    res.json(await this.crawlRunService.getLog(String(req.params.id), afterSeq));
+  }
+
   public async getMappingReview(req: AuthedRequest, res: Response): Promise<void> {
     await this.handleReviewErrors(res, async () => {
       res.json(await this.mappingReviewService.getMappingDetail(String(req.params.id)));
@@ -319,6 +373,19 @@ export class AdminController {
     } catch (err) {
       if (err instanceof PantryWriteError) {
         res.status(PANTRY_WRITE_ERROR_STATUS[err.code]).json({ error: err.message });
+        return;
+      }
+      throw err;
+    }
+  }
+
+  private async handleCrawlRunErrors(res: Response, fn: () => Promise<void>): Promise<void> {
+    try {
+      await fn();
+    } catch (err) {
+      if (err instanceof CrawlRunError) {
+        const { status, error } = CRAWL_RUN_ERROR_STATUS[err.code];
+        res.status(status).json({ error });
         return;
       }
       throw err;

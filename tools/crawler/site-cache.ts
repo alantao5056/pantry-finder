@@ -10,23 +10,27 @@
 import { Redis } from 'ioredis';
 import { pantryCacheKeys } from '@pantry-finder/shared';
 import type { PantryLocation } from '@pantry-finder/shared/firestore';
+import type { Logger } from './logger.js';
 
 export class SiteCache {
-  private constructor(private redis: Redis | null) {}
+  private constructor(
+    private redis: Redis | null,
+    private readonly logger: Logger,
+  ) {}
 
   /** For dry runs, which write nothing. */
-  static disabled(): SiteCache {
-    return new SiteCache(null);
+  static disabled(logger: Logger): SiteCache {
+    return new SiteCache(null, logger);
   }
 
-  static fromEnv(): SiteCache {
+  static fromEnv(logger: Logger): SiteCache {
     const url = process.env.REDIS_URL;
     if (!url) {
-      console.warn(
+      logger.warn(
         'REDIS_URL not set: the API cache is not cleared after updates, so the site shows them ' +
           'only once cached entries expire (up to 24h for pantry pages, 48h for city pages).',
       );
-      return new SiteCache(null);
+      return new SiteCache(null, logger);
     }
     const redis = new Redis(url, {
       connectTimeout: 5000,
@@ -34,8 +38,8 @@ export class SiteCache {
       maxRetriesPerRequest: 2,
       lazyConnect: true,
     });
-    redis.on('error', (err) => console.warn(`Redis: ${err.message}`));
-    return new SiteCache(redis);
+    redis.on('error', (err) => logger.warn(`Redis: ${err.message}`));
+    return new SiteCache(redis, logger);
   }
 
   /** Connects up front so a wrong REDIS_URL shows at the start of a run, not per pantry. */
@@ -43,9 +47,9 @@ export class SiteCache {
     if (!this.redis) return;
     try {
       await this.redis.ping();
-      console.log('Redis reachable: the API cache is cleared after each update.');
+      this.logger.info('Redis reachable: the API cache is cleared after each update.');
     } catch (err) {
-      console.warn(`WARNING: Redis unreachable (${(err as Error).message}); updates reach the site only after cache expiry.`);
+      this.logger.warn(`WARNING: Redis unreachable (${(err as Error).message}); updates reach the site only after cache expiry.`);
       // Don't retry (and warn) for every updated pantry.
       this.redis.disconnect();
       this.redis = null;
@@ -57,7 +61,7 @@ export class SiteCache {
     try {
       await this.redis.del(...pantryCacheKeys(pantry));
     } catch (err) {
-      console.warn(`  ${pantry.id}: could not clear the API cache (${(err as Error).message})`);
+      this.logger.warn(`  ${pantry.id}: could not clear the API cache (${(err as Error).message})`);
     }
   }
 

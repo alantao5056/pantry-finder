@@ -115,7 +115,14 @@ export interface RejectReviewItemRequest {
   reason: string;
 }
 
-export type CrawlRunStatus = 'running' | 'completed' | 'failed' | 'aborted';
+/**
+ * `queued`: requested from the admin, waiting for the crawler worker to pick
+ * it up. Runs started from the CLI begin at `running`.
+ */
+export type CrawlRunStatus = 'queued' | 'running' | 'completed' | 'failed' | 'aborted';
+
+/** A queued or running run; at most one exists at a time. */
+export const ACTIVE_CRAWL_RUN_STATUSES: readonly CrawlRunStatus[] = ['queued', 'running'];
 
 export interface CrawlRunCounts {
   fetched: number;
@@ -135,10 +142,50 @@ export interface CrawlRunSummary {
   finishedAt?: string;
   counts: CrawlRunCounts;
   errors: string[];
+  options: CrawlRunOptions;
+  /** Admin email, for runs started from the admin. */
+  requestedBy?: string;
+  /** Stop was pressed; the worker finishes the pantries in progress. */
+  abortRequested: boolean;
+  /** Running, but the worker hasn't reported in for a while (it likely died). */
+  stale: boolean;
+}
+
+export interface CrawlRunOptions {
+  limit?: number;
+  pantryId?: string;
 }
 
 export interface ListCrawlRunsResponse {
   runs: CrawlRunSummary[];
+}
+
+export interface StartCrawlRunRequest {
+  mode: CrawlRunMode;
+  /** Pantries to crawl (default 100); ignored with `pantryId`. */
+  limit?: number;
+  /** Crawl just this pantry. */
+  pantryId?: string;
+}
+
+export const DEFAULT_CRAWL_LIMIT = 100;
+export const MAX_CRAWL_LIMIT = 1000;
+
+export interface CrawlRunLogResponse {
+  lines: string[];
+  /** Pass back as `afterSeq` to fetch only newer lines. */
+  lastSeq: number;
+}
+
+/**
+ * DeepSeek doubles prices Mon–Fri 01:00–04:00 and 06:00–10:00 UTC
+ * (docs/crawler-design.md); runs are best started outside those windows.
+ */
+export function isPeakHour(now = new Date()): boolean {
+  const day = now.getUTCDay();
+  const hour = now.getUTCHours();
+  if (day === 0 || day === 6) return false;
+  return (hour >= 1 && hour < 4) || (hour >= 6 && hour < 10);
 }
 
 // ---- Crawler mappings (review types `new_mapping` / `suspicious_value`) ----

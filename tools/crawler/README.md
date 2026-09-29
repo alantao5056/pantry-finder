@@ -87,6 +87,35 @@ pantries it didn't reach are first in line for the next run.
 Review items, the change log (with per-change and per-run revert) and the tier
 comparison live in the admin site.
 
+## Starting runs from the admin (worker)
+
+The admin's **Crawler** page can start the same runs: dry run or apply, a
+number of pantries (default 100) or one pantry ID, and stop a run in progress.
+The API only queues the run (`crawl_runs` doc with status `queued`); the
+**worker** — a long-running process — picks it up, crawls, and streams the log
+into `crawl_runs/{id}/log`, which the page shows under **Log**.
+
+```sh
+npm run worker:dev01     # local: executes runs queued from a local admin against dev01
+```
+
+In prod the worker is the `pantry-finder-crawler` systemd service
+(`npm run start:worker`, i.e. `node --env-file=.env.production dist/worker.js`
+in `tools/crawler`; the deploy writes `.env.production` from GitHub secrets
+and restarts the service). Redis is on the same host, so the API cache is
+cleared without a tunnel.
+
+- One run at a time: the admin refuses to start another while one is queued or
+  running (CLI runs count too).
+- **Stop** lets the pantries in progress finish, then marks the run `aborted`.
+- The worker refreshes `heartbeatAt` every 30 s. A running run without a
+  heartbeat for 2 minutes shows as **stale** in the admin; starting a new run
+  (or restarting the worker) marks it `failed`.
+- Stopping or restarting the worker (e.g. a deploy) marks its current run
+  `aborted`; the pantries it didn't reach are first in line next time.
+- Dry runs from the admin are recorded in `crawl_runs` (mode `dry-run`) so
+  their log can be read; CLI dry runs still record nothing.
+
 ## LLM tier comparison
 
 ```sh
@@ -111,3 +140,5 @@ Fetches one URL the way the crawler does (no Firestore, no LLM) and prints its
 text blocks, their selectors and headings, and the extra pages it would follow.
 
 `npm run typecheck` type-checks the tool (tsx runs it without checking).
+`npm run build` compiles it to `dist/` for the worker service (part of the
+root `npm run build`).

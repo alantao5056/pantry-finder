@@ -1,0 +1,11 @@
+{
+  // Compiles the crawler to dist/ for the worker service (node dist/worker.js).
+  // CLI scripts keep running from source through tsx.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "outDir": "./dist",
+    "rootDir": "."
+  },
+  "exclude": ["node_modules", "dist"]
+}

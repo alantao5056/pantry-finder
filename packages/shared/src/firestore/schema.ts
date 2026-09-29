@@ -7,6 +7,7 @@ import type { GeoPoint, Timestamp } from 'firebase-admin/firestore';
 import type {
   CrawlRunCounts,
   CrawlRunMode,
+  CrawlRunOptions,
   CrawlRunStatus,
   EvalGrade,
   EvalVariantKey,
@@ -164,20 +165,36 @@ export interface ReviewItemDocument {
   rejectionReason?: string;
 }
 
-// One crawler run (`crawl_runs`). Written by tools/crawler, read by the admin
-// status page.
+// One crawler run (`crawl_runs`). Started from the CLI (tools/crawler) or
+// queued by the admin and executed by the crawler worker.
 export interface CrawlRunDocument {
-  // Target environment the run wrote to ('dev01' | 'dev02' | 'prod').
+  // Target environment the run wrote to ('dev01' | 'dev02' | 'prod'); empty
+  // while queued (the worker fills it in).
   env: string;
   mode: CrawlRunMode;
   status: CrawlRunStatus;
+  // Request time while queued, then when the worker picked it up.
   startedAt: Timestamp;
   finishedAt?: Timestamp;
   counts: CrawlRunCounts;
   // Most recent error messages, capped by the crawler.
   errors: string[];
-  // CLI filters the run was started with.
-  options?: { limit?: number; pantryId?: string };
+  // Filters the run was started with.
+  options?: CrawlRunOptions;
+  // Admin email, for runs queued from the admin.
+  requestedBy?: string;
+  // Stop pressed in the admin; the worker winds the run down.
+  abortRequested?: boolean;
+  // Refreshed by the worker while running; a stale one means the worker died.
+  heartbeatAt?: Timestamp;
+}
+
+// A chunk of a worker run's log (`crawl_runs/{runId}/log/{seq}`).
+export interface CrawlRunLogDocument {
+  // 1, 2, 3… in write order.
+  seq: number;
+  lines: string[];
+  createdAt: Timestamp;
 }
 
 // One fetched URL (`crawl_sources/{sha256(url)}`).

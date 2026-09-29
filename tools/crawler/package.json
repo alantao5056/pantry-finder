@@ -11,6 +11,10 @@
     "compare-tiers:dev01": "npm --prefix ../../packages/shared run build && tsx --env-file=.env.dev01 compare-tiers.ts dev01",
     "compare-tiers:dev02": "npm --prefix ../../packages/shared run build && tsx --env-file=.env.dev02 compare-tiers.ts dev02",
     "compare-tiers:prod": "npm --prefix ../../packages/shared run build && tsx --env-file=.env.prod compare-tiers.ts prod",
+    "worker:dev01": "npm --prefix ../../packages/shared run build && tsx --env-file=.env.dev01 worker.ts dev01",
+    "worker:dev02": "npm --prefix ../../packages/shared run build && tsx --env-file=.env.dev02 worker.ts dev02",
+    "build": "tsc -p tsconfig.build.json",
+    "start:worker": "node --env-file=.env.production dist/worker.js",
     "inspect": "tsx inspect.ts",
     "typecheck": "tsc -p ."
   },

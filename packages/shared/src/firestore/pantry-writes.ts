@@ -44,6 +44,14 @@ export const COLLECTIONS = {
   llmEvals: 'llm_evals',
 } as const;
 
+// Subcollection of a `crawl_runs` doc holding the worker's log chunks.
+export const CRAWL_RUN_LOG = 'log';
+
+// The crawler worker refreshes a running run's `heartbeatAt` this often; a
+// run not refreshed for CRAWL_STALE_MS is treated as abandoned.
+export const CRAWL_HEARTBEAT_MS = 30_000;
+export const CRAWL_STALE_MS = 120_000;
+
 export type PantryWriteErrorCode = 'not_found' | 'bad_target' | 'not_revertible' | 'already_reverted' | 'conflict';
 
 export class PantryWriteError extends Error {
