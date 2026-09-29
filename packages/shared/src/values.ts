@@ -5,6 +5,7 @@
 // full weekday names, `everyOtherWeekIndicator` always present as a boolean.
 
 import type { AddressFields, ScheduleDraft } from './admin.js';
+import { US_STATES } from './states.js';
 
 /** JSON with sorted object keys, so value comparisons ignore key order. */
 export function stableStringify(value: unknown): string {
@@ -53,22 +54,54 @@ export function normalizePhone(raw: string): string {
   return trimmed;
 }
 
+// Full state name (lowercase, no dots) → 2-letter code.
+const STATE_CODES: Record<string, string> = {
+  ...Object.fromEntries(Object.entries(US_STATES).map(([code, name]) => [name.replace(/\./g, '').toLowerCase(), code.toUpperCase()])),
+  'district of columbia': 'DC',
+};
+
+/** `TX`, `tx.`, `Texas`, `D.C.` → `TX` / `DC`; anything else → undefined. */
+function stateCode(raw: string): string | undefined {
+  const s = raw.replace(/\./g, '').trim().replace(/\s+/g, ' ').toLowerCase();
+  return /^[a-z]{2}$/.test(s) ? s.toUpperCase() : STATE_CODES[s];
+}
+
 /**
- * Best-effort split of a one-line US address — `street[, line 2], city, ST 12345[, USA]` —
- * into pantry address fields. A line that doesn't fit lands whole in `address1`
- * for the admin to split by hand.
+ * Best-effort split of a one-line US address — `street[, line 2], city, ST 12345[, USA]`,
+ * where the state may be a code or a full name (`Texas 78666`) and the city may
+ * share the last part with it (`San Marcos TX 78666`) — into pantry address
+ * fields. A line that doesn't fit lands whole in `address1` for the admin to
+ * split by hand.
  */
 export function parseAddressLine(line: string): AddressFields {
+  const fallback = { address1: line.trim(), address2: '', city: '', state: '', zipCode: '' };
   const parts = line.split(',').map((p) => p.trim()).filter(Boolean);
   if (parts.length && /^(usa?|united states( of america)?)$/i.test(parts[parts.length - 1]!)) parts.pop();
-  const stateZip = parts.length >= 3 ? /^([A-Za-z]{2})\.?(?:\s+(\d{5})(?:-\d{4})?)?$/.exec(parts[parts.length - 1]!) : null;
-  if (!stateZip) return { address1: line.trim(), address2: '', city: '', state: '', zipCode: '' };
+  if (parts.length < 2) return fallback;
+
+  const [, rest, zipCode = ''] = /^(.*?)(?:\s+(\d{5})(?:-\d{4})?)?$/.exec(parts.pop()!)!;
+  let state = stateCode(rest!);
+  let city: string | undefined;
+  if (state) {
+    // `…, city, ST 12345`: the city is its own part.
+    if (parts.length < 2) return fallback;
+    city = parts.pop()!;
+  } else if (zipCode) {
+    // `…, city ST 12345`: peel a state (up to 3 words) off the end. Only with a
+    // ZIP, so a lone city part like "Fort Worth" is never misread.
+    const words = rest!.split(/\s+/);
+    for (let n = Math.min(3, words.length - 1); n >= 1 && !state; n--) {
+      state = stateCode(words.slice(-n).join(' '));
+      if (state) city = words.slice(0, -n).join(' ');
+    }
+  }
+  if (!state || !city) return fallback;
   return {
     address1: parts[0]!,
-    address2: parts.slice(1, -2).join(', '),
-    city: parts[parts.length - 2]!,
-    state: stateZip[1]!.toUpperCase(),
-    zipCode: stateZip[2] ?? '',
+    address2: parts.slice(1).join(', '),
+    city,
+    state,
+    zipCode,
   };
 }
 
