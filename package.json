@@ -7,8 +7,8 @@
     "npm": ">=11"
   },
   "workspaces": [
-    "apps/*",
     "packages/*",
+    "apps/*",
     "tools/*"
   ],
   "scripts": {
