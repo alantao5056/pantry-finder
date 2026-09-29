@@ -122,6 +122,7 @@ const confirm = async () => {
 }
 
 const rejectOpen = ref(false)
+const deleteOpen = ref(false)
 </script>
 
 <template>
@@ -281,11 +282,13 @@ const rejectOpen = ref(false)
       </UCard>
 
       <div v-if="isPending" class="flex justify-end gap-2">
+        <UButton label="Delete" icon="i-lucide-trash-2" color="neutral" variant="outline" @click="deleteOpen = true" />
         <UButton label="Reject all" color="error" variant="outline" @click="rejectOpen = true" />
         <UButton label="Confirm & apply" :loading="confirming" @click="confirm" />
       </div>
     </template>
 
     <RejectItemModal v-model:open="rejectOpen" :item-id="id" title="Reject mapping proposal" @rejected="refresh()" />
+    <DeleteReviewItemModal v-model:open="deleteOpen" :item-id="id" />
   </div>
 </template>

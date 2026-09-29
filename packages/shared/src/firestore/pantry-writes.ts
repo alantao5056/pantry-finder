@@ -67,6 +67,11 @@ export function rawHash(kind: 'text' | 'schedules', rawText: string): string {
   return createHash('sha256').update(`${kind}\n${rawText}`).digest('hex');
 }
 
+/** A URL's `crawl_sources` doc id. */
+export function sourceId(url: string): string {
+  return createHash('sha256').update(url).digest('hex');
+}
+
 export function mappingId(pantryId: string, target: MappingTarget): string {
   return `${pantryId}_${target}`;
 }

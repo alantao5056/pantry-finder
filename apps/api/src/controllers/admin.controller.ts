@@ -238,6 +238,13 @@ export class AdminController {
     });
   }
 
+  public async deleteReviewItem(req: AuthedRequest, res: Response): Promise<void> {
+    await this.handleReviewErrors(res, async () => {
+      await this.mappingReviewService.deleteItem(String(req.params.id));
+      res.json({ ok: true });
+    });
+  }
+
   public async listCrawlRuns(_req: AuthedRequest, res: Response): Promise<void> {
     res.json({ runs: await this.crawlRunService.listRuns() });
   }

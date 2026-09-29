@@ -11,6 +11,7 @@ router.use(requireAdmin);
 router.get('/me', adminController.me.bind(adminController));
 router.get('/review-items', adminController.listReviewItems.bind(adminController));
 router.get('/review-items/:id', adminController.getReviewItem.bind(adminController));
+router.delete('/review-items/:id', adminController.deleteReviewItem.bind(adminController));
 router.get('/review-items/:id/submission', adminController.getSubmissionReview.bind(adminController));
 router.post('/review-items/:id/approve-submission', adminController.approveSubmission.bind(adminController));
 router.post('/review-items/:id/reject', adminController.rejectReviewItem.bind(adminController));

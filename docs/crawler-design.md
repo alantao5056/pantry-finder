@@ -300,6 +300,10 @@ Decisions made while building M2, on top of the design above. Usage:
   `active` / `broken` / `needs_recheck`. Rejecting a whole `new_mapping` item
   deletes its `proposed` mappings; the site is proposed again only once its
   content changes (`proposalHash` on the homepage's `crawl_sources` doc).
+  **Deleting** a pending crawler item (admin "Delete") instead forgets it: the
+  item and its `proposed` mappings go, `proposalHash` / `redirectReviewedUrl` /
+  the mapping's `lastRawHash` are cleared as applicable, and the pantry's
+  `lastCrawledAt` is cleared so the next run tries it first.
 - **Review payloads** live on the review item itself (`newMapping` /
   `suspicious` fields of `review_items`), not in a separate collection.
 - **Confirming** a mapping (or approving a suspicious value) writes, in one

@@ -23,6 +23,7 @@ import {
   mappingId,
   planFieldUpdates,
   rawHash,
+  sourceId,
   writeFieldUpdates,
   type CrawlSourceDocument,
   type ExtractionCacheDocument,
@@ -30,7 +31,6 @@ import {
   type PantryDocument,
   type ReviewItemDocument,
 } from '@pantry-finder/shared/firestore';
-import { createHash } from 'node:crypto';
 import { checkAddress } from './address.js';
 import { checkPhone } from './phone.js';
 import type { Fetcher } from './fetch/fetcher.js';
@@ -105,10 +105,6 @@ export function pantryContext(p: StoredPantry, targets: MappingTarget[]): Pantry
 
 /** A `crawl_sources` doc plus the crawler-only bookkeeping fields stored on homepages. */
 type SourceState = CrawlSourceDocument & { proposalHash?: string; redirectReviewedUrl?: string };
-
-function urlHash(url: string): string {
-  return createHash('sha256').update(url).digest('hex');
-}
 
 export class PantryCrawler {
   constructor(
@@ -226,7 +222,7 @@ export class PantryCrawler {
     const now = Timestamp.now();
     const batch = this.db.batch();
     batch.set(
-      this.db.collection(COLLECTIONS.crawlSources).doc(urlHash(home.url)),
+      this.db.collection(COLLECTIONS.crawlSources).doc(sourceId(home.url)),
       { proposalHash: hash },
       { merge: true },
     );
@@ -421,7 +417,7 @@ export class PantryCrawler {
     };
     batch.create(this.db.collection(COLLECTIONS.reviewItems).doc(), pruneUndefined(item));
     batch.set(
-      this.db.collection(COLLECTIONS.crawlSources).doc(urlHash(home.url)),
+      this.db.collection(COLLECTIONS.crawlSources).doc(sourceId(home.url)),
       { redirectReviewedUrl: newUrl },
       { merge: true },
     );
@@ -435,7 +431,7 @@ export class PantryCrawler {
   private async recordSource(
     loaded: LoadedPage,
   ): Promise<SourceState> {
-    const ref = this.db.collection(COLLECTIONS.crawlSources).doc(urlHash(loaded.url));
+    const ref = this.db.collection(COLLECTIONS.crawlSources).doc(sourceId(loaded.url));
     const prev = (await ref.get()).data() as SourceState | undefined;
     const doc: CrawlSourceDocument = {
       url: loaded.url,

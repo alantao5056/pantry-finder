@@ -1,4 +1,4 @@
-import { GeoPoint, Timestamp } from 'firebase-admin/firestore';
+import { FieldValue, GeoPoint, Timestamp, type DocumentReference } from 'firebase-admin/firestore';
 import { encodeGeoDocument } from 'geofirestore-core';
 import type {
   AddressFields,
@@ -16,6 +16,7 @@ import {
   planFieldUpdates,
   rawHash,
   sameLocation,
+  sourceId,
   writeAddressUpdate,
   writeFieldUpdates,
   type ExtractionCacheDocument,
@@ -62,6 +63,7 @@ export class MappingReviewService {
   private readonly pantriesCol = db.collection(COLLECTIONS.pantries);
   private readonly mappingsCol = db.collection(COLLECTIONS.fieldMappings);
   private readonly cacheCol = db.collection(COLLECTIONS.extractionCache);
+  private readonly sourcesCol = db.collection(COLLECTIONS.crawlSources);
   private readonly geoService = new GeoService();
 
   public async getMappingDetail(id: string): Promise<MappingReviewDetail> {
@@ -277,6 +279,59 @@ export class MappingReviewService {
     });
     if (applied) await invalidatePantryCaches(location);
     return applied;
+  }
+
+  /**
+   * Deletes a pending crawler review and clears what the crawler remembers
+   * about it (proposed mappings, proposal/redirect markers, the held-back
+   * text's hash), so the next run handles the pantry afresh. The pantry's
+   * `lastCrawledAt` is cleared too, which puts it first in the rotation.
+   */
+  public async deleteItem(id: string): Promise<void> {
+    const itemRef = this.reviewItemsCol.doc(id);
+    await db.runTransaction(async (tx) => {
+      const itemSnap = await tx.get(itemRef);
+      if (!itemSnap.exists) throw new ReviewError('not_found');
+      const item = itemSnap.data() as ReviewItemDocument;
+      if (item.type !== 'new_mapping' && item.type !== 'suspicious_value') throw new ReviewError('wrong_type');
+      const pantryId = this.check(item, item.type).pantryId!;
+
+      // Reads first: a transaction may not read after writing.
+      const pantryRef = this.pantriesCol.doc(pantryId);
+      const pantrySnap = await tx.get(pantryRef);
+      const clears: { ref: DocumentReference; field: string }[] = [];
+      const deletes: DocumentReference[] = [];
+
+      if (item.type === 'new_mapping') {
+        const m = item.newMapping!;
+        const refs = m.proposals.map((p) => this.mappingsCol.doc(mappingId(pantryId, p.target)));
+        const snaps = refs.length ? await tx.getAll(...refs) : [];
+        for (const snap of snaps) {
+          const mapping = snap.data() as FieldMappingDocument | undefined;
+          if (mapping?.status === 'proposed' && mapping.reviewItemId === id) deletes.push(snap.ref);
+        }
+        const sourceSnap = await tx.get(this.sourcesCol.doc(sourceId(m.website)));
+        if (sourceSnap.get('proposalHash') !== undefined) clears.push({ ref: sourceSnap.ref, field: 'proposalHash' });
+      } else {
+        const s = item.suspicious!;
+        if (s.target === 'website') {
+          const sourceSnap = await tx.get(this.sourcesCol.doc(sourceId(s.url)));
+          if (sourceSnap.get('redirectReviewedUrl') === s.newValue) {
+            clears.push({ ref: sourceSnap.ref, field: 'redirectReviewedUrl' });
+          }
+        } else if (s.mappingId && s.rawHash) {
+          const mappingSnap = await tx.get(this.mappingsCol.doc(s.mappingId));
+          if ((mappingSnap.data() as FieldMappingDocument | undefined)?.lastRawHash === s.rawHash) {
+            clears.push({ ref: mappingSnap.ref, field: 'lastRawHash' });
+          }
+        }
+      }
+
+      for (const ref of deletes) tx.delete(ref);
+      for (const { ref, field } of clears) tx.update(ref, { [field]: FieldValue.delete() });
+      if (pantrySnap.exists) tx.update(pantryRef, { lastCrawledAt: FieldValue.delete() });
+      tx.delete(itemRef);
+    });
   }
 
   private async load(
