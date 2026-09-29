@@ -579,7 +579,22 @@
     gap: 5px;
     color: #6b7280;
     font-size: 13px;
+    line-height: 1.4;
     text-decoration: none;
+  }
+  /* Fixed-width icon slot so the meta lines' text aligns. */
+  .pantry-popup-meta-icon {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 1.4em;
+  }
+  .pantry-popup-meta-icon > * {
+    width: 13px;
+    height: 13px;
+    color: var(--green-mid);
   }
 
   .status-pill {
@@ -804,6 +819,20 @@
     text-transform: uppercase;
   }
 
+  /* Address / phone line under the pantry name on the detail page. */
+  .detail-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #4b5563;
+    font-size: 14px;
+  }
+  .detail-meta-icon {
+    width: 14px;
+    height: 14px;
+    color: #9ca3af;
+  }
+
   /* Hero action buttons (Love / Call / Directions / Report). The base is a
      white outlined pill; modifiers recolor it. Hover runs the unified
      green-wash group below unless a modifier opts out. */
@@ -872,6 +901,21 @@
     border-radius: 9px;
     background: var(--green-light);
     color: var(--green-dark);
+  }
+  .detail-contact-icon > * {
+    width: 15px;
+    height: 15px;
+  }
+  .detail-contact-title {
+    display: block;
+    color: #1f2937;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .detail-contact-sub {
+    display: block;
+    color: #9ca3af;
+    font-size: 11px;
   }
 
   /* Share fallback menu (ShareButton.vue) — only rendered in browsers

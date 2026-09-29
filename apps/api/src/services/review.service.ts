@@ -29,7 +29,7 @@ const NEARBY_RADIUS_KM = 0.1;
 const LIST_LIMIT = 100;
 
 const TRACKED_FIELDS: TrackedPantryField[] = [
-  'name', 'address1', 'address2', 'city', 'state', 'zipCode', 'phone',
+  'name', 'address1', 'address2', 'city', 'state', 'zipCode', 'phone', 'email',
   'website', 'aboutUs', 'contactName', 'notes', 'schedules', 'services',
 ];
 
@@ -55,6 +55,7 @@ export function toSummary(id: string, doc: ReviewItemDocument): ReviewItemSummar
     createdAt: toIso(doc.createdAt)!,
     resolvedAt: toIso(doc.resolvedAt),
     resolvedBy: doc.resolvedBy,
+    addressCheck: doc.newMapping?.addressCheck?.status,
   };
 }
 
@@ -76,7 +77,7 @@ function submissionToDraft(s: PantrySubmissionDocument): PantryDraft {
   };
 }
 
-function oneLineAddress(d: Pick<PantryDraft, 'address1' | 'city' | 'state' | 'zipCode'>): string {
+export function oneLineAddress(d: Pick<PantryDraft, 'address1' | 'city' | 'state' | 'zipCode'>): string {
   return `${d.address1}, ${d.city}, ${d.state} ${d.zipCode}`;
 }
 
@@ -180,6 +181,7 @@ export class ReviewService {
         state: draft.state,
         zipCode: draft.zipCode,
         phone: draft.phone ?? '',
+        email: draft.email,
         coordinates: new GeoPoint(location.latitude, location.longitude),
         website: draft.website,
         aboutUs: draft.aboutUs,

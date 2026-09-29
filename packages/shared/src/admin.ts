@@ -33,6 +33,8 @@ export interface ReviewItemSummary {
   createdAt: string;
   resolvedAt?: string;
   resolvedBy?: string;
+  /** `new_mapping` items: result of the site address check. */
+  addressCheck?: AddressCheckStatus;
 }
 
 export interface ListReviewItemsResponse {
@@ -64,6 +66,7 @@ export interface PantryDraft {
   state: string;
   zipCode: string;
   phone?: string;
+  email?: string;
   website?: string;
   aboutUs?: string;
   contactName?: string;
@@ -208,6 +211,19 @@ export interface TargetProposal {
   candidates: MappingCandidate[];
 }
 
+/**
+ * Whether a crawled site states the pantry's address: `match` when one of the
+ * addresses found on it is the stored one, `mismatch` when addresses were
+ * found but none is, `not_found` when the site states none.
+ */
+export type AddressCheckStatus = 'match' | 'mismatch' | 'not_found';
+
+export interface AddressCheck {
+  status: AddressCheckStatus;
+  /** Addresses as written on the site. */
+  found: string[];
+}
+
 export interface MappingReviewField {
   target: MappingTarget;
   currentValue: TargetValue;
@@ -222,6 +238,9 @@ export interface MappingReviewDetail {
   pantryName: string;
   website: string;
   fetchedAt: string;
+  /** The pantry's stored address on one line. */
+  storedAddress: string;
+  addressCheck?: AddressCheck;
   /** Service names by index, for labelling `services.<i>.schedules` targets. */
   serviceNames: string[];
   fields: MappingReviewField[];

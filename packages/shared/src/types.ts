@@ -27,6 +27,7 @@ export interface Pantry {
   longitude: number;
   distance?: number;
   phone?: string;
+  email?: string;
   about?: string;
   notes?: string;
   heartCount?: number;

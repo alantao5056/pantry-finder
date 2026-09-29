@@ -53,6 +53,11 @@ export function normalizePhone(raw: string): string {
   return trimmed;
 }
 
+/** `mailto:Info@Example.org` → `info@example.org`. */
+export function normalizeEmail(raw: string): string {
+  return raw.trim().replace(/^mailto:/i, '').toLowerCase();
+}
+
 export const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as const;
 
 function normalizeWeekDay(raw: string): string {

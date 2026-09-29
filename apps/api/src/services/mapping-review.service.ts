@@ -20,7 +20,7 @@ import {
 import { db } from '../config/firebase';
 import { PantryDocument } from '../models/pantry.schema';
 import { ReviewItemDocument } from '../models/review-item.schema';
-import { ReviewError, toSummary } from './review.service';
+import { ReviewError, oneLineAddress, toSummary } from './review.service';
 import { invalidatePantryCaches } from '../cache/pantryCaches';
 
 type StoredPantry = Omit<PantryDocument, 'id'>;
@@ -54,6 +54,8 @@ export class MappingReviewService {
       pantryName: pantry.name,
       website: payload.website,
       fetchedAt: payload.fetchedAt.toDate().toISOString(),
+      storedAddress: oneLineAddress(pantry),
+      addressCheck: payload.addressCheck,
       serviceNames: (pantry.services ?? []).map((s) => s.name),
       fields: payload.proposals.map((p) => ({
         target: p.target,

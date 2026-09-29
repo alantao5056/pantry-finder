@@ -197,12 +197,12 @@ const serviceTextClass = (category: string) => {
               </div>
 
               <div class="flex flex-wrap gap-x-4 gap-y-1.5 mb-5">
-                <span class="flex items-center gap-1.5 text-[14px] text-gray-600">
-                  <UIcon name="i-lucide-map-pin" class="size-3.5 text-gray-400" />
+                <span class="detail-meta">
+                  <UIcon name="i-lucide-map-pin" class="detail-meta-icon" />
                   {{ pantry.address }}
                 </span>
-                <span v-if="pantry.phone" class="flex items-center gap-1.5 text-[14px] text-gray-600">
-                  <UIcon name="i-lucide-phone" class="size-3.5 text-gray-400" />
+                <span v-if="pantry.phone" class="detail-meta">
+                  <UIcon name="i-lucide-phone" class="detail-meta-icon" />
                   {{ pantry.phone }}
                 </span>
                 <span
@@ -436,26 +436,37 @@ const serviceTextClass = (category: string) => {
           </div>
 
           <!-- Contact card -->
-          <div v-if="pantry.phone" class="detail-card p-5">
+          <div v-if="pantry.phone || pantry.email" class="detail-card p-5">
             <div class="detail-eyebrow">Contact</div>
-            <a :href="`tel:${pantry.phone}`" class="detail-contact-row mb-3">
-              <span class="detail-contact-icon">
-                <UIcon name="i-lucide-phone" class="size-[15px]" />
-              </span>
-              <span>
-                <span class="block text-[13px] font-semibold text-gray-800">{{ pantry.phone }}</span>
-                <span class="block text-[11px] text-gray-400">Tap to call</span>
-              </span>
-            </a>
-            <a :href="mapsUrl" target="_blank" rel="noreferrer" class="detail-contact-row">
-              <span class="detail-contact-icon">
-                <UIcon name="i-lucide-map-pin" class="size-[15px]" />
-              </span>
-              <span>
-                <span class="block text-[13px] font-semibold text-gray-800">Get Directions</span>
-                <span class="block text-[11px] text-gray-400">Open in Google Maps</span>
-              </span>
-            </a>
+            <div class="flex flex-col gap-3">
+              <a v-if="pantry.phone" :href="`tel:${pantry.phone}`" class="detail-contact-row">
+                <span class="detail-contact-icon">
+                  <UIcon name="i-lucide-phone" />
+                </span>
+                <span class="min-w-0">
+                  <span class="detail-contact-title">{{ pantry.phone }}</span>
+                  <span class="detail-contact-sub">Tap to call</span>
+                </span>
+              </a>
+              <a v-if="pantry.email" :href="`mailto:${pantry.email}`" class="detail-contact-row">
+                <span class="detail-contact-icon">
+                  <UIcon name="i-lucide-mail" />
+                </span>
+                <span class="min-w-0">
+                  <span class="detail-contact-title break-all">{{ pantry.email }}</span>
+                  <span class="detail-contact-sub">Tap to email</span>
+                </span>
+              </a>
+              <a :href="mapsUrl" target="_blank" rel="noreferrer" class="detail-contact-row">
+                <span class="detail-contact-icon">
+                  <UIcon name="i-lucide-map-pin" />
+                </span>
+                <span class="min-w-0">
+                  <span class="detail-contact-title">Get Directions</span>
+                  <span class="detail-contact-sub">Open in Google Maps</span>
+                </span>
+              </a>
+            </div>
           </div>
 
           <!-- Available food card -->

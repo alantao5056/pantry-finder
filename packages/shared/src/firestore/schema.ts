@@ -5,6 +5,7 @@
 
 import type { GeoPoint, Timestamp } from 'firebase-admin/firestore';
 import type {
+  AddressCheck,
   CrawlRunCounts,
   CrawlRunMode,
   CrawlRunOptions,
@@ -33,6 +34,7 @@ export type TrackedPantryField =
   | 'state'
   | 'zipCode'
   | 'phone'
+  | 'email'
   | 'website'
   | 'aboutUs'
   | 'contactName'
@@ -72,6 +74,7 @@ export interface PantryDocument {
   state: string;
   zipCode: string;
   phone: string;
+  email?: string;
   coordinates: GeoPoint;
   website?: string;
   aboutUs?: string;
@@ -124,6 +127,9 @@ export interface NewMappingPayload {
   website: string;
   fetchedAt: Timestamp;
   proposals: TargetProposal[];
+  // Whether the site's stated address(es) match the pantry's. Absent on items
+  // raised before the check existed.
+  addressCheck?: AddressCheck;
   // Set on resolve: chosen candidate index per target (null = rejected).
   confirmed?: Partial<Record<MappingTarget, number | null>>;
 }

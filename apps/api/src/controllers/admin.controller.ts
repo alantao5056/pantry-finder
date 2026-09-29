@@ -16,6 +16,7 @@ import {
   MAX_CRAWL_LIMIT,
   isMappingTarget,
   isValidStateSlug,
+  normalizeEmail,
   parseTarget,
 } from '@pantry-finder/shared';
 import { PantryWriteError, type PantryWriteErrorCode } from '@pantry-finder/shared/firestore';
@@ -134,6 +135,7 @@ function parseDraft(raw: unknown): { draft: PantryDraft } | { missing: string[] 
     state: str(r.state, 100).toUpperCase(),
     zipCode: str(r.zipCode, 20),
     phone: str(r.phone, 40) || undefined,
+    email: normalizeEmail(str(r.email, 200)) || undefined,
     website: str(r.website, 300) || undefined,
     aboutUs: str(r.aboutUs, MAX_ABOUT) || undefined,
     contactName: str(r.contactName, 200) || undefined,

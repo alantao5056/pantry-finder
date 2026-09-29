@@ -51,7 +51,7 @@ on the page; fields are then located within that row.
 
 **Applied to live `pantries` automatically**, with a change-log entry per
 field, when the field mapping is already confirmed:
-`phone`, `schedules` (top-level or per-service), `aboutUs`, `notes`,
+`phone`, `email`, `schedules` (top-level or per-service), `aboutUs`, `notes`,
 `contactName`, `website`.
 
 **Always routed to human review:**
@@ -263,8 +263,16 @@ Decisions made while building M2, on top of the design above. Usage:
   the text anchor (nearest heading, `<h1–6>` or a short all-bold block). A
   candidate's raw text is read back through its selector, exactly as later runs
   read it, so the stored `lastRawHash` matches.
-- **Targets:** `phone`, `contactName`, `aboutUs`, `notes`, `schedules`,
+- **Targets:** `phone`, `email`, `contactName`, `aboutUs`, `notes`, `schedules`,
   `services.<i>.schedules` (`MappingTarget` in `packages/shared/src/crawl.ts`).
+  `email` (pantry field added with the crawler; public) is stored lowercased
+  without `mailto:`.
+- **Address check:** the first-visit proposal call also asks the LLM for the
+  street addresses the pages state; `tools/crawler/address.ts` compares them to
+  the stored address (house number + first street-name word + ZIP when given)
+  and stores `match` / `mismatch` / `not_found` on the `new_mapping` item
+  (`newMapping.addressCheck`). It is only a badge for the admin deciding
+  whether the site is the pantry's; it is not re-checked on refresh runs.
   `website` is not extracted; it is only proposed (as `suspicious_value`, reason
   `redirect`) when the homepage redirects to another site.
 - **Normalization:** values are compared and stored in the existing formats —

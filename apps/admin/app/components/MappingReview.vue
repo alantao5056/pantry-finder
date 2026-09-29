@@ -21,6 +21,10 @@ const { data: detail, error, refresh } = await useAsyncData(
 
 const isPending = computed(() => detail.value?.item.status === 'pending')
 
+const addressWarning = computed(() => detail.value?.addressCheck?.status === 'not_found'
+  ? "The site doesn't state an address — make sure it belongs to this pantry."
+  : "The site's address differs from the pantry's — make sure it belongs to this pantry.")
+
 // Per target: picked candidate (null = no source on the site) and the value to apply.
 interface Choice { candidateIndex: number | null; value: TargetValue | null }
 const choices = ref<Record<string, Choice>>({})
@@ -69,6 +73,13 @@ const rejectOpen = ref(false)
       <div class="flex flex-wrap items-center gap-3">
         <h1 class="text-xl font-semibold">{{ detail.pantryName }}</h1>
         <UBadge :label="detail.item.status" :color="REVIEW_STATUS_COLORS[detail.item.status]" variant="subtle" />
+        <UBadge
+          v-if="detail.addressCheck"
+          :label="ADDRESS_CHECK_LABELS[detail.addressCheck.status]"
+          :color="ADDRESS_CHECK_COLORS[detail.addressCheck.status]"
+          :icon="detail.addressCheck.status === 'match' ? 'i-lucide-map-pin-check' : 'i-lucide-triangle-alert'"
+          variant="subtle"
+        />
         <ExternalLinkButton :to="pantryUrl(detail.pantryId)" label="View on pantryfinder.org" />
         <ExternalLinkButton :to="detail.website" :label="detail.website" />
         <span class="text-sm text-(--ui-text-muted)">Fetched {{ formatDateTime(detail.fetchedAt) }}</span>
@@ -77,6 +88,18 @@ const rejectOpen = ref(false)
         For each field, pick the page region its value should come from, or "Not on this site".
         The crawler keeps reading confirmed regions and applies changes automatically.
       </p>
+      <UAlert
+        v-if="detail.addressCheck && detail.addressCheck.status !== 'match'"
+        color="warning"
+        variant="subtle"
+        icon="i-lucide-triangle-alert"
+        :title="addressWarning"
+      >
+        <template #description>
+          <div>Pantry: {{ detail.storedAddress }}</div>
+          <div v-for="a in detail.addressCheck.found" :key="a">On site: {{ a }}</div>
+        </template>
+      </UAlert>
       <UAlert
         v-if="detail.rejectionReason"
         color="neutral"

@@ -3,10 +3,10 @@
 // admin app.
 
 import type { ScheduleDraft } from './admin.js';
-import { normalizePhone, normalizeSchedules, stableStringify } from './values.js';
+import { normalizeEmail, normalizePhone, normalizeSchedules, stableStringify } from './values.js';
 
 /** Plain-text pantry fields the crawler maintains. */
-export type TextTarget = 'phone' | 'aboutUs' | 'notes' | 'contactName' | 'website';
+export type TextTarget = 'phone' | 'email' | 'aboutUs' | 'notes' | 'contactName' | 'website';
 
 /** A pantry field, or one service's schedule list (`services.<index>.schedules`). */
 export type MappingTarget = TextTarget | 'schedules' | `services.${number}.schedules`;
@@ -14,7 +14,7 @@ export type MappingTarget = TextTarget | 'schedules' | `services.${number}.sched
 /** The value a target holds: text for text targets, a schedule list otherwise. */
 export type TargetValue = string | ScheduleDraft[];
 
-export const TEXT_TARGETS: readonly TextTarget[] = ['phone', 'aboutUs', 'notes', 'contactName', 'website'];
+export const TEXT_TARGETS: readonly TextTarget[] = ['phone', 'email', 'aboutUs', 'notes', 'contactName', 'website'];
 
 export type ParsedTarget =
   | { kind: 'text'; field: TextTarget }
@@ -43,7 +43,9 @@ export function targetField(target: MappingTarget): TextTarget | 'schedules' | '
 /** Normalizes a value into the stored format for its target. */
 export function normalizeTargetValue(target: MappingTarget, value: TargetValue): TargetValue {
   if (Array.isArray(value)) return normalizeSchedules(value);
-  return target === 'phone' ? normalizePhone(value) : value.trim();
+  if (target === 'phone') return normalizePhone(value);
+  if (target === 'email') return normalizeEmail(value);
+  return value.trim();
 }
 
 /** Whether two values of a target are the same once normalized (so formatting noise isn't a change). */

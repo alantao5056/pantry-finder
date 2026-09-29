@@ -1,4 +1,4 @@
-import type { MappingTarget, ReviewItemStatus, ReviewItemType, SuspiciousReason, TextTarget } from '@pantry-finder/shared'
+import type { AddressCheckStatus, MappingTarget, ReviewItemStatus, ReviewItemType, SuspiciousReason, TextTarget } from '@pantry-finder/shared'
 import { parseTarget } from '@pantry-finder/shared'
 
 export const formatDateTime = (iso?: string): string =>
@@ -20,8 +20,21 @@ export const REVIEW_STATUS_COLORS: Record<ReviewItemStatus, 'warning' | 'success
   rejected: 'neutral',
 }
 
+export const ADDRESS_CHECK_LABELS: Record<AddressCheckStatus, string> = {
+  match: 'Address match',
+  mismatch: 'Address mismatch',
+  not_found: 'No address on site',
+}
+
+export const ADDRESS_CHECK_COLORS: Record<AddressCheckStatus, 'success' | 'warning'> = {
+  match: 'success',
+  mismatch: 'warning',
+  not_found: 'warning',
+}
+
 const TEXT_TARGET_LABELS: Record<TextTarget, string> = {
   phone: 'Phone',
+  email: 'Email',
   aboutUs: 'About',
   notes: 'Notes',
   contactName: 'Contact name',

@@ -65,11 +65,14 @@ What a run does per pantry:
 1. Fetches the homepage (robots.txt obeyed, User-Agent
    `PantryFinderBot/1.0 (+CRAWLER_CONTACT)`). A page that looks client-rendered
    (almost no text) is flagged `needsBrowser` in `crawl_sources` and skipped.
-2. **Targets without a mapping** (phone, contact name, about, notes, pantry
-   hours, each service's hours): fetches up to 5 likely same-site pages
+2. **Targets without a mapping** (phone, email, contact name, about, notes,
+   pantry hours, each service's hours): fetches up to 5 likely same-site pages
    (hours/contact/about…), asks the LLM where each value is, and files one
    `new_mapping` review item with up to 3 candidate regions per target. Not
    repeated while that review is pending, nor while the pages are unchanged.
+   The same call reports the addresses the site states; the item records
+   whether one matches the pantry's (`address.ts`), shown as a badge in the
+   admin.
 3. **Confirmed mappings**: re-reads the region (CSS selector, falling back to
    the heading text above it). Unchanged text is skipped outright; changed text
    is parsed from the extraction cache or by the LLM and applied to the pantry

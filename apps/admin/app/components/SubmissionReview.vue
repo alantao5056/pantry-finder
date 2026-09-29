@@ -25,7 +25,7 @@ watch(detail, (d) => {
 
 const isPending = computed(() => detail.value?.item.status === 'pending')
 
-type TextField = 'name' | 'address1' | 'address2' | 'city' | 'state' | 'zipCode' | 'phone' | 'website' | 'contactName'
+type TextField = 'name' | 'address1' | 'address2' | 'city' | 'state' | 'zipCode' | 'phone' | 'email' | 'website' | 'contactName'
 const textFields: { key: TextField; label: string; required?: boolean }[] = [
   { key: 'name', label: 'Name', required: true },
   { key: 'address1', label: 'Street address', required: true },
@@ -34,6 +34,7 @@ const textFields: { key: TextField; label: string; required?: boolean }[] = [
   { key: 'state', label: 'State (2-letter)', required: true },
   { key: 'zipCode', label: 'ZIP code', required: true },
   { key: 'phone', label: 'Phone' },
+  { key: 'email', label: 'Email' },
   { key: 'website', label: 'Website' },
   { key: 'contactName', label: 'Contact name' },
 ]

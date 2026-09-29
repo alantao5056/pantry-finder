@@ -165,10 +165,10 @@ onBeforeUnmount(() => {
               </div>
 
               <div class="pantry-popup-meta">
-                <span class="shrink-0 w-[18px] h-[1.4em] flex items-center justify-center">
-                  <UIcon name="i-lucide-map-pin" class="size-[13px] text-[var(--green-mid)]" />
+                <span class="pantry-popup-meta-icon">
+                  <UIcon name="i-lucide-map-pin" />
                 </span>
-                <span class="leading-[1.4]">{{ pantry.address }}</span>
+                <span>{{ pantry.address }}</span>
                 <span
                   v-if="pantry.distance !== undefined"
                   class="ml-2 inline-flex items-center gap-1.5 font-semibold text-gray-600"
@@ -181,10 +181,19 @@ onBeforeUnmount(() => {
                 v-if="pantry.phone"
                 class="pantry-popup-meta"
               >
-                <span class="shrink-0 w-[18px] h-[1.4em] flex items-center justify-center">
-                  <UIcon name="i-lucide-phone" class="size-[13px] text-[var(--green-mid)]" />
+                <span class="pantry-popup-meta-icon">
+                  <UIcon name="i-lucide-phone" />
                 </span>
-                <span class="leading-[1.4]">{{ pantry.phone }}</span>
+                <span>{{ pantry.phone }}</span>
+              </div>
+              <div
+                v-if="pantry.email"
+                class="pantry-popup-meta"
+              >
+                <span class="pantry-popup-meta-icon">
+                  <UIcon name="i-lucide-mail" />
+                </span>
+                <a class="break-all hover:text-[var(--green-dark)]" :href="`mailto:${pantry.email}`">{{ pantry.email }}</a>
               </div>
             </div>
           </div>

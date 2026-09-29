@@ -31,6 +31,7 @@ import {
   type ReviewItemDocument,
 } from '@pantry-finder/shared/firestore';
 import { createHash } from 'node:crypto';
+import { checkAddress } from './address.js';
 import type { Fetcher } from './fetch/fetcher.js';
 import { errorMessage, hostOf, siteOf } from './fetch/fetcher.js';
 import type { Extractor, PantryContext, Usage } from './extract/Extractor.js';
@@ -82,6 +83,7 @@ const MAX_ERRORS = 100;
 export function targetsFor(p: StoredPantry): MappingTarget[] {
   return [
     'phone',
+    'email',
     'contactName',
     'aboutUs',
     'notes',
@@ -202,11 +204,13 @@ export class PantryCrawler {
     }
 
     const ctx = pantryContext(pantry, targets);
-    const { proposals: raw, usage } = await this.extractor.proposeMappings(forLlm, ctx);
+    const { proposals: raw, addresses, usage } = await this.extractor.proposeMappings(forLlm, ctx);
     this.countLlm(usage);
     const proposals = toCandidates(site, raw);
+    const addressCheck = checkAddress(pantry, addresses);
 
     if (!this.apply) {
+      this.log(id, `address ${addressCheck.status}${addresses.length ? ` — ${addresses.map((a) => JSON.stringify(a)).join(', ')}` : ''}`);
       this.log(id, `would propose ${proposals.length} target(s):`);
       for (const p of proposals) {
         const c = p.candidates[0];
@@ -231,7 +235,7 @@ export class PantryCrawler {
         subtitle: `${pantry.city}, ${pantry.state} · ${hostOf(website)}`,
         pantryId: id,
         ...(this.runId ? { runId: this.runId } : {}),
-        newMapping: { website, fetchedAt: now, proposals },
+        newMapping: { website, fetchedAt: now, proposals, addressCheck },
         createdAt: now,
       };
       batch.create(itemRef, pruneUndefined(item));
@@ -248,7 +252,7 @@ export class PantryCrawler {
       this.stats.reviewItemsCreated++;
     }
     await batch.commit();
-    this.log(id, `proposed ${proposals.length} target(s)`);
+    this.log(id, `proposed ${proposals.length} target(s); address ${addressCheck.status}`);
   }
 
   // ---- later visits: refresh confirmed mappings ----

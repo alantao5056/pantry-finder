@@ -56,7 +56,16 @@ const open = (_e: Event, row: TableRow<ReviewItemSummary>) => navigateTo(`/revie
         :on-select="open"
       >
         <template #title-cell="{ row }">
-          <div class="font-medium">{{ row.original.title }}</div>
+          <div class="flex items-center gap-2">
+            <span class="font-medium">{{ row.original.title }}</span>
+            <UBadge
+              v-if="row.original.addressCheck"
+              :label="ADDRESS_CHECK_LABELS[row.original.addressCheck]"
+              :color="ADDRESS_CHECK_COLORS[row.original.addressCheck]"
+              variant="subtle"
+              size="sm"
+            />
+          </div>
           <div class="text-xs text-(--ui-text-muted)">{{ row.original.subtitle }}</div>
         </template>
         <template #type-cell="{ row }">

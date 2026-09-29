@@ -39,8 +39,14 @@ export interface Usage {
 
 export interface Extractor {
   readonly model: string;
-  /** First visit: where on the pages each target's value is, and what it is. */
-  proposeMappings(pages: PageForExtraction[], ctx: PantryContext): Promise<{ proposals: RawProposal[]; usage: Usage }>;
+  /**
+   * First visit: where on the pages each target's value is, and what it is,
+   * plus the pantry addresses the pages state (for the address check).
+   */
+  proposeMappings(
+    pages: PageForExtraction[],
+    ctx: PantryContext,
+  ): Promise<{ proposals: RawProposal[]; addresses: string[]; usage: Usage }>;
   /** Re-parse a known region whose text changed. */
   parseRegion(
     target: MappingTarget,
