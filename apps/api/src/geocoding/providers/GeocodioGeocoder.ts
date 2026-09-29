@@ -1,15 +1,26 @@
+import type { AddressGeocoder } from "../AddressGeocoder";
 import type { LocationGeocoder } from "../LocationGeocoder";
 import type { Coordinates } from "../types";
 import { fetchJsonWithRetry } from "./http";
 
 type GeocodioLocation = { lat?: number; lng?: number };
-type GeocodioResult = { location?: GeocodioLocation; accuracy?: number };
+type GeocodioResult = { location?: GeocodioLocation; accuracy?: number; accuracy_type?: string };
 type GeocodioResponse = { results?: GeocodioResult[] };
 
-export class GeocodioGeocoder implements LocationGeocoder {
+// Result types that pin a house number, not a street/city/ZIP centroid.
+const ADDRESS_LEVEL = new Set(["rooftop", "point", "range_interpolation", "nearest_rooftop_match"]);
+
+export class GeocodioGeocoder implements LocationGeocoder, AddressGeocoder {
   private readonly baseUrl: string = "https://api.geocod.io/v1.12/geocode";
 
-  constructor(private readonly apiKey: string) {}
+  /**
+   * @param addressLevelOnly Reject results coarser than a house number — for
+   *   pantry addresses, where a city centroid would silently misplace the pin.
+   */
+  constructor(
+    private readonly apiKey: string,
+    private readonly addressLevelOnly = false
+  ) {}
 
   public async geocode(input: string): Promise<Coordinates | null> {
     if (!this.apiKey) {
@@ -45,7 +56,12 @@ export class GeocodioGeocoder implements LocationGeocoder {
       return null;
     }
 
-    const loc = results[0]?.location;
+    const first = results[0];
+    if (this.addressLevelOnly && !ADDRESS_LEVEL.has(first?.accuracy_type ?? "")) {
+      return null;
+    }
+
+    const loc = first?.location;
     if (!loc || typeof loc.lat !== "number" || typeof loc.lng !== "number") {
       return null;
     }

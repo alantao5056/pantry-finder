@@ -9,7 +9,8 @@ export class CachedAddressGeocoder implements AddressGeocoder {
 
   constructor(inner: AddressGeocoder) {
     this.inner = inner;
-    this.cache = createCache<Coordinates>("pf:geo:addr:", {
+    // v2: Geocodio fallback added — drops nulls cached by the Census-only lookup.
+    this.cache = createCache<Coordinates>("pf:geo:addr:v2:", {
       ttlMs: 24 * 60 * 60 * 1000,
       max: 10000,
     });
