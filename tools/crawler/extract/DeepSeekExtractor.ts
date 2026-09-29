@@ -62,6 +62,8 @@ export class DeepSeekExtractor implements Extractor {
               { role: 'user', content: user },
             ],
             response_format: { type: 'json_object' },
+            // Thinking is on by default (effort high) and billed as output; extraction doesn't need it.
+            thinking: { type: 'disabled' },
             temperature: 0,
           }),
         });
