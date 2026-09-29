@@ -1,5 +1,7 @@
-import { Timestamp } from 'firebase-admin/firestore';
+import { GeoPoint, Timestamp } from 'firebase-admin/firestore';
+import { encodeGeoDocument } from 'geofirestore-core';
 import type {
+  AddressFields,
   ConfirmMappingField,
   MappingReviewDetail,
   SuspiciousReviewDetail,
@@ -9,21 +11,37 @@ import { normalizeTargetValue, parseTarget, sameTargetValue } from '@pantry-find
 import {
   COLLECTIONS,
   getTargetValue,
+  locationOf,
   mappingId,
   planFieldUpdates,
   rawHash,
+  sameLocation,
+  writeAddressUpdate,
   writeFieldUpdates,
   type ExtractionCacheDocument,
   type FieldMappingDocument,
   type FieldUpdate,
+  type GeoHashField,
+  type PantryLocation,
+  type StoredLocation,
 } from '@pantry-finder/shared/firestore';
 import { db } from '../config/firebase';
 import { PantryDocument } from '../models/pantry.schema';
 import { ReviewItemDocument } from '../models/review-item.schema';
 import { ReviewError, oneLineAddress, toSummary } from './review.service';
+import { GeoService } from './geo.service';
 import { invalidatePantryCaches } from '../cache/pantryCaches';
 
 type StoredPantry = Omit<PantryDocument, 'id'>;
+
+/** GeoFirestore's geohash index entry for a point, as its radius queries expect it. */
+function geoHashOf(point: GeoPoint): GeoHashField {
+  return encodeGeoDocument(point, {}).g as unknown as GeoHashField;
+}
+
+function addressFieldsOf(p: AddressFields): AddressFields {
+  return { address1: p.address1, address2: p.address2 ?? '', city: p.city, state: p.state, zipCode: p.zipCode };
+}
 
 function emptyValue(target: string): TargetValue {
   return parseTarget(target)?.kind === 'schedules' ? [] : '';
@@ -44,6 +62,7 @@ export class MappingReviewService {
   private readonly pantriesCol = db.collection(COLLECTIONS.pantries);
   private readonly mappingsCol = db.collection(COLLECTIONS.fieldMappings);
   private readonly cacheCol = db.collection(COLLECTIONS.extractionCache);
+  private readonly geoService = new GeoService();
 
   public async getMappingDetail(id: string): Promise<MappingReviewDetail> {
     const { item, pantry } = await this.load(id, 'new_mapping');
@@ -56,6 +75,9 @@ export class MappingReviewService {
       fetchedAt: payload.fetchedAt.toDate().toISOString(),
       storedAddress: oneLineAddress(pantry),
       addressCheck: payload.addressCheck,
+      confirmedAddress: payload.confirmedAddress,
+      storedPhone: pantry.phone || undefined,
+      phoneCheck: payload.phoneCheck,
       serviceNames: (pantry.services ?? []).map((s) => s.name),
       fields: payload.proposals.map((p) => ({
         target: p.target,
@@ -70,10 +92,25 @@ export class MappingReviewService {
   /**
    * Resolves a mapping proposal: picked candidates become active mappings and
    * their values are applied; targets left out or set to null are rejected
-   * (not proposed again).
-   * @returns Number of pantry fields that changed.
+   * (not proposed again). `address`, when given, moves the pantry there
+   * (re-geocoded; address and coordinates change together).
+   * @returns Number of pantry changes made.
    */
-  public async confirmMapping(id: string, fields: ConfirmMappingField[], adminEmail: string): Promise<number> {
+  public async confirmMapping(
+    id: string,
+    fields: ConfirmMappingField[],
+    address: AddressFields | undefined,
+    adminEmail: string,
+  ): Promise<number> {
+    // Geocode outside the transaction: it's a slow external call, and a
+    // transaction body can be retried.
+    let coordinates: GeoPoint | undefined;
+    if (address) {
+      const point = await this.geoService.geocodeAddress(oneLineAddress(address));
+      if (!point) throw new ReviewError('geocode_failed');
+      coordinates = new GeoPoint(point.latitude, point.longitude);
+    }
+
     const itemRef = this.reviewItemsCol.doc(id);
     const { applied, location } = await db.runTransaction(async (tx) => {
       const itemSnap = await tx.get(itemRef);
@@ -141,21 +178,30 @@ export class MappingReviewService {
         });
       }
 
+      const ctx = { source: 'crawler' as const, actor: adminEmail, now, reviewItemId: id, runId: item.runId };
       const plan = planFieldUpdates(pantry, updates);
-      writeFieldUpdates(tx, db, pantryRef, pantry, plan, {
-        source: 'crawler',
-        actor: adminEmail,
-        now,
-        reviewItemId: id,
-        runId: item.runId,
-      });
+      writeFieldUpdates(tx, db, pantryRef, pantry, plan, ctx);
+
+      let location: PantryLocation = { id: pantryRef.id, state: pantry.state, city: pantry.city };
+      let moved = false;
+      if (address && coordinates) {
+        const previous = locationOf(pantry, pantry.g ?? geoHashOf(pantry.coordinates));
+        const next: StoredLocation = { ...addressFieldsOf(address), coordinates, g: geoHashOf(coordinates) };
+        if (!sameLocation(previous, next)) {
+          writeAddressUpdate(tx, db, pantryRef, previous, next, { ...ctx, source: 'admin' });
+          location = { ...location, state: next.state, city: next.city, movedFrom: { state: pantry.state, city: pantry.city } };
+          moved = true;
+        }
+      }
+
       tx.update(itemRef, {
         status: 'approved',
         resolvedAt: now,
         resolvedBy: adminEmail,
         'newMapping.confirmed': confirmed,
+        'newMapping.confirmedAddress': moved ? addressFieldsOf(address!) : null,
       });
-      return { applied: plan.length, location: { id: pantryRef.id, state: pantry.state, city: pantry.city } };
+      return { applied: plan.length + (moved ? 1 : 0), location };
     });
     if (applied) await invalidatePantryCaches(location);
     return applied;

@@ -70,9 +70,9 @@ What a run does per pantry:
    (hours/contact/about…), asks the LLM where each value is, and files one
    `new_mapping` review item with up to 3 candidate regions per target. Not
    repeated while that review is pending, nor while the pages are unchanged.
-   The same call reports the addresses the site states; the item records
-   whether one matches the pantry's (`address.ts`), shown as a badge in the
-   admin.
+   The same call reports the addresses and phone numbers the site states; the
+   item records whether one matches the pantry's (`address.ts`, `phone.ts`),
+   shown as badges in the admin.
 3. **Confirmed mappings**: re-reads the region (CSS selector, falling back to
    the heading text above it). Unchanged text is skipped outright; changed text
    is parsed from the extraction cache or by the LLM and applied to the pantry

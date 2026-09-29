@@ -7,7 +7,7 @@
  * formatting differences ("N Main Street" vs "North Main St.") still match.
  * It only decides a badge on the review page, never a write.
  */
-import type { AddressCheck } from '@pantry-finder/shared';
+import type { SiteCheck } from '@pantry-finder/shared';
 import type { StoredPantry } from './pipeline.js';
 
 // Suffixes and directions folded to one spelling so both sides compare equal.
@@ -78,7 +78,7 @@ function matches(pantry: StoredPantry, found: string): boolean {
   });
 }
 
-export function checkAddress(pantry: StoredPantry, found: string[]): AddressCheck {
+export function checkAddress(pantry: StoredPantry, found: string[]): SiteCheck {
   if (!found.length) return { status: 'not_found', found };
   return { status: found.some((a) => matches(pantry, a)) ? 'match' : 'mismatch', found };
 }

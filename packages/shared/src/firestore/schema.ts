@@ -5,7 +5,7 @@
 
 import type { GeoPoint, Timestamp } from 'firebase-admin/firestore';
 import type {
-  AddressCheck,
+  AddressFields,
   CrawlRunCounts,
   CrawlRunMode,
   CrawlRunOptions,
@@ -15,6 +15,7 @@ import type {
   PantryChangeKind,
   ReviewItemStatus,
   ReviewItemType,
+  SiteCheck,
   SuspiciousReason,
   TargetProposal,
 } from '../admin.js';
@@ -65,6 +66,18 @@ export interface ServiceSchema {
   schedules: ScheduleSchema[];
 }
 
+export interface GeoHashField {
+  geohash: string;
+  geopoint: GeoPoint;
+}
+
+// A pantry's address with the coordinates geocoded from it. Always written
+// together: an address never moves without its coordinates.
+export interface StoredLocation extends AddressFields {
+  coordinates: GeoPoint;
+  g: GeoHashField;
+}
+
 export interface PantryDocument {
   id: string;
   name: string;
@@ -76,6 +89,9 @@ export interface PantryDocument {
   phone: string;
   email?: string;
   coordinates: GeoPoint;
+  // GeoFirestore's index of `coordinates` (radius search reads it); rewritten
+  // with every coordinates change.
+  g?: GeoHashField;
   website?: string;
   aboutUs?: string;
   contactName?: string;
@@ -99,6 +115,8 @@ export interface PantryDocument {
 //   create  — `newValue` is the full pantry document as written
 //   update  — one entry per changed target, with `oldValue` / `newValue`
 //             (null = the field was absent)
+//   address — the address fields and coordinates, moved as one unit; `oldValue`
+//             / `newValue` are `StoredLocation`s
 //   archive / restore — pantry moved to / from `pantries_archive`
 export interface PantryChangeDocument {
   pantryId: string;
@@ -129,9 +147,14 @@ export interface NewMappingPayload {
   proposals: TargetProposal[];
   // Whether the site's stated address(es) match the pantry's. Absent on items
   // raised before the check existed.
-  addressCheck?: AddressCheck;
+  addressCheck?: SiteCheck;
+  // Same for the site's phone numbers. Absent on older items and when the
+  // pantry has no phone to compare.
+  phoneCheck?: SiteCheck;
   // Set on resolve: chosen candidate index per target (null = rejected).
   confirmed?: Partial<Record<MappingTarget, number | null>>;
+  // Set on resolve: the address the pantry was moved to (null = kept).
+  confirmedAddress?: AddressFields | null;
 }
 
 // Payload of a `suspicious_value` review item: a value the crawler would have

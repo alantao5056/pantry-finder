@@ -56,7 +56,8 @@ const columns: TableColumn<PantryChangeSummary>[] = [
   { id: 'actions', header: '' },
 ]
 
-const isRevertable = (c: PantryChangeSummary) => c.kind === 'update' && !!c.target && !c.revertOf && !c.revertedAt
+const isRevertable = (c: PantryChangeSummary) =>
+  (c.kind === 'address' || (c.kind === 'update' && !!c.target)) && !c.revertOf && !c.revertedAt
 
 // Admin approvals clear the API's cached copies themselves; this is for changes
 // the API didn't make (a local crawler run can't reach its in-memory cache).
@@ -142,7 +143,7 @@ const revertRun = async () => {
         </template>
         <template #pantryId-cell="{ row }">
           <ULink :to="pantryUrl(row.original.pantryId)" target="_blank" class="font-mono text-xs">{{ row.original.pantryId }}</ULink>
-          <div class="text-sm">{{ row.original.target ? targetLabel(row.original.target) : row.original.field ?? '—' }}</div>
+          <div class="text-sm">{{ row.original.target ? targetLabel(row.original.target) : row.original.kind === 'address' ? 'Address' : row.original.field ?? '—' }}</div>
           <UButton
             v-if="!pantryId"
             label="All changes to this pantry"

@@ -36,6 +36,8 @@ export function cityPantriesCache(): Cache<Pantry[]> {
  */
 export async function invalidatePantryCaches(pantry: PantryLocation): Promise<void> {
   await pantryByIdCache().delete(pantry.id);
-  const city = cityIndexKey(pantry.state, pantry.city);
-  if (city) await cityPantriesCache().delete(city);
+  for (const { state, city } of [pantry, ...(pantry.movedFrom ? [pantry.movedFrom] : [])]) {
+    const key = cityIndexKey(state, city);
+    if (key) await cityPantriesCache().delete(key);
+  }
 }

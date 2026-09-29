@@ -41,12 +41,13 @@ export interface Extractor {
   readonly model: string;
   /**
    * First visit: where on the pages each target's value is, and what it is,
-   * plus the pantry addresses the pages state (for the address check).
+   * plus the pantry addresses and phone numbers the pages state (for the
+   * address and phone checks).
    */
   proposeMappings(
     pages: PageForExtraction[],
     ctx: PantryContext,
-  ): Promise<{ proposals: RawProposal[]; addresses: string[]; usage: Usage }>;
+  ): Promise<{ proposals: RawProposal[]; addresses: string[]; phones: string[]; usage: Usage }>;
   /** Re-parse a known region whose text changed. */
   parseRegion(
     target: MappingTarget,

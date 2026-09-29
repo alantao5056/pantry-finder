@@ -56,6 +56,7 @@ export function toSummary(id: string, doc: ReviewItemDocument): ReviewItemSummar
     resolvedAt: toIso(doc.resolvedAt),
     resolvedBy: doc.resolvedBy,
     addressCheck: doc.newMapping?.addressCheck?.status,
+    phoneCheck: doc.newMapping?.phoneCheck?.status,
   };
 }
 

@@ -27,9 +27,11 @@ import { pruneUndefined } from '../values.js';
 import type {
   FieldMappingDocument,
   FieldSource,
+  GeoHashField,
   PantryChangeDocument,
   PantryDocument,
   ServiceSchema,
+  StoredLocation,
   TrackedPantryField,
 } from './schema.js';
 
@@ -191,11 +193,74 @@ export function writeFieldUpdates(
   return changeIds;
 }
 
+const ADDRESS_FIELDS = ['address1', 'address2', 'city', 'state', 'zipCode'] as const;
+
+/** The pantry's address and coordinates, with `address2` as stored ('' when absent). */
+export function locationOf(pantry: StoredPantry, g: GeoHashField): StoredLocation {
+  return {
+    address1: pantry.address1,
+    address2: pantry.address2 ?? '',
+    city: pantry.city,
+    state: pantry.state,
+    zipCode: pantry.zipCode,
+    coordinates: pantry.coordinates,
+    g,
+  };
+}
+
+/** Same address and coordinates (the geohash follows from the coordinates). */
+export function sameLocation(a: StoredLocation, b: StoredLocation): boolean {
+  return (
+    ADDRESS_FIELDS.every((f) => (a[f] ?? '') === (b[f] ?? '')) &&
+    a.coordinates.latitude === b.coordinates.latitude &&
+    a.coordinates.longitude === b.coordinates.longitude
+  );
+}
+
+/**
+ * Moves a pantry to a new address: address fields, coordinates and geohash in
+ * one update, logged as one `address` change so it is reverted as one unit.
+ * `previous` is the pantry's current location (with its geohash). Returns the
+ * change id.
+ */
+export function writeAddressUpdate(
+  tx: Transaction,
+  db: Firestore,
+  pantryRef: DocumentReference,
+  previous: StoredLocation,
+  next: StoredLocation,
+  ctx: WriteContext,
+): string {
+  const update: Record<string, unknown> = { ...next, updatedAt: ctx.now };
+  for (const f of ADDRESS_FIELDS) {
+    if ((previous[f] ?? '') !== (next[f] ?? '')) update[`fieldSources.${f}`] = { source: ctx.source, at: ctx.now };
+  }
+  tx.update(pantryRef, update);
+
+  const changeRef = db.collection(COLLECTIONS.pantryChanges).doc();
+  const change: PantryChangeDocument = {
+    pantryId: pantryRef.id,
+    kind: 'address',
+    oldValue: previous,
+    newValue: next,
+    source: ctx.source,
+    actor: ctx.actor,
+    runId: ctx.runId,
+    reviewItemId: ctx.reviewItemId,
+    revertOf: ctx.revertOf,
+    createdAt: ctx.now,
+  };
+  tx.create(changeRef, pruneUndefined(change));
+  return changeRef.id;
+}
+
 /** What callers need to clear a pantry's cached copies (see pantryCacheKeys). */
 export interface PantryLocation {
   id: string;
   state: string;
   city: string;
+  /** The city it was listed under before an address change, when different. */
+  movedFrom?: { state: string; city: string };
 }
 
 /**
@@ -215,8 +280,9 @@ export async function revertChange(
   const changeSnap = await tx.get(changeRef);
   if (!changeSnap.exists) throw new PantryWriteError('not_found', 'Change not found.');
   const change = changeSnap.data() as PantryChangeDocument;
-  if (change.kind !== 'update' || !change.target || change.revertOf) {
-    throw new PantryWriteError('not_revertible', 'Only crawler-pipeline field updates can be reverted.');
+  const revertible = change.kind === 'address' || (change.kind === 'update' && change.target);
+  if (!revertible || change.revertOf) {
+    throw new PantryWriteError('not_revertible', 'Only crawler-pipeline field and address updates can be reverted.');
   }
   if (change.revertedAt) throw new PantryWriteError('already_reverted', 'Change was already reverted.');
 
@@ -225,17 +291,35 @@ export async function revertChange(
   if (!pantrySnap.exists) throw new PantryWriteError('not_found', 'Pantry no longer exists.');
   const pantry = pantrySnap.data() as StoredPantry;
 
-  const current = getTargetValue(pantry, change.target);
-  if (!sameTargetValue(change.target, current, change.newValue as TargetValue)) {
+  if (change.kind === 'address') {
+    const written = change.newValue as StoredLocation;
+    const restore = change.oldValue as StoredLocation;
+    const current = locationOf(pantry, pantry.g ?? written.g);
+    if (!sameLocation(current, written)) {
+      throw new PantryWriteError('conflict', 'The address has changed since; revert the later change first.');
+    }
+    writeAddressUpdate(tx, db, pantryRef, current, restore, { source: 'admin', actor, now, revertOf: changeId });
+    tx.update(changeRef, { revertedAt: now, revertedBy: actor });
+    return {
+      id: pantryRef.id,
+      state: restore.state,
+      city: restore.city,
+      movedFrom: { state: current.state, city: current.city },
+    };
+  }
+  const target = change.target!;
+
+  const current = getTargetValue(pantry, target);
+  if (!sameTargetValue(target, current, change.newValue as TargetValue)) {
     throw new PantryWriteError('conflict', 'The field has changed since; revert the later change first.');
   }
 
   const restore = (change.oldValue ??
-    (parseTarget(change.target)?.kind === 'schedules' ? [] : '')) as TargetValue;
+    (parseTarget(target)?.kind === 'schedules' ? [] : '')) as TargetValue;
   const plan: PlannedChange[] = [
     {
-      target: change.target,
-      field: targetField(change.target),
+      target,
+      field: targetField(target),
       oldValue: current ?? null,
       newValue: restore,
       mappingId: change.mappingId,

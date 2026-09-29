@@ -1,11 +1,21 @@
 import { Timestamp } from 'firebase-admin/firestore';
 import type { PantryChangeSummary, RevertConflict, RevertRunResponse } from '@pantry-finder/shared';
-import { COLLECTIONS, PantryWriteError, revertChange } from '@pantry-finder/shared/firestore';
+import { COLLECTIONS, PantryWriteError, revertChange, type StoredLocation } from '@pantry-finder/shared/firestore';
 import { db } from '../config/firebase';
 import { invalidatePantryCaches } from '../cache/pantryCaches';
 import { PantryChangeDocument } from '../models/pantry-change.schema';
+import { oneLineAddress } from './review.service';
 
 const PAGE_SIZE = 50;
+
+/** How a stored change value is shown in the list. */
+function displayValue(c: PantryChangeDocument, value: unknown): unknown {
+  // A `create` entry holds the whole pantry document; the list only needs to know it happened.
+  if (c.kind === 'create') return undefined;
+  // An `address` entry holds address + coordinates; show the address line.
+  if (c.kind === 'address' && value) return oneLineAddress(value as StoredLocation);
+  return value;
+}
 
 function toSummary(id: string, c: PantryChangeDocument): PantryChangeSummary {
   return {
@@ -14,9 +24,8 @@ function toSummary(id: string, c: PantryChangeDocument): PantryChangeSummary {
     kind: c.kind,
     field: c.field,
     target: c.target,
-    // A `create` entry holds the whole pantry document; the list only needs to know it happened.
-    oldValue: c.kind === 'create' ? undefined : c.oldValue,
-    newValue: c.kind === 'create' ? undefined : c.newValue,
+    oldValue: displayValue(c, c.oldValue),
+    newValue: displayValue(c, c.newValue),
     source: c.source,
     actor: c.actor,
     runId: c.runId,
@@ -60,7 +69,7 @@ export class ChangeLogService {
   }
 
   /**
-   * Reverts every not-yet-reverted field update of a crawl run, newest first
+   * Reverts every not-yet-reverted field and address update of a crawl run, newest first
    * (so stacked changes to one field unwind in order). Changes that can't be
    * reverted — typically because the field was edited again since — are
    * skipped and reported.
@@ -71,7 +80,7 @@ export class ChangeLogService {
     const conflicts: RevertConflict[] = [];
     for (const doc of snapshot.docs) {
       const c = doc.data() as PantryChangeDocument;
-      if (c.kind !== 'update' || c.revertedAt || c.revertOf) continue;
+      if ((c.kind !== 'update' && c.kind !== 'address') || c.revertedAt || c.revertOf) continue;
       try {
         await this.revert(doc.id, adminEmail);
         reverted++;

@@ -27,7 +27,7 @@ export class DeepSeekExtractor implements Extractor {
   async proposeMappings(
     pages: PageForExtraction[],
     ctx: PantryContext,
-  ): Promise<{ proposals: RawProposal[]; addresses: string[]; usage: Usage }> {
+  ): Promise<{ proposals: RawProposal[]; addresses: string[]; phones: string[]; usage: Usage }> {
     const blockIds = new Set(pages.flatMap((p) => p.blocks.map((b) => b.id)));
     const { json, usage } = await this.complete(proposeSystemPrompt(), proposeUserPrompt(pages, ctx));
     return { ...parseProposeResponse(json, ctx, blockIds), usage };

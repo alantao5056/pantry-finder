@@ -1,5 +1,6 @@
 import { Response } from 'express';
 import type {
+  AddressFields,
   ConfirmMappingField,
   CrawlRunMode,
   EvalGrade,
@@ -124,16 +125,32 @@ function parseConfirmFields(raw: unknown): ConfirmMappingField[] | null {
   return fields;
 }
 
-/** Validates an admin-edited draft; returns the missing/invalid field names on failure. */
-function parseDraft(raw: unknown): { draft: PantryDraft } | { missing: string[] } {
-  const r = (raw ?? {}) as Record<string, unknown>;
-  const draft: PantryDraft = {
-    name: str(r.name),
+function parseAddressFields(r: Record<string, unknown>): AddressFields {
+  return {
     address1: str(r.address1),
     address2: str(r.address2, 200) || undefined,
     city: str(r.city),
     state: str(r.state, 100).toUpperCase(),
     zipCode: str(r.zipCode, 20),
+  };
+}
+
+/** Names of the required address fields that are missing or invalid. */
+function invalidAddressFields(a: AddressFields): string[] {
+  const missing: string[] = [];
+  if (!a.address1) missing.push('address1');
+  if (!a.city) missing.push('city');
+  if (!a.state || !isValidStateSlug(a.state.toLowerCase())) missing.push('state');
+  if (!a.zipCode) missing.push('zipCode');
+  return missing;
+}
+
+/** Validates an admin-edited draft; returns the missing/invalid field names on failure. */
+function parseDraft(raw: unknown): { draft: PantryDraft } | { missing: string[] } {
+  const r = (raw ?? {}) as Record<string, unknown>;
+  const draft: PantryDraft = {
+    name: str(r.name),
+    ...parseAddressFields(r),
     phone: str(r.phone, 40) || undefined,
     email: normalizeEmail(str(r.email, 200)) || undefined,
     website: str(r.website, 300) || undefined,
@@ -149,12 +166,7 @@ function parseDraft(raw: unknown): { draft: PantryDraft } | { missing: string[] 
       : [],
   };
 
-  const missing: string[] = [];
-  if (!draft.name) missing.push('name');
-  if (!draft.address1) missing.push('address1');
-  if (!draft.city) missing.push('city');
-  if (!draft.state || !isValidStateSlug(draft.state.toLowerCase())) missing.push('state');
-  if (!draft.zipCode) missing.push('zipCode');
+  const missing = [...(draft.name ? [] : ['name']), ...invalidAddressFields(draft)];
   return missing.length ? { missing } : { draft };
 }
 
@@ -278,13 +290,28 @@ export class AdminController {
   }
 
   public async confirmMapping(req: AuthedRequest, res: Response): Promise<void> {
-    const fields = parseConfirmFields((req.body ?? {}).fields);
+    const body = (req.body ?? {}) as Record<string, unknown>;
+    const fields = parseConfirmFields(body.fields);
     if (!fields) {
       res.status(400).json({ error: 'fields must be a list of { target, candidateIndex, value? }.' });
       return;
     }
+    let address: AddressFields | undefined;
+    if (body.address !== undefined && body.address !== null) {
+      address = parseAddressFields(body.address as Record<string, unknown>);
+      const missing = invalidAddressFields(address);
+      if (missing.length) {
+        res.status(400).json({ error: 'Missing or invalid required fields.', fields: missing });
+        return;
+      }
+    }
     await this.handleReviewErrors(res, async () => {
-      const applied = await this.mappingReviewService.confirmMapping(String(req.params.id), fields, req.user!.sub);
+      const applied = await this.mappingReviewService.confirmMapping(
+        String(req.params.id),
+        fields,
+        address,
+        req.user!.sub,
+      );
       res.json({ applied });
     });
   }

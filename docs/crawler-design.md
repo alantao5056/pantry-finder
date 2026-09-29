@@ -271,8 +271,22 @@ Decisions made while building M2, on top of the design above. Usage:
   street addresses the pages state; `tools/crawler/address.ts` compares them to
   the stored address (house number + first street-name word + ZIP when given)
   and stores `match` / `mismatch` / `not_found` on the `new_mapping` item
-  (`newMapping.addressCheck`). It is only a badge for the admin deciding
-  whether the site is the pantry's; it is not re-checked on refresh runs.
+  (`newMapping.addressCheck`). The same call lists the site's phone numbers;
+  `tools/crawler/phone.ts` compares them to the stored phone on the 10 digits
+  (`newMapping.phoneCheck`; absent when the pantry has no phone). Both are
+  badges for the admin deciding whether the site is the pantry's; they are not
+  re-checked on refresh runs.
+- **Address update from review:** on an address `mismatch` the review page
+  offers the site's addresses like a field ("keep" by default). The picked one
+  (split by `parseAddressLine`, editable) is sent with the confirm; the API
+  geocodes it before the transaction (failure → 422, nothing applied) and
+  `writeAddressUpdate` writes the address fields, `coordinates` and the
+  GeoFirestore `g` geohash together, as one `pantry_changes` entry of kind
+  `address` holding both full locations. Reverting it restores the old
+  address, coordinates and `g` as one unit (conflict if the address changed
+  since). It is not a mapping: nothing is tracked afterwards. A city/state
+  change leaves the `states`/`cities` browse index stale until the sitemap
+  tool is re-run.
   `website` is not extracted; it is only proposed (as `suspicious_value`, reason
   `redirect`) when the homepage redirects to another site.
 - **Normalization:** values are compared and stored in the existing formats —
@@ -329,8 +343,9 @@ Decisions made while building M2, on top of the design above. Usage:
   (keys from `pantryCacheKeys` in `packages/shared/src/cache-keys.ts`). For
   writes the API can't see otherwise (a local crawler run against an API with
   in-process caches), the change log has a per-pantry **Clear cache** action
-  (`POST /admin/pantries/:id/evict-cache`). Name or
-  address changes (M3) will also need the *old* city's list cleared.
+  (`POST /admin/pantries/:id/evict-cache`). Address changes (and their
+  reverts) clear the old city's list too (`PantryLocation.movedFrom`); name
+  changes (M3) will need the same.
 
 ## Crawler worker notes
 

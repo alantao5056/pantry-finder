@@ -34,7 +34,9 @@ export interface ReviewItemSummary {
   resolvedAt?: string;
   resolvedBy?: string;
   /** `new_mapping` items: result of the site address check. */
-  addressCheck?: AddressCheckStatus;
+  addressCheck?: SiteCheckStatus;
+  /** `new_mapping` items: result of the site phone check. */
+  phoneCheck?: SiteCheckStatus;
 }
 
 export interface ListReviewItemsResponse {
@@ -212,16 +214,25 @@ export interface TargetProposal {
 }
 
 /**
- * Whether a crawled site states the pantry's address: `match` when one of the
- * addresses found on it is the stored one, `mismatch` when addresses were
+ * Whether a crawled site states the pantry's address (or phone): `match` when
+ * one of the values found on it is the stored one, `mismatch` when values were
  * found but none is, `not_found` when the site states none.
  */
-export type AddressCheckStatus = 'match' | 'mismatch' | 'not_found';
+export type SiteCheckStatus = 'match' | 'mismatch' | 'not_found';
 
-export interface AddressCheck {
-  status: AddressCheckStatus;
-  /** Addresses as written on the site. */
+export interface SiteCheck {
+  status: SiteCheckStatus;
+  /** Values as written on the site. */
   found: string[];
+}
+
+/** A pantry's postal address, as stored on the pantry document. */
+export interface AddressFields {
+  address1: string;
+  address2?: string;
+  city: string;
+  state: string;
+  zipCode: string;
 }
 
 export interface MappingReviewField {
@@ -240,7 +251,11 @@ export interface MappingReviewDetail {
   fetchedAt: string;
   /** The pantry's stored address on one line. */
   storedAddress: string;
-  addressCheck?: AddressCheck;
+  addressCheck?: SiteCheck;
+  /** Once resolved: the address the pantry was moved to (null = kept). Absent on older items. */
+  confirmedAddress?: AddressFields | null;
+  storedPhone?: string;
+  phoneCheck?: SiteCheck;
   /** Service names by index, for labelling `services.<i>.schedules` targets. */
   serviceNames: string[];
   fields: MappingReviewField[];
@@ -257,10 +272,12 @@ export interface ConfirmMappingField {
 
 export interface ConfirmMappingRequest {
   fields: ConfirmMappingField[];
+  /** New address for the pantry (re-geocoded on confirm); absent keeps the current one. */
+  address?: AddressFields;
 }
 
 export interface ConfirmMappingResponse {
-  /** Number of pantry fields that changed. */
+  /** Number of pantry changes made (an address update counts as one). */
   applied: number;
 }
 
@@ -292,7 +309,7 @@ export interface ApproveValueRequest {
 
 // ---- Change log ----
 
-export type PantryChangeKind = 'create' | 'update' | 'archive' | 'restore';
+export type PantryChangeKind = 'create' | 'update' | 'address' | 'archive' | 'restore';
 
 export interface PantryChangeSummary {
   id: string;

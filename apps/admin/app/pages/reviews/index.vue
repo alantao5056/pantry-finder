@@ -61,7 +61,14 @@ const open = (_e: Event, row: TableRow<ReviewItemSummary>) => navigateTo(`/revie
             <UBadge
               v-if="row.original.addressCheck"
               :label="ADDRESS_CHECK_LABELS[row.original.addressCheck]"
-              :color="ADDRESS_CHECK_COLORS[row.original.addressCheck]"
+              :color="SITE_CHECK_COLORS[row.original.addressCheck]"
+              variant="subtle"
+              size="sm"
+            />
+            <UBadge
+              v-if="row.original.phoneCheck"
+              :label="PHONE_CHECK_LABELS[row.original.phoneCheck]"
+              :color="SITE_CHECK_COLORS[row.original.phoneCheck]"
               variant="subtle"
               size="sm"
             />

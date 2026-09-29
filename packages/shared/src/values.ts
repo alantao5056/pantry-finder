@@ -4,7 +4,7 @@
 // Stored formats (from the prod data): phone `555-123-4567`, times `9:00 AM`,
 // full weekday names, `everyOtherWeekIndicator` always present as a boolean.
 
-import type { ScheduleDraft } from './admin.js';
+import type { AddressFields, ScheduleDraft } from './admin.js';
 
 /** JSON with sorted object keys, so value comparisons ignore key order. */
 export function stableStringify(value: unknown): string {
@@ -51,6 +51,25 @@ export function normalizePhone(raw: string): string {
     return `${ten.slice(0, 3)}-${ten.slice(3, 6)}-${ten.slice(6)}`;
   }
   return trimmed;
+}
+
+/**
+ * Best-effort split of a one-line US address — `street[, line 2], city, ST 12345[, USA]` —
+ * into pantry address fields. A line that doesn't fit lands whole in `address1`
+ * for the admin to split by hand.
+ */
+export function parseAddressLine(line: string): AddressFields {
+  const parts = line.split(',').map((p) => p.trim()).filter(Boolean);
+  if (parts.length && /^(usa?|united states( of america)?)$/i.test(parts[parts.length - 1]!)) parts.pop();
+  const stateZip = parts.length >= 3 ? /^([A-Za-z]{2})\.?(?:\s+(\d{5})(?:-\d{4})?)?$/.exec(parts[parts.length - 1]!) : null;
+  if (!stateZip) return { address1: line.trim(), address2: '', city: '', state: '', zipCode: '' };
+  return {
+    address1: parts[0]!,
+    address2: parts.slice(1, -2).join(', '),
+    city: parts[parts.length - 2]!,
+    state: stateZip[1]!.toUpperCase(),
+    zipCode: stateZip[2] ?? '',
+  };
 }
 
 /** `mailto:Info@Example.org` → `info@example.org`. */

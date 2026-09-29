@@ -35,8 +35,10 @@ For each requested target that the pages actually state, return up to ${MAX_CAND
 
 Also list in "addresses" every street address the pages give for where this pantry (or its organization) is located, each as written on one line ("123 Main St, Springfield, IL 62701"). Leave it empty if the pages state none; never guess one.
 
+Also list in "phones" every phone number the pages give for this pantry (or its organization), as written. Leave it empty if the pages state none.
+
 Answer with JSON only:
-{"fields":[{"target":"phone","candidates":[{"blocks":["p0b3"],"value":"555-123-4567","uncertain":false}]}],"addresses":["123 Main St, Springfield, IL 62701"]}`;
+{"fields":[{"target":"phone","candidates":[{"blocks":["p0b3"],"value":"555-123-4567","uncertain":false}]}],"addresses":["123 Main St, Springfield, IL 62701"],"phones":["(555) 123-4567"]}`;
 }
 
 export function proposeUserPrompt(pages: PageForExtraction[], ctx: PantryContext): string {
@@ -114,20 +116,27 @@ const proposeSchema = z.object({
     }),
   ),
   addresses: z.array(z.unknown()).optional(),
+  phones: z.array(z.unknown()).optional(),
 });
 
-const MAX_ADDRESSES = 10;
+const MAX_LISTED = 10;
+
+/** The non-empty strings of an LLM-listed array, trimmed and capped. */
+function listed(values: unknown[] | undefined): string[] {
+  return (values ?? [])
+    .filter((v): v is string => typeof v === 'string' && v.trim() !== '')
+    .map((v) => v.trim().slice(0, 300))
+    .slice(0, MAX_LISTED);
+}
 
 export function parseProposeResponse(
   json: unknown,
   ctx: PantryContext,
   blockIds: Set<string>,
-): { proposals: RawProposal[]; addresses: string[] } {
+): { proposals: RawProposal[]; addresses: string[]; phones: string[] } {
   const parsed = proposeSchema.parse(json);
-  const addresses = (parsed.addresses ?? [])
-    .filter((a): a is string => typeof a === 'string' && a.trim() !== '')
-    .map((a) => a.trim().slice(0, 300))
-    .slice(0, MAX_ADDRESSES);
+  const addresses = listed(parsed.addresses);
+  const phones = listed(parsed.phones);
   const proposals: RawProposal[] = [];
   for (const f of parsed.fields) {
     if (!isMappingTarget(f.target) || !ctx.targets.includes(f.target)) continue;
@@ -144,7 +153,7 @@ export function parseProposeResponse(
       .slice(0, MAX_CANDIDATES);
     if (candidates.length) proposals.push({ target, candidates });
   }
-  return { proposals, addresses };
+  return { proposals, addresses, phones };
 }
 
 const parseRegionSchema = z.object({ value: z.unknown(), uncertain: z.boolean().optional() });
