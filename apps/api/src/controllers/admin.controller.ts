@@ -194,8 +194,7 @@ export class AdminController {
       res.status(400).json({ error: `status must be one of ${REVIEW_STATUSES.join(', ')}.` });
       return;
     }
-    const items = await this.reviewService.listItems(status);
-    res.json({ items });
+    res.json(await this.reviewService.listItems(status, str(req.query.cursor, 100) || undefined));
   }
 
   public async getReviewItem(req: AuthedRequest, res: Response): Promise<void> {

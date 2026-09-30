@@ -1,6 +1,7 @@
 import { GeoPoint, Timestamp } from 'firebase-admin/firestore';
 import { GeoTransaction } from 'geofirestore';
 import type {
+  ListReviewItemsResponse,
   NearbyPantry,
   PantryDraft,
   ReviewItemStatus,
@@ -26,7 +27,7 @@ import { COLLECTIONS, mappingId, type FieldMappingDocument } from '@pantry-finde
 // Existing pantries within this distance of a submission are flagged as
 // possible duplicates.
 const NEARBY_RADIUS_KM = 0.1;
-const LIST_LIMIT = 100;
+const PAGE_SIZE = 50;
 
 const TRACKED_FIELDS: TrackedPantryField[] = [
   'name', 'address1', 'address2', 'city', 'state', 'zipCode', 'phone', 'email',
@@ -90,13 +91,19 @@ export class ReviewService {
   private readonly mappingsCol = db.collection(COLLECTIONS.fieldMappings);
   private readonly geoService = new GeoService();
 
-  public async listItems(status: ReviewItemStatus): Promise<ReviewItemSummary[]> {
-    const snapshot = await this.reviewItemsCol
-      .where('status', '==', status)
-      .orderBy('createdAt', 'desc')
-      .limit(LIST_LIMIT)
-      .get();
-    return snapshot.docs.map((d) => toSummary(d.id, d.data() as ReviewItemDocument));
+  /** Newest first. `cursor` is the last id of the previous page. */
+  public async listItems(status: ReviewItemStatus, cursor?: string): Promise<ListReviewItemsResponse> {
+    let query = this.reviewItemsCol.where('status', '==', status).orderBy('createdAt', 'desc');
+    if (cursor) {
+      const cursorSnap = await this.reviewItemsCol.doc(cursor).get();
+      if (cursorSnap.exists) query = query.startAfter(cursorSnap);
+    }
+    const snapshot = await query.limit(PAGE_SIZE + 1).get();
+    const docs = snapshot.docs.slice(0, PAGE_SIZE);
+    return {
+      items: docs.map((d) => toSummary(d.id, d.data() as ReviewItemDocument)),
+      nextCursor: snapshot.docs.length > PAGE_SIZE ? docs[docs.length - 1].id : undefined,
+    };
   }
 
   public async getItem(id: string): Promise<ReviewItemSummary> {

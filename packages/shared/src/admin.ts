@@ -41,6 +41,8 @@ export interface ReviewItemSummary {
 
 export interface ListReviewItemsResponse {
   items: ReviewItemSummary[];
+  /** Pass back as `cursor` for the next page; absent on the last page. */
+  nextCursor?: string;
 }
 
 export interface ScheduleDraft {

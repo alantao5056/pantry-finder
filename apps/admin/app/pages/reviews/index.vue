@@ -5,6 +5,7 @@ import type { TableColumn, TableRow } from '@nuxt/ui'
 const api = useApi()
 const route = useRoute()
 const router = useRouter()
+const toast = useToast()
 
 const tabs = [
   { label: 'Pending', value: 'pending' },
@@ -19,11 +20,35 @@ const status = computed<ReviewItemStatus>({
   set: (value) => router.replace({ query: { status: value } }),
 })
 
-const { data, pending, error, refresh } = await useAsyncData(
+const items = ref<ReviewItemSummary[]>([])
+const nextCursor = ref<string | undefined>()
+const loadingMore = ref(false)
+
+const { pending, error, refresh } = await useAsyncData(
   'review-items',
-  () => api<ListReviewItemsResponse>('/admin/review-items', { query: { status: status.value } }),
+  async () => {
+    const res = await api<ListReviewItemsResponse>('/admin/review-items', { query: { status: status.value } })
+    items.value = res.items
+    nextCursor.value = res.nextCursor
+    return true
+  },
   { watch: [status] },
 )
+
+const loadMore = async () => {
+  loadingMore.value = true
+  try {
+    const res = await api<ListReviewItemsResponse>('/admin/review-items', {
+      query: { status: status.value, cursor: nextCursor.value },
+    })
+    items.value.push(...res.items)
+    nextCursor.value = res.nextCursor
+  } catch (err) {
+    toast.add({ title: 'Load failed', description: apiErrorMessage(err), color: 'error' })
+  } finally {
+    loadingMore.value = false
+  }
+}
 
 const columns: TableColumn<ReviewItemSummary>[] = [
   { accessorKey: 'title', header: 'Pantry' },
@@ -48,7 +73,7 @@ const open = (_e: Event, row: TableRow<ReviewItemSummary>) => navigateTo(`/revie
 
     <UCard :ui="{ body: 'p-0 sm:p-0' }">
       <UTable
-        :data="data?.items ?? []"
+        :data="items"
         :columns="columns"
         :loading="pending"
         empty="Nothing here."
@@ -90,5 +115,9 @@ const open = (_e: Event, row: TableRow<ReviewItemSummary>) => navigateTo(`/revie
         </template>
       </UTable>
     </UCard>
+
+    <div v-if="nextCursor" class="flex justify-center">
+      <UButton label="Load more" color="neutral" variant="outline" :loading="loadingMore" @click="loadMore" />
+    </div>
   </div>
 </template>
