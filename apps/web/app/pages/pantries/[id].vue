@@ -280,7 +280,18 @@ const serviceTextClass = (category: string) => {
               </span>
               <h2 class="font-serif text-[17px] font-bold text-gray-900">About This Pantry</h2>
             </div>
-            <p class="text-[15px] leading-[1.75] text-gray-600">{{ pantry.about }}</p>
+            <p class="detail-body">{{ pantry.about }}</p>
+          </section>
+
+          <!-- Good to Know (pantry notes) -->
+          <section v-if="pantry.notes" class="detail-card px-7 py-6">
+            <div class="detail-section-title">
+              <span class="detail-section-icon">
+                <UIcon name="i-lucide-clipboard-list" class="size-4" />
+              </span>
+              <h2 class="font-serif text-[17px] font-bold text-gray-900">Good to Know</h2>
+            </div>
+            <p class="detail-body">{{ pantry.notes }}</p>
           </section>
 
           <!-- Hours & Schedule -->
@@ -310,10 +321,11 @@ const serviceTextClass = (category: string) => {
                     class="flex items-center gap-2.5 flex-wrap"
                   >
                     <span class="text-[14px] font-medium text-gray-800">{{ s.start }} – {{ s.end }}</span>
-                    <span
-                      v-if="s.notes"
-                      class="text-[12px] text-gray-600 bg-gray-100 rounded-full px-2.5 py-0.5"
-                    >{{ s.notes }}</span>
+                    <span v-if="s.isEveryOtherWeek === 'true'" class="schedule-biweekly">
+                      <UIcon name="i-lucide-repeat" class="size-3" />
+                      Every other week
+                    </span>
+                    <span v-if="s.notes" class="schedule-note">{{ s.notes }}</span>
                   </div>
                 </div>
               </div>
@@ -352,6 +364,11 @@ const serviceTextClass = (category: string) => {
                 </span>
               </div>
 
+              <p
+                v-if="service.notes"
+                class="pl-4 mb-2 text-[13px] leading-relaxed text-gray-600 whitespace-pre-line"
+              >{{ service.notes }}</p>
+
               <div
                 v-for="group in serviceSchedulesByDay(service)"
                 :key="group.day"
@@ -368,10 +385,11 @@ const serviceTextClass = (category: string) => {
                     class="flex items-center gap-2 flex-wrap"
                   >
                     <span class="text-[13.5px] font-medium text-gray-800">{{ s.start }} – {{ s.end }}</span>
-                    <span
-                      v-if="s.notes"
-                      class="text-[12px] text-gray-700 bg-gray-100 rounded-full px-2.5 py-0.5"
-                    >{{ s.notes }}</span>
+                    <span v-if="s.isEveryOtherWeek === 'true'" class="schedule-biweekly">
+                      <UIcon name="i-lucide-repeat" class="size-3" />
+                      Every other week
+                    </span>
+                    <span v-if="s.notes" class="schedule-note">{{ s.notes }}</span>
                   </div>
                 </div>
               </div>
@@ -398,7 +416,7 @@ const serviceTextClass = (category: string) => {
               </div>
 
               <div
-                v-if="serviceSchedulesByDay(service).length === 0 && !serviceNoDayNote(service) && serviceFoods(service).length === 0"
+                v-if="serviceSchedulesByDay(service).length === 0 && !serviceNoDayNote(service) && serviceFoods(service).length === 0 && !service.notes"
                 class="pl-4 text-[13px] italic text-gray-400"
               >
                 Contact pantry for details.
