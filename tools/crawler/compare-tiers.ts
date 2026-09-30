@@ -15,7 +15,7 @@ import { DeepSeekExtractor } from './extract/DeepSeekExtractor.js';
 import { Fetcher, errorMessage } from './fetch/fetcher.js';
 import { applyCommand, hasFlag, initFirestore, intFlag, peakHourWarning, requireEnvArg, requireEnvVar } from './lib.js';
 import { pantryContext, targetsFor } from './pipeline.js';
-import { selectPantries } from './select.js';
+import { allCrawlTargets } from './select.js';
 import { loadPage, loadSite, pagesForExtraction, toCandidates } from './site.js';
 
 const env = requireEnvArg();
@@ -37,7 +37,7 @@ peakHourWarning();
 
 // Fisher–Yates over the eligible pantries; fetch failures are replaced from
 // the rest of the shuffled list until the sample is full.
-const pool = await selectPantries(db);
+const pool = await allCrawlTargets(db);
 for (let i = pool.length - 1; i > 0; i--) {
   const j = randomInt(i + 1);
   [pool[i], pool[j]] = [pool[j], pool[i]];

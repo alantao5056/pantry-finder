@@ -202,6 +202,8 @@ export class ReviewService {
         })),
         source: 'user_submission',
         fieldSources,
+        // Joins the crawl queue (tools/crawler/select.ts), first in line.
+        ...(draft.website ? { lastCrawledAt: null } : {}),
         createdAt: now,
         updatedAt: now,
       };

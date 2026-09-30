@@ -159,6 +159,9 @@ export function writeFieldUpdates(
     if (parsed.kind === 'text') {
       // An emptied optional field is removed rather than stored as ''.
       update[parsed.field] = c.newValue === '' && parsed.field !== 'phone' ? FieldValue.delete() : c.newValue;
+      // A new website goes to the front of the crawl queue; a cleared one
+      // leaves it (tools/crawler/select.ts).
+      if (parsed.field === 'website') update.lastCrawledAt = c.newValue === '' ? FieldValue.delete() : null;
     } else if (parsed.serviceIndex === null) {
       update.schedules = pruneUndefined(c.newValue);
     } else {

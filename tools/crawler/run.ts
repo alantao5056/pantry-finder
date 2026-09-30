@@ -56,7 +56,7 @@ export class CrawlJob {
     const { db, runRef, apply, options, concurrency, fetcher, extractor, logger } = this.config;
     const heartbeat = runRef ? setInterval(() => void this.beat(), CRAWL_HEARTBEAT_MS) : null;
     try {
-      const todo = (await selectPantries(db, options.pantryId)).slice(0, options.limit);
+      const todo = await selectPantries(db, options.limit, options.pantryId);
       logger.info(`${todo.length} pantr${todo.length === 1 ? 'y' : 'ies'} to crawl (concurrency ${concurrency}).`);
 
       // Clears the API's cached copies of updated pantries so the site shows changes at once.

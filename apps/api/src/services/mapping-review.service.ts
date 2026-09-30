@@ -285,7 +285,7 @@ export class MappingReviewService {
    * Deletes a pending crawler review and clears what the crawler remembers
    * about it (proposed mappings, proposal/redirect markers, the held-back
    * text's hash), so the next run handles the pantry afresh. The pantry's
-   * `lastCrawledAt` is cleared too, which puts it first in the rotation.
+   * `lastCrawledAt` is reset to null too, which puts it first in the crawl queue.
    */
   public async deleteItem(id: string): Promise<void> {
     const itemRef = this.reviewItemsCol.doc(id);
@@ -329,7 +329,7 @@ export class MappingReviewService {
 
       for (const ref of deletes) tx.delete(ref);
       for (const { ref, field } of clears) tx.update(ref, { [field]: FieldValue.delete() });
-      if (pantrySnap.exists) tx.update(pantryRef, { lastCrawledAt: FieldValue.delete() });
+      if (pantrySnap.get('lastCrawledAt') !== undefined) tx.update(pantryRef, { lastCrawledAt: null });
       tx.delete(itemRef);
     });
   }

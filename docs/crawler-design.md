@@ -156,7 +156,10 @@ HTML snapshots. The admin links to the live URL for context.
 - env files `.env.dev01` / `.env.dev02` / `.env.prod`
 - each run takes the N (default 100) least recently crawled pantries
   (`pantries.lastCrawledAt`), so runs rotate through all sites and an
-  interrupted run's leftovers go first next time
+  interrupted run's leftovers go first next time. The field's presence is
+  crawl-queue membership (`null` = never crawled), maintained by
+  `sync-queue.ts` and the API's website writes, so a run reads ~N pantries
+  rather than all ~3.8k with a website
 - run **manually** by the maintainer (no cron in phase 1): from the CLI, or
   from the admin's Crawler page, executed by a worker service (see
   [worker notes](#crawler-worker-notes))
@@ -303,7 +306,7 @@ Decisions made while building M2, on top of the design above. Usage:
   **Deleting** a pending crawler item (admin "Delete") instead forgets it: the
   item and its `proposed` mappings go, `proposalHash` / `redirectReviewedUrl` /
   the mapping's `lastRawHash` are cleared as applicable, and the pantry's
-  `lastCrawledAt` is cleared so the next run tries it first.
+  `lastCrawledAt` is reset to `null` so the next run tries it first.
 - **Review payloads** live on the review item itself (`newMapping` /
   `suspicious` fields of `review_items`), not in a separate collection.
 - **Confirming** a mapping (or approving a suspicious value) writes, in one

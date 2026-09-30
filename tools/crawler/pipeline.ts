@@ -103,8 +103,8 @@ export function pantryContext(p: StoredPantry, targets: MappingTarget[]): Pantry
   };
 }
 
-/** A `crawl_sources` doc plus the crawler-only bookkeeping fields stored on homepages. */
-type SourceState = CrawlSourceDocument & { proposalHash?: string; redirectReviewedUrl?: string };
+/** Crawler-only bookkeeping fields stored on a homepage's `crawl_sources` doc. */
+type HomeMarkers = { proposalHash?: string; redirectReviewedUrl?: string };
 
 export class PantryCrawler {
   constructor(
@@ -124,9 +124,10 @@ export class PantryCrawler {
     } catch (err) {
       this.error(id, errorMessage(err));
     }
-    // Stamped on failures too, so a dead site moves to the back of the rotation
-    // (select.ts) instead of taking a slot in every run.
-    if (this.apply) {
+    // Stamped on failures too, so a dead site moves to the back of the crawl
+    // queue (select.ts) instead of taking a slot in every run. A pantry outside
+    // the crawl queue (a `--pantry` run) stays outside it.
+    if (this.apply && pantry.lastCrawledAt !== undefined) {
       try {
         await this.db.collection(COLLECTIONS.pantries).doc(id).update({ lastCrawledAt: Timestamp.now() });
       } catch (err) {
@@ -145,7 +146,7 @@ export class PantryCrawler {
     );
 
     const home = await loadPage(this.fetcher, website);
-    const homeSource = await this.recordSource(home);
+    const homeSource = await this.recordHome(home);
     if (!home.page) {
       this.stats.failed++;
       return this.error(id, `${website}: ${home.fetch.error ?? 'no content'}`);
@@ -184,7 +185,7 @@ export class PantryCrawler {
     pantry: StoredPantry,
     website: string,
     home: LoadedPage,
-    homeSource: SourceState,
+    homeSource: HomeMarkers,
     targets: MappingTarget[],
     pages: Map<string, LoadedPage>,
   ): Promise<void> {
@@ -389,7 +390,7 @@ export class PantryCrawler {
     pantry: StoredPantry,
     website: string,
     home: LoadedPage,
-    homeSource: SourceState,
+    homeSource: HomeMarkers,
   ): Promise<void> {
     const newUrl = home.fetch.finalUrl;
     if (homeSource.redirectReviewedUrl === newUrl) return;
@@ -427,24 +428,33 @@ export class PantryCrawler {
 
   // ---- bookkeeping ----
 
-  /** Writes `crawl_sources` (apply mode) and returns the stored doc as it was before this fetch. */
-  private async recordSource(
-    loaded: LoadedPage,
-  ): Promise<SourceState> {
-    const ref = this.db.collection(COLLECTIONS.crawlSources).doc(sourceId(loaded.url));
-    const prev = (await ref.get()).data() as SourceState | undefined;
+  /**
+   * Writes a fetched page's `crawl_sources` doc (apply mode), without reading
+   * it: fields not written — `needsBrowser` after a failed fetch, the homepage
+   * markers — keep their stored values through the merge.
+   */
+  private async recordSource(loaded: LoadedPage): Promise<void> {
+    if (!this.apply) return;
     const doc: CrawlSourceDocument = {
       url: loaded.url,
       host: hostOf(loaded.url),
-      needsBrowser: loaded.page?.looksJsRendered ?? prev?.needsBrowser ?? false,
+      ...(loaded.page ? { needsBrowser: loaded.page.looksJsRendered } : {}),
       robotsAllowed: loaded.fetch.robotsAllowed,
       lastFetchedAt: Timestamp.now(),
       lastStatus: loaded.fetch.status,
       finalUrl: loaded.fetch.finalUrl,
       ...(loaded.fetch.error ? { lastError: loaded.fetch.error } : {}),
     };
-    if (this.apply) await ref.set(doc, { merge: true });
-    return { ...doc, proposalHash: prev?.proposalHash, redirectReviewedUrl: prev?.redirectReviewedUrl };
+    await this.db.collection(COLLECTIONS.crawlSources).doc(sourceId(loaded.url)).set(doc, { merge: true });
+  }
+
+  /** `recordSource` for the homepage, also returning the markers stored on it before this fetch. */
+  private async recordHome(home: LoadedPage): Promise<HomeMarkers> {
+    const prev = (await this.db.collection(COLLECTIONS.crawlSources).doc(sourceId(home.url)).get()).data() as
+      | HomeMarkers
+      | undefined;
+    await this.recordSource(home);
+    return { proposalHash: prev?.proposalHash, redirectReviewedUrl: prev?.redirectReviewedUrl };
   }
 
   private async updateMapping(id: string, fields: Partial<FieldMappingDocument>): Promise<void> {

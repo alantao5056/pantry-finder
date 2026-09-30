@@ -105,7 +105,9 @@ export interface PantryDocument {
   source?: string;
   pantryId?: string;
   fieldSources?: Partial<Record<TrackedPantryField, FieldProvenance>>;
-  lastCrawledAt?: Timestamp;
+  // Present iff the pantry is in the crawl queue (tools/crawler/select.ts);
+  // null until its first crawl.
+  lastCrawledAt?: Timestamp | null;
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
 }
@@ -231,7 +233,8 @@ export interface CrawlSourceDocument {
   url: string;
   host: string;
   // Page looks JS-rendered; skipped until a browser fetcher exists.
-  needsBrowser: boolean;
+  // Absent until a fetch of the page succeeds.
+  needsBrowser?: boolean;
   robotsAllowed: boolean;
   lastFetchedAt: Timestamp;
   // HTTP status, or 0 for network errors / timeouts.

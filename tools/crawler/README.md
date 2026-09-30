@@ -40,6 +40,9 @@ see a crawled update on the local site.
 Before the first run on an environment, deploy the composite indexes the admin
 change log uses: `npm run deploy-indexes:dev01 -- --apply` from `tools/firestore`.
 
+Also set up the crawl queue once per environment (and again after a pantry
+re-import): `npm run sync-queue:dev01 -- --apply` — see [Crawl queue](#crawl-queue).
+
 ## Crawl
 
 From `tools/crawler`:
@@ -50,12 +53,32 @@ npm run crawl:dev01 -- --limit 5 --apply     # 5 of them, writing results
 npm run crawl:dev01 -- --pantry <pantryId>   # one pantry (any site)
 ```
 
-Each run takes the `--limit` (default 100) eligible pantries with the oldest
-`lastCrawledAt` (never-crawled first, then by id), so repeated `--apply` runs
-rotate through every site. `lastCrawledAt` is stamped on every visit in
+Each run takes the `--limit` (default 100) pantries of the crawl queue with the
+oldest `lastCrawledAt` (never-crawled first, then by id), so repeated `--apply`
+runs rotate through every site. `lastCrawledAt` is stamped on every visit in
 `--apply` mode — whatever the outcome (pending review, failed fetch, …) — so
 dead sites go to the back of the line. Dry runs stamp nothing and pick the
-same pantries each time.
+same pantries each time. A `--pantry` run on a pantry outside the crawl queue
+doesn't add it.
+
+### Crawl queue
+
+A pantry is in the crawl queue iff its `lastCrawledAt` field is present (`null` =
+never crawled, which sorts first), so a run reads only about `--limit` pantries
+instead of every pantry with a website. Who belongs (a usable website on a site
+no other pantry uses) needs every pantry's site, so it's decided by
+
+```sh
+npm run sync-queue:dev01                # dry run: counts to add / remove
+npm run sync-queue:dev01 -- --apply
+```
+
+which scans all pantries with a website (~2 reads each), adds `lastCrawledAt:
+null` where it belongs and is missing, and deletes it where it doesn't belong;
+existing timestamps are kept. Between syncs the API keeps it up to date: an
+approved submission with a website, or a website set through review, joins at
+the front; a cleared website leaves. Only a sync notices a site becoming
+shared by a second pantry.
 
 Other options: `--concurrency N` (pantries in parallel, default 8; each host
 still gets at most one request per second).
