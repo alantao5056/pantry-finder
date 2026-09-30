@@ -14,6 +14,12 @@ test('suffix and direction spellings are folded', () => {
   assert.equal(status('123 N Main St', '12345', ['123 North Main Street, Springfield, IL 12345']), 'match');
 });
 
+test('spelled-out ordinal streets match their numeric form', () => {
+  assert.equal(status('120 2nd Ave', '25951', ['120 Second Ave, Hinton, WV 25951']), 'match');
+  assert.equal(status('120 Second Ave', '25951', ['120 2nd Avenue, Hinton, WV 25951']), 'match');
+  assert.equal(status('120 2nd Ave', '25951', ['120 Third Ave, Hinton, WV 25951']), 'mismatch');
+});
+
 test('a different house number or street is a mismatch', () => {
   assert.equal(status('123 N Main St', '12345', ['124 N Main St, Springfield 12345']), 'mismatch');
   assert.equal(status('123 N Main St', '12345', ['123 Oak St, Springfield 12345']), 'mismatch');

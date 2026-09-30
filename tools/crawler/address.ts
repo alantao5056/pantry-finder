@@ -38,6 +38,16 @@ const ABBREVIATIONS: Record<string, string> = {
   northwest: 'nw',
   southeast: 'se',
   southwest: 'sw',
+  first: '1st',
+  second: '2nd',
+  third: '3rd',
+  fourth: '4th',
+  fifth: '5th',
+  sixth: '6th',
+  seventh: '7th',
+  eighth: '8th',
+  ninth: '9th',
+  tenth: '10th',
 };
 const DIRECTIONS = new Set(['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw']);
 const HOUSE_NUMBER = /^\d+[a-z]?$/;
