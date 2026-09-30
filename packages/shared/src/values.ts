@@ -112,13 +112,17 @@ export function normalizeEmail(raw: string): string {
 
 export const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as const;
 
-function normalizeWeekDay(raw: string): string {
+// Imported "contact for hours" schedules store null times (and '' weekDay), so
+// nullish input normalizes to '' instead of throwing.
+function normalizeWeekDay(raw: string | null | undefined): string {
+  if (raw == null) return '';
   const key = raw.trim().slice(0, 3).toLowerCase();
   return WEEKDAYS.find((d) => d.slice(0, 3).toLowerCase() === key) ?? raw.trim();
 }
 
 /** `9am`, `09:00`, `9:00am`, `noon`, `17:30` → `9:00 AM` style. Unparseable input is trimmed as-is. */
-export function normalizeTime(raw: string): string {
+export function normalizeTime(raw: string | null | undefined): string {
+  if (raw == null) return '';
   const s = raw.trim().toLowerCase().replace(/\./g, '');
   if (s === 'noon') return '12:00 PM';
   if (s === 'midnight') return '12:00 AM';
