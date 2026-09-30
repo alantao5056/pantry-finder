@@ -27,7 +27,7 @@ import { COLLECTIONS, mappingId, type FieldMappingDocument } from '@pantry-finde
 // Existing pantries within this distance of a submission are flagged as
 // possible duplicates.
 const NEARBY_RADIUS_KM = 0.1;
-const PAGE_SIZE = 50;
+const PAGE_SIZE = 20;
 
 const TRACKED_FIELDS: TrackedPantryField[] = [
   'name', 'address1', 'address2', 'city', 'state', 'zipCode', 'phone', 'email',

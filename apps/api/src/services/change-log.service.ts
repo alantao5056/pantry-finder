@@ -6,7 +6,7 @@ import { invalidatePantryCaches } from '../cache/pantryCaches';
 import { PantryChangeDocument } from '../models/pantry-change.schema';
 import { oneLineAddress } from './review.service';
 
-const PAGE_SIZE = 50;
+const PAGE_SIZE = 20;
 
 /** How a stored change value is shown in the list. */
 function displayValue(c: PantryChangeDocument, value: unknown): unknown {
