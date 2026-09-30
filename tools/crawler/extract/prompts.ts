@@ -15,7 +15,7 @@ const FIELD_GUIDE = `Targets:
 - "contactName": a named contact person for the pantry (not the organization name).
 - "aboutUs": a short description of the food pantry / food ministry itself: what it does, who it serves, how long it has run, who runs it (as written on the site, may be condensed, max ~600 characters). When the pantry is run by a church or other larger organization, prefer text about the food program over the organization's general "About Us". Don't use church history, beliefs, worship, denominational statements or unrelated ministries. Fall back to the host organization's description only if it clearly mentions its food assistance, and set uncertain to true in that case.
 - "notes": practical information for people seeking food: eligibility, what to bring, registration, service area, drive-through, etc. Condense to max ~600 characters.
-- "schedules": the pantry's general hours for food distribution / visiting the pantry.
+- "schedules": the times when people can actually get food from the pantry (food distribution / pick-up hours). Not the opening hours of the church, agency or office that hosts it.
 - "services.<i>.schedules": hours of one specific service listed below, when the site gives hours for that service specifically.
 
 A schedule value is an array of {"weekDay","startTime","endTime","everyOtherWeekIndicator","notes"}:
@@ -24,7 +24,8 @@ A schedule value is an array of {"weekDay","startTime","endTime","everyOtherWeek
 - One entry per day per time range.
 - everyOtherWeekIndicator: true only for "every other week".
 - Anything that doesn't fit (e.g. "2nd and 4th Tuesday of the month", "except holidays", "by appointment") goes in that entry's notes, and set uncertain to true when the pattern can't be represented exactly.
-Ignore office hours, worship services, thrift-store hours, volunteer shifts and events unless they are clearly when people can get food.`;
+Distribution hours vs. organization hours: a church or agency's office/building hours (e.g. "Office hours Mon–Fri 8:00 AM–5:00 PM") are usually NOT the pantry's food distribution times (e.g. "Food pantry: Tuesday 3:00–4:00 PM"). Only use hours the text explicitly ties to the food pantry / food distribution / pick-up. Never merge or substitute organization hours for distribution hours. Ignore office hours, worship services, thrift-store hours, volunteer shifts and events.
+If the pages only give the organization's general hours, leave schedules out. If it is unclear whether some hours are for food distribution, set uncertain to true.`;
 
 export function proposeSystemPrompt(): string {
   return `You extract facts about a food pantry from its website. The pages are given as numbered text blocks: "[p0b12] text".
@@ -64,7 +65,7 @@ export function parseSystemPrompt(): string {
 
 ${FIELD_GUIDE}
 
-Answer with JSON only: {"value": <string or schedule array>, "uncertain": <bool>}. If the text doesn't contain a value for the target, answer {"value": null, "uncertain": true}.`;
+Answer with JSON only: {"value": <string or schedule array>, "uncertain": <bool>}. If the text doesn't contain a value for the target, answer {"value": null, "uncertain": true}. For a schedules target, if the text only gives the organization's/office's hours and not food distribution hours, answer {"value": null, "uncertain": true}.`;
 }
 
 export function parseUserPrompt(target: MappingTarget, rawText: string, ctx: PantryContext): string {
