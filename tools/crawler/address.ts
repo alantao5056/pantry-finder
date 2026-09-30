@@ -54,9 +54,13 @@ function tokens(text: string): string[] {
     .map((t) => ABBREVIATIONS[t] ?? t);
 }
 
-/** First word of the street name after position `from`, skipping directions and extra numbers (ranges). */
+/**
+ * First word of the street name after the house number at `from - 1`, skipping
+ * directions and the rest of a number range ("123-125 Main"). A number after a
+ * direction is the street itself, as in grid addresses ("2375 E 3300 S").
+ */
 function streetWord(toks: string[], from: number): string | undefined {
-  return toks.slice(from).find((t) => !DIRECTIONS.has(t) && !HOUSE_NUMBER.test(t));
+  return toks.find((t, i) => i >= from && !DIRECTIONS.has(t) && !(HOUSE_NUMBER.test(t) && HOUSE_NUMBER.test(toks[i - 1])));
 }
 
 function matches(pantry: StoredPantry, found: string): boolean {

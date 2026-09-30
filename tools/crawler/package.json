@@ -16,7 +16,8 @@
     "build": "tsc -p tsconfig.build.json",
     "start:worker": "node --env-file=.env.production dist/worker.js",
     "inspect": "tsx inspect.ts",
-    "typecheck": "tsc -p ."
+    "typecheck": "tsc -p .",
+    "test": "tsx --test"
   },
   "dependencies": {
     "@pantry-finder/shared": "*",

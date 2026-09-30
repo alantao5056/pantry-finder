@@ -171,6 +171,55 @@ const deleteOpen = ref(false)
         :description="detail.rejectionReason"
       />
 
+      <UCard v-if="addressOptions.length">
+        <template #header>
+          <div class="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 class="font-semibold">Address</h2>
+            <span class="text-xs text-(--ui-text-dimmed)">Coordinates are re-geocoded from the new address</span>
+          </div>
+        </template>
+
+        <div class="grid lg:grid-cols-[1fr_2fr] gap-4">
+          <div>
+            <div class="text-xs uppercase text-(--ui-text-muted) mb-1">Current value</div>
+            <div class="text-sm">{{ detail.storedAddress }}</div>
+          </div>
+
+          <div v-if="!isPending" class="text-sm">
+            <template v-if="detail.confirmedAddress">Moved to {{ oneLine(detail.confirmedAddress) }}</template>
+            <template v-else-if="detail.confirmedAddress === null">Kept the pantry's address</template>
+          </div>
+          <div v-else class="flex flex-col gap-2">
+            <label
+              v-for="(a, i) in addressOptions"
+              :key="a"
+              class="candidate"
+              :class="{ 'candidate-picked': addressChoice === i }"
+            >
+              <div class="flex items-center gap-2 text-sm">
+                <input type="radio" name="address" :checked="addressChoice === i" @change="pickAddress(i)">
+                Move to: {{ a }}
+              </div>
+            </label>
+            <label class="candidate" :class="{ 'candidate-picked': addressChoice === null }">
+              <div class="flex items-center gap-2 text-sm">
+                <input type="radio" name="address" :checked="addressChoice === null" @change="pickAddress(null)">
+                Keep the pantry's address
+              </div>
+            </label>
+
+            <div v-if="addressDraft" class="mt-2">
+              <div class="text-xs uppercase text-(--ui-text-muted) mb-1">Address to apply (edit if the split is wrong)</div>
+              <div class="grid md:grid-cols-3 gap-3">
+                <UFormField v-for="f in addressInputs" :key="f.key" :label="f.label" :required="f.required">
+                  <UInput v-model="addressDraft[f.key]" class="w-full" />
+                </UFormField>
+              </div>
+            </div>
+          </div>
+        </div>
+      </UCard>
+
       <UCard v-for="field in detail.fields" :key="field.target">
         <template #header>
           <div class="flex flex-wrap items-baseline justify-between gap-2">
@@ -229,55 +278,6 @@ const deleteOpen = ref(false)
               <TargetValueEditor v-model="choices[field.target]!.value!" />
             </div>
           </fieldset>
-        </div>
-      </UCard>
-
-      <UCard v-if="addressOptions.length">
-        <template #header>
-          <div class="flex flex-wrap items-baseline justify-between gap-2">
-            <h2 class="font-semibold">Address</h2>
-            <span class="text-xs text-(--ui-text-dimmed)">Coordinates are re-geocoded from the new address</span>
-          </div>
-        </template>
-
-        <div class="grid lg:grid-cols-[1fr_2fr] gap-4">
-          <div>
-            <div class="text-xs uppercase text-(--ui-text-muted) mb-1">Current value</div>
-            <div class="text-sm">{{ detail.storedAddress }}</div>
-          </div>
-
-          <div v-if="!isPending" class="text-sm">
-            <template v-if="detail.confirmedAddress">Moved to {{ oneLine(detail.confirmedAddress) }}</template>
-            <template v-else-if="detail.confirmedAddress === null">Kept the pantry's address</template>
-          </div>
-          <div v-else class="flex flex-col gap-2">
-            <label
-              v-for="(a, i) in addressOptions"
-              :key="a"
-              class="candidate"
-              :class="{ 'candidate-picked': addressChoice === i }"
-            >
-              <div class="flex items-center gap-2 text-sm">
-                <input type="radio" name="address" :checked="addressChoice === i" @change="pickAddress(i)">
-                Move to: {{ a }}
-              </div>
-            </label>
-            <label class="candidate" :class="{ 'candidate-picked': addressChoice === null }">
-              <div class="flex items-center gap-2 text-sm">
-                <input type="radio" name="address" :checked="addressChoice === null" @change="pickAddress(null)">
-                Keep the pantry's address
-              </div>
-            </label>
-
-            <div v-if="addressDraft" class="mt-2">
-              <div class="text-xs uppercase text-(--ui-text-muted) mb-1">Address to apply (edit if the split is wrong)</div>
-              <div class="grid md:grid-cols-3 gap-3">
-                <UFormField v-for="f in addressInputs" :key="f.key" :label="f.label" :required="f.required">
-                  <UInput v-model="addressDraft[f.key]" class="w-full" />
-                </UFormField>
-              </div>
-            </div>
-          </div>
         </div>
       </UCard>
 
