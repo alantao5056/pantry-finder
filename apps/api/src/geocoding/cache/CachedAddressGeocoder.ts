@@ -1,5 +1,6 @@
 import { createCache } from "../../cache/createCache";
 import type { Cache } from "../../cache/Cache";
+import { cacheTtl } from "../../services/app-config.service";
 import type { AddressGeocoder } from "../AddressGeocoder";
 import type { Coordinates } from "../types";
 
@@ -11,7 +12,7 @@ export class CachedAddressGeocoder implements AddressGeocoder {
     this.inner = inner;
     // v2: Geocodio fallback added — drops nulls cached by the Census-only lookup.
     this.cache = createCache<Coordinates>("pf:geo:addr:v2:", {
-      ttlMs: 24 * 60 * 60 * 1000,
+      ttlMs: cacheTtl.geocode,
       max: 10000,
     });
   }

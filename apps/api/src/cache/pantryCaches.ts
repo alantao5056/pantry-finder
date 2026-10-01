@@ -2,6 +2,7 @@ import { CACHE_PREFIX, cityIndexKey, Pantry } from '@pantry-finder/shared';
 import type { PantryLocation } from '@pantry-finder/shared/firestore';
 import { Cache } from './Cache';
 import { createCache } from './createCache';
+import { cacheTtl } from '../services/app-config.service';
 
 // The caches that hold pantry data, as process-wide singletons: the services
 // that read them and the admin writes that invalidate them must share one
@@ -14,7 +15,7 @@ let byCity: Cache<Pantry[]> | null = null;
 /** Pantry detail by doc id (`GET /pantries/:id`). */
 export function pantryByIdCache(): Cache<Pantry> {
   byId ??= createCache<Pantry>(CACHE_PREFIX.pantryById, {
-    ttlMs: 24 * 60 * 60 * 1000, // 24 hours
+    ttlMs: cacheTtl.pantry,
     max: 10000,
   });
   return byId;
@@ -23,7 +24,7 @@ export function pantryByIdCache(): Cache<Pantry> {
 /** Full (unpaginated) pantry list per browse-index city, keyed by `cityIndexKey`. */
 export function cityPantriesCache(): Cache<Pantry[]> {
   byCity ??= createCache<Pantry[]>(CACHE_PREFIX.cityPantries, {
-    ttlMs: 48 * 60 * 60 * 1000, // 48 hours, like the rest of the browse index
+    ttlMs: cacheTtl.cityState, // like the rest of the browse index
     max: 4000,
   });
   return byCity;

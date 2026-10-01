@@ -1,10 +1,11 @@
 import { createCache } from "../cache/createCache";
+import { cacheTtl } from "./app-config.service";
 import { UserService, UserProfile, GoogleProfile, MicrosoftProfile } from "./user.service";
 
 export class CachedUserService {
   private readonly inner: UserService;
   private readonly profileCache = createCache<UserProfile>("pf:user:profile:", {
-    ttlMs: 60 * 60 * 1000, // 1 hour
+    ttlMs: cacheTtl.user,
     max: 1000,
   });
 

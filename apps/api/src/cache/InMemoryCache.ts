@@ -1,5 +1,5 @@
 import { LRUCache } from 'lru-cache';
-import { Cache, CacheOptions } from './Cache';
+import { Cache, CacheOptions, CacheTtl, resolveTtl } from './Cache';
 
 /**
  * In-process fallback Cache used when REDIS_URL is unset (local dev). Values
@@ -7,12 +7,11 @@ import { Cache, CacheOptions } from './Cache';
  */
 export class InMemoryCache<T> implements Cache<T> {
   private readonly cache: LRUCache<string, { v: T | null }>;
+  private readonly defaultTtlMs: CacheTtl;
 
   constructor(options: CacheOptions) {
-    this.cache = new LRUCache<string, { v: T | null }>({
-      max: options.max,
-      ttl: options.ttlMs,
-    });
+    this.cache = new LRUCache<string, { v: T | null }>({ max: options.max });
+    this.defaultTtlMs = options.ttlMs;
   }
 
   public get(key: string): Promise<T | null | undefined> {
@@ -20,9 +19,8 @@ export class InMemoryCache<T> implements Cache<T> {
     return Promise.resolve(boxed === undefined ? undefined : boxed.v);
   }
 
-  public set(key: string, value: T | null, ttlMs?: number): Promise<void> {
-    this.cache.set(key, { v: value }, ttlMs !== undefined ? { ttl: ttlMs } : undefined);
-    return Promise.resolve();
+  public async set(key: string, value: T | null, ttlMs?: number): Promise<void> {
+    this.cache.set(key, { v: value }, { ttl: ttlMs ?? (await resolveTtl(this.defaultTtlMs)) });
   }
 
   public delete(key: string): Promise<void> {

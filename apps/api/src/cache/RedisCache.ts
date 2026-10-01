@@ -1,5 +1,5 @@
 import type { Redis } from 'ioredis';
-import { Cache } from './Cache';
+import { Cache, CacheTtl, resolveTtl } from './Cache';
 
 /**
  * Redis-backed Cache. Values are JSON-serialized; a cached negative result is
@@ -11,7 +11,7 @@ export class RedisCache<T> implements Cache<T> {
   constructor(
     private readonly redis: Redis,
     private readonly prefix: string,
-    private readonly defaultTtlMs: number
+    private readonly defaultTtlMs: CacheTtl
   ) {}
 
   public async get(key: string): Promise<T | null | undefined> {
@@ -33,7 +33,7 @@ export class RedisCache<T> implements Cache<T> {
         this.prefix + key,
         JSON.stringify(value),
         'PX',
-        ttlMs ?? this.defaultTtlMs
+        ttlMs ?? (await resolveTtl(this.defaultTtlMs))
       );
     } catch (err) {
       logCacheError('set', this.prefix, err);

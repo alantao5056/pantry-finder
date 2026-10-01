@@ -1,23 +1,34 @@
-import type { RedisKeyGroup, RedisKeyStatsResponse, RedisStatusResponse } from '@pantry-finder/shared';
+import type {
+  CacheTtlMinutes,
+  RedisKeyGroup,
+  RedisKeyStatsResponse,
+  RedisStatusResponse,
+} from '@pantry-finder/shared';
 import { CACHE_PREFIX } from '@pantry-finder/shared';
+import { getAppConfig } from './app-config.service';
 import { getRedisClient } from '../cache/redisClient';
 import { KEY_PREFIX as RATE_LIMIT_PREFIX } from '../cache/rateLimiter';
 
-const HOUR_MS = 60 * 60 * 1000;
-
 // Every key namespace the API writes (the createCache() call sites plus the
-// rate limiter). A cache missing here still shows up, under "Other".
-const KEY_GROUPS: { label: string; prefix: string; ttlMs: number | null }[] = [
-  { label: 'Geocode: address', prefix: 'pf:geo:addr:', ttlMs: 24 * HOUR_MS },
-  { label: 'Geocode: ZIP', prefix: 'pf:geo:zip:', ttlMs: 24 * HOUR_MS },
-  { label: 'Geocode: location', prefix: 'pf:geo:loc:', ttlMs: 24 * HOUR_MS },
-  { label: 'Pantry detail', prefix: CACHE_PREFIX.pantryById, ttlMs: 24 * HOUR_MS },
-  { label: 'City pantries', prefix: CACHE_PREFIX.cityPantries, ttlMs: 48 * HOUR_MS },
-  { label: 'State list', prefix: 'pf:city:states:', ttlMs: 48 * HOUR_MS },
-  { label: 'Cities by state', prefix: 'pf:city:list:', ttlMs: 48 * HOUR_MS },
-  { label: 'City entry', prefix: 'pf:city:entry:', ttlMs: 48 * HOUR_MS },
-  { label: 'User profile', prefix: 'pf:user:profile:', ttlMs: HOUR_MS },
-  { label: 'Rate-limit buckets', prefix: RATE_LIMIT_PREFIX, ttlMs: null },
+// rate limiter). A cache missing here still shows up, under "Other". The TTL
+// is read from the app config; null = varies per key.
+type TtlPick = (ttl: CacheTtlMinutes) => number;
+const geocode: TtlPick = (ttl) => ttl.geocode;
+const pantry: TtlPick = (ttl) => ttl.pantry;
+const cityState: TtlPick = (ttl) => ttl.cityState;
+const user: TtlPick = (ttl) => ttl.user;
+
+const KEY_GROUPS: { label: string; prefix: string; ttlMinutes: TtlPick | null }[] = [
+  { label: 'Geocode: address', prefix: 'pf:geo:addr:', ttlMinutes: geocode },
+  { label: 'Geocode: ZIP', prefix: 'pf:geo:zip:', ttlMinutes: geocode },
+  { label: 'Geocode: location', prefix: 'pf:geo:loc:', ttlMinutes: geocode },
+  { label: 'Pantry detail', prefix: CACHE_PREFIX.pantryById, ttlMinutes: pantry },
+  { label: 'City pantries', prefix: CACHE_PREFIX.cityPantries, ttlMinutes: cityState },
+  { label: 'State list', prefix: 'pf:city:states:', ttlMinutes: cityState },
+  { label: 'Cities by state', prefix: 'pf:city:list:', ttlMinutes: cityState },
+  { label: 'City entry', prefix: 'pf:city:entry:', ttlMinutes: cityState },
+  { label: 'User profile', prefix: 'pf:user:profile:', ttlMinutes: user },
+  { label: 'Rate-limit buckets', prefix: RATE_LIMIT_PREFIX, ttlMinutes: null },
 ];
 
 const SCAN_COUNT = 1000;
@@ -97,8 +108,15 @@ export class RedisStatusService {
       return { groups: [], scanned: 0, truncated: false };
     }
 
+    const { cacheTtlMinutes } = await getAppConfig();
     const groups: RedisKeyGroup[] = [
-      ...KEY_GROUPS.map((g) => ({ ...g, count: 0, approxBytes: 0 })),
+      ...KEY_GROUPS.map(({ label, prefix, ttlMinutes }) => ({
+        label,
+        prefix,
+        ttlMs: ttlMinutes ? ttlMinutes(cacheTtlMinutes) * 60 * 1000 : null,
+        count: 0,
+        approxBytes: 0,
+      })),
       { label: 'Other', prefix: '', ttlMs: null, count: 0, approxBytes: 0 },
     ];
     const samples: string[][] = groups.map(() => []);

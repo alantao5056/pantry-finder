@@ -1,6 +1,8 @@
 import { Response } from 'express';
 import type {
   AddressFields,
+  AppConfig,
+  CacheTtlMinutes,
   ConfirmMappingField,
   CrawlRunMode,
   EvalGrade,
@@ -14,7 +16,9 @@ import type {
 } from '@pantry-finder/shared';
 import {
   DEFAULT_CRAWL_LIMIT,
+  MAX_CACHE_TTL_MINUTES,
   MAX_CRAWL_LIMIT,
+  MIN_CACHE_TTL_MINUTES,
   isMappingTarget,
   isValidStateSlug,
   normalizeEmail,
@@ -30,6 +34,7 @@ import { LlmEvalService } from '../services/llm-eval.service';
 import { PantryCacheService } from '../services/pantry-cache.service';
 import { RedisStatusService } from '../services/redis-status.service';
 import { UserService } from '../services/user.service';
+import { isValidTtlMinutes, readAppConfig, updateAppConfig } from '../services/app-config.service';
 import { MAX_ABOUT, MAX_ARRAY, MAX_STR, str } from '../utils/validation.util';
 
 const REVIEW_STATUSES: ReviewItemStatus[] = ['pending', 'approved', 'rejected'];
@@ -169,6 +174,35 @@ function parseDraft(raw: unknown): { draft: PantryDraft } | { missing: string[] 
 
   const missing = [...(draft.name ? [] : ['name']), ...invalidAddressFields(draft)];
   return missing.length ? { missing } : { draft };
+}
+
+/** Validates the admin's settings; returns the invalid field names on failure. */
+function parseAppConfig(raw: unknown): { config: AppConfig } | { invalid: string[] } {
+  const r = (raw ?? {}) as Record<string, unknown>;
+  const { anonymousSearchEnabled } = r;
+  const { geocode, pantry, cityState, user } = (r.cacheTtlMinutes ?? {}) as Partial<
+    Record<keyof CacheTtlMinutes, unknown>
+  >;
+
+  if (
+    typeof anonymousSearchEnabled === 'boolean' &&
+    isValidTtlMinutes(geocode) &&
+    isValidTtlMinutes(pantry) &&
+    isValidTtlMinutes(cityState) &&
+    isValidTtlMinutes(user)
+  ) {
+    return { config: { anonymousSearchEnabled, cacheTtlMinutes: { geocode, pantry, cityState, user } } };
+  }
+
+  return {
+    invalid: [
+      ...(typeof anonymousSearchEnabled === 'boolean' ? [] : ['anonymousSearchEnabled']),
+      ...(isValidTtlMinutes(geocode) ? [] : ['geocode']),
+      ...(isValidTtlMinutes(pantry) ? [] : ['pantry']),
+      ...(isValidTtlMinutes(cityState) ? [] : ['cityState']),
+      ...(isValidTtlMinutes(user) ? [] : ['user']),
+    ],
+  };
 }
 
 export class AdminController {
@@ -380,6 +414,22 @@ export class AdminController {
 
   public async getRedisKeyStats(_req: AuthedRequest, res: Response): Promise<void> {
     res.json(await this.redisStatusService.getKeyStats());
+  }
+
+  public async getAppConfig(_req: AuthedRequest, res: Response): Promise<void> {
+    res.json(await readAppConfig());
+  }
+
+  public async updateAppConfig(req: AuthedRequest, res: Response): Promise<void> {
+    const parsed = parseAppConfig(req.body);
+    if ('invalid' in parsed) {
+      res.status(400).json({
+        error: `Invalid settings: cache TTLs must be whole minutes from ${MIN_CACHE_TTL_MINUTES} to ${MAX_CACHE_TTL_MINUTES}.`,
+        fields: parsed.invalid,
+      });
+      return;
+    }
+    res.json(await updateAppConfig(parsed.config, req.user!.sub));
   }
 
   public async listLlmEvals(_req: AuthedRequest, res: Response): Promise<void> {

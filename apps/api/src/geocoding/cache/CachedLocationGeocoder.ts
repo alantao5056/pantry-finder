@@ -1,5 +1,6 @@
 import { createCache } from "../../cache/createCache";
 import type { Cache } from "../../cache/Cache";
+import { cacheTtl } from "../../services/app-config.service";
 import type { LocationGeocoder } from "../LocationGeocoder";
 import type { Coordinates } from "../types";
 
@@ -10,7 +11,7 @@ export class CachedLocationGeocoder implements LocationGeocoder {
   constructor(inner: LocationGeocoder) {
     this.inner = inner;
     this.cache = createCache<Coordinates>("pf:geo:loc:", {
-      ttlMs: 24 * 60 * 60 * 1000,
+      ttlMs: cacheTtl.geocode,
       max: 10000,
     });
   }

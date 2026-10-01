@@ -247,6 +247,48 @@ export interface RedisKeyStatsResponse {
   truncated: boolean;
 }
 
+// ---- App config (admin `/settings`) ----
+
+/** TTL, in minutes, of each group of API caches. */
+export interface CacheTtlMinutes {
+  /** Address, ZIP and location lookups. */
+  geocode: number;
+  /** Pantry detail by doc id. */
+  pantry: number;
+  /** The browse index: states, cities, and each city's pantry list. */
+  cityState: number;
+  /** User profiles. */
+  user: number;
+}
+
+export const MIN_CACHE_TTL_MINUTES = 1;
+export const MAX_CACHE_TTL_MINUTES = 30 * 24 * 60; // 30 days
+
+/** Runtime settings stored in the Firestore `appConfig` collection. */
+export interface AppConfig {
+  /** Off: searching requires an account. */
+  anonymousSearchEnabled: boolean;
+  cacheTtlMinutes: CacheTtlMinutes;
+}
+
+/** What the API uses for any setting missing from Firestore. */
+export const DEFAULT_APP_CONFIG: AppConfig = {
+  anonymousSearchEnabled: true,
+  cacheTtlMinutes: {
+    geocode: 24 * 60,
+    pantry: 24 * 60,
+    cityState: 48 * 60,
+    user: 60,
+  },
+};
+
+export interface AppConfigResponse {
+  config: AppConfig;
+  /** Absent until the settings are first saved from the admin. */
+  updatedAt?: string;
+  updatedBy?: string;
+}
+
 // ---- Crawler mappings (review types `new_mapping` / `suspicious_value`) ----
 
 /** One place on a crawled page that a target's value could come from. */

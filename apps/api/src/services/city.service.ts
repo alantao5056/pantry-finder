@@ -12,13 +12,14 @@ import { cityPantriesCache } from '../cache/pantryCaches';
 import { mapPantryDocumentToDto } from '../utils/pantry.mapper';
 import { PantryDocument } from '../models/pantry.schema';
 import { CITY_PAGE_SIZE } from '../config/constants';
+import { cacheTtl } from './app-config.service';
 
 // The browse index lives in the precomputed `states`/`cities` Firestore
 // collections, written by the sitemap tool (tools/sitemap) from a single scan
 // of the pantries collection. This service only ever reads those small
 // collections — never scan `pantries` here: at ~14k docs a full scan burns a
 // third of the free-tier daily read quota per cold start.
-const INDEX_TTL = 48 * 60 * 60 * 1000; // 48 hours
+const INDEX_TTL = cacheTtl.cityState;
 
 const STATES_KEY = 'all';
 
