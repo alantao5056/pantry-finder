@@ -4,6 +4,36 @@ import { parseTarget } from '@pantry-finder/shared'
 export const formatDateTime = (iso?: string): string =>
   iso ? new Date(iso).toLocaleString() : '—'
 
+/** "512 B", "3.4 KB", "101.2 MB". */
+export const formatBytes = (bytes: number): string => {
+  const units = ['B', 'KB', 'MB', 'GB']
+  let value = bytes
+  let unit = 0
+  while (value >= 1024 && unit < units.length - 1) {
+    value /= 1024
+    unit++
+  }
+  return `${unit === 0 ? value : value.toFixed(1)} ${units[unit]}`
+}
+
+/** Two largest units: "3d 4h", "2h 5m", "45s". */
+export const formatDuration = (totalSeconds: number): string => {
+  const s = Math.floor(totalSeconds)
+  const parts = [
+    [Math.floor(s / 86400), 'd'],
+    [Math.floor((s % 86400) / 3600), 'h'],
+    [Math.floor((s % 3600) / 60), 'm'],
+    [s % 60, 's'],
+  ] as const
+  const first = parts.findIndex(([n]) => n > 0)
+  if (first === -1) return '0s'
+  return parts
+    .slice(first, first + 2)
+    .filter(([n]) => n > 0)
+    .map(([n, unit]) => `${n}${unit}`)
+    .join(' ')
+}
+
 export const REVIEW_TYPE_LABELS: Record<ReviewItemType, string> = {
   user_submission: 'User submission',
   new_mapping: 'New mapping',

@@ -13,7 +13,7 @@ export interface RateLimiter {
   consume(key: string, limit: number, windowMs: number): Promise<RateLimitResult>;
 }
 
-const KEY_PREFIX = 'pf:rl:';
+export const KEY_PREFIX = 'pf:rl:';
 
 // Atomic sliding-window check-and-add over a sorted set of hit timestamps:
 // drop entries older than the window, deny (returning the oldest score so the

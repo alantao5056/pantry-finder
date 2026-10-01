@@ -195,6 +195,58 @@ export function isPeakHour(now = new Date()): boolean {
   return (hour >= 1 && hour < 4) || (hour >= 6 && hour < 10);
 }
 
+// ---- Redis status (admin `/redis`) ----
+
+/** Snapshot of the API's Redis server, from PING + INFO. */
+export interface RedisServerStatus {
+  /** ioredis connection state ("ready", "reconnecting", …). */
+  clientStatus: string;
+  pingMs: number;
+  version: string;
+  uptimeSeconds: number;
+  connectedClients: number;
+  opsPerSec: number;
+  usedMemoryBytes: number;
+  /** 0 when Redis has no memory limit. */
+  maxMemoryBytes: number;
+  maxMemoryPolicy: string;
+  fragmentationRatio: number;
+  /** Keys dropped to stay under maxmemory since Redis started. */
+  evictedKeys: number;
+  expiredKeys: number;
+  /** Server-wide key lookups since Redis started (all caches together). */
+  keyspaceHits: number;
+  keyspaceMisses: number;
+  totalKeys: number;
+  /** Last RDB snapshot; absent when Redis has never saved. */
+  lastSaveAt?: string;
+  lastSaveOk: boolean;
+}
+
+export type RedisStatusResponse =
+  /** REDIS_URL unset: the API uses its in-process caches. */
+  | { backend: 'in-memory' }
+  | { backend: 'redis'; connected: false; clientStatus: string; error: string }
+  | ({ backend: 'redis'; connected: true } & RedisServerStatus);
+
+export interface RedisKeyGroup {
+  label: string;
+  /** Empty for the catch-all group of keys no known cache owns. */
+  prefix: string;
+  /** Null when the TTL varies per key (rate-limit windows) or is unknown. */
+  ttlMs: number | null;
+  count: number;
+  /** Estimated from a sample of the group's keys. */
+  approxBytes: number;
+}
+
+export interface RedisKeyStatsResponse {
+  groups: RedisKeyGroup[];
+  scanned: number;
+  /** The scan stopped at its key cap; counts are a lower bound. */
+  truncated: boolean;
+}
+
 // ---- Crawler mappings (review types `new_mapping` / `suspicious_value`) ----
 
 /** One place on a crawled page that a target's value could come from. */

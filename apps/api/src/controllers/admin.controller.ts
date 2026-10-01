@@ -28,6 +28,7 @@ import { MappingReviewService } from '../services/mapping-review.service';
 import { ChangeLogService } from '../services/change-log.service';
 import { LlmEvalService } from '../services/llm-eval.service';
 import { PantryCacheService } from '../services/pantry-cache.service';
+import { RedisStatusService } from '../services/redis-status.service';
 import { UserService } from '../services/user.service';
 import { MAX_ABOUT, MAX_ARRAY, MAX_STR, str } from '../utils/validation.util';
 
@@ -178,6 +179,7 @@ export class AdminController {
   private readonly changeLogService = new ChangeLogService();
   private readonly llmEvalService = new LlmEvalService();
   private readonly pantryCacheService = new PantryCacheService();
+  private readonly redisStatusService = new RedisStatusService();
 
   public async me(req: AuthedRequest, res: Response): Promise<void> {
     const profile = await this.userService.getUserProfile(req.user!.sub);
@@ -370,6 +372,14 @@ export class AdminController {
       return;
     }
     res.json({ ok: true });
+  }
+
+  public async getRedisStatus(_req: AuthedRequest, res: Response): Promise<void> {
+    res.json(await this.redisStatusService.getStatus());
+  }
+
+  public async getRedisKeyStats(_req: AuthedRequest, res: Response): Promise<void> {
+    res.json(await this.redisStatusService.getKeyStats());
   }
 
   public async listLlmEvals(_req: AuthedRequest, res: Response): Promise<void> {

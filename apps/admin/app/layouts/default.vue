@@ -6,6 +6,7 @@ const links = [
   { label: 'Crawler', to: '/crawler', icon: 'i-lucide-bot' },
   { label: 'Change log', to: '/changes', icon: 'i-lucide-history' },
   { label: 'LLM eval', to: '/llm-evals', icon: 'i-lucide-scale' },
+  { label: 'Redis', to: '/redis', icon: 'i-lucide-database' },
 ]
 </script>
 
