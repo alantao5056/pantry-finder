@@ -1108,6 +1108,15 @@
     color: var(--green-dark);
   }
 
+  /* Centered LogoMessage state in the search results area (no filter
+     matches, sign-in required), and the action button under its text. */
+  .search-state {
+    @apply px-6 py-20 h-full flex items-center justify-center;
+  }
+  .search-state-action {
+    @apply mt-6;
+  }
+
   /* Compact location card in the map-view side list (PantryMapList).
      .is-selected → orange ring matching the highlighted map pin. */
   .map-list-card {

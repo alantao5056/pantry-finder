@@ -1,6 +1,7 @@
 import { Response, NextFunction } from 'express';
 import { AuthedRequest } from './auth.middleware';
 import { createRateLimiter } from '../cache/rateLimiter';
+import { isAnonymousSearchEnabled } from '../services/app-config.service';
 import {
   ANON_SEARCH_LIMIT,
   ANON_SEARCH_WINDOW_MS,
@@ -49,6 +50,17 @@ export async function rateLimitSearch(
   res: Response,
   next: NextFunction
 ): Promise<void> {
+  // Runtime switch (Firestore appConfig/search). Checked on every page so
+  // pagination can't bypass it.
+  if (!req.user?.sub && !(await isAnonymousSearchEnabled())) {
+    res.status(401).json({
+      error: 'auth_required',
+      message: 'Please sign in or create a free account to search for pantries.',
+      requiresAuth: true,
+    });
+    return;
+  }
+
   if (!isFirstPage(req)) {
     next();
     return;

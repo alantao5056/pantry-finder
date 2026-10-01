@@ -39,6 +39,8 @@ const MIN_FILTERED_RESULTS = 10
 const route = useRoute()
 const router = useRouter()
 const api = useApi()
+const { isLoggedIn } = useAuth()
+const { show: showAuthModal } = useAuthModal()
 
 usePageSeo({
   title: 'Search Food Pantries',
@@ -57,6 +59,8 @@ const pending = ref(false)
 const error = ref<unknown>(null)
 const locationNotFound = ref(false)
 const rateLimited = ref<RateLimitState | null>(null)
+// Set when the API refuses anonymous search (runtime switch, 401 auth_required).
+const authRequired = ref<string | null>(null)
 const lastSearchSucceeded = ref(false)
 const selectedPantry = ref<Pantry | null>(null)
 
@@ -137,6 +141,8 @@ const fetchPage = async (
     const err = e as ApiError
     if (err.statusCode === 404) {
       locationNotFound.value = true
+    } else if (err.statusCode === 401) {
+      authRequired.value = err.data?.message ?? 'Please sign in to search for pantries.'
     } else if (err.statusCode === 429) {
       rateLimited.value = {
         message: err.data?.message ?? 'You have reached the search limit. Please try again later.',
@@ -160,6 +166,7 @@ const runSearch = async () => {
   error.value = null
   locationNotFound.value = false
   rateLimited.value = null
+  authRequired.value = null
   lastSearchSucceeded.value = false
 
   if (!route.query.location) return
@@ -202,6 +209,10 @@ watch(
   [() => route.query.location, () => route.query.radius],
   () => { runSearch() },
 )
+// Re-run a search that was refused for being anonymous once the user signs in.
+watch(isLoggedIn, (loggedIn) => {
+  if (loggedIn && authRequired.value) runSearch()
+})
 
 const onSearch = (location: string, radius: string) => {
   const sameLocation = location === String(route.query.location ?? '')
@@ -229,6 +240,7 @@ const isLocationNotFound = computed(() => locationNotFound.value)
 const resultsReady = computed(() =>
   !locationNotFound.value
   && !rateLimited.value
+  && !authRequired.value
   && !(error.value && loadedPantries.value.length === 0)
   && filteredPantries.value.length > 0,
 )
@@ -317,6 +329,9 @@ const mapActive = computed(() => viewMode.value === 'map' && resultsReady.value)
               <template v-if="pending && loadedPantries.length === 0">
                 Searching for pantries…
               </template>
+              <template v-else-if="authRequired && loadedPantries.length === 0">
+                <span class="text-red-700">Sign in to search.</span>
+              </template>
               <template v-else-if="rateLimited && loadedPantries.length === 0">
                 <span class="text-red-700">Search limit reached.</span>
               </template>
@@ -379,6 +394,16 @@ const mapActive = computed(() => viewMode.value === 'map' && resultsReady.value)
               <p class="text-gray-500 text-[15px]">Try entering a city, ZIP code, or a more complete street address.</p>
             </div>
 
+            <!-- Anonymous search disabled: sign in required -->
+            <div
+              v-else-if="authRequired"
+              class="search-state"
+            >
+              <LogoMessage title="Sign in to search pantries" :message="authRequired">
+                <button type="button" class="btn-primary search-state-action" @click="showAuthModal('login')">Sign In</button>
+              </LogoMessage>
+            </div>
+
             <!-- Rate limit reached -->
             <div
               v-else-if="rateLimited"
@@ -424,13 +449,13 @@ const mapActive = computed(() => viewMode.value === 'map' && resultsReady.value)
             <!-- Empty: filters too restrictive -->
             <div
               v-else-if="filteredPantries.length === 0"
-              class="px-6 py-20 h-full flex items-center justify-center"
+              class="search-state"
             >
               <LogoMessage
                 title="No pantries match your filters"
                 message="Try adjusting your filters or increasing the search radius."
               >
-                <button type="button" class="btn-primary mt-6" @click="clearFilters">Clear Filters</button>
+                <button type="button" class="btn-primary search-state-action" @click="clearFilters">Clear Filters</button>
               </LogoMessage>
             </div>
 

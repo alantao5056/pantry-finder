@@ -10,6 +10,9 @@ export const ANON_SEARCH_WINDOW_MS = 24 * 60 * 60 * 1000; // 24 hours
 export const USER_SEARCH_LIMIT = 24;
 export const USER_SEARCH_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 
+// How long the API caches the Firestore appConfig docs (runtime switches).
+export const APP_CONFIG_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
 // Pantry submissions ("Add a Pantry"). Public + unauthenticated, so throttle
 // per IP (or per user when logged in) to curb spam into the moderation queue.
 export const SUBMISSION_LIMIT = 10;
