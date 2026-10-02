@@ -2,7 +2,7 @@
  * Crawls single-pantry websites (docs/crawler-design.md, M2). Dry run by
  * default: fetches and calls the LLM, prints what it would do, writes nothing.
  *
- *   npm run crawl:dev01 -- [--limit N] [--pantry <id>] [--concurrency N] [--apply]
+ *   npm run crawl:dev01 -- [--limit N] [--pantry <id>] [--llm deepseek|gemini] [--concurrency N] [--apply]
  *
  * Each run takes the `--limit` (default 100) least recently crawled pantries,
  * so repeated runs rotate through all of them; an interrupted run's leftovers
@@ -13,13 +13,14 @@ import { Timestamp } from 'firebase-admin/firestore';
 import { DEFAULT_CRAWL_LIMIT } from '@pantry-finder/shared';
 import { COLLECTIONS, type CrawlRunDocument } from '@pantry-finder/shared/firestore';
 import { Fetcher } from './fetch/fetcher.js';
-import { DeepSeekExtractor } from './extract/DeepSeekExtractor.js';
+import { createExtractor } from './extract/factory.js';
 import {
   applyCommand,
   flag,
   hasFlag,
   initFirestore,
   intFlag,
+  llmFlag,
   peakHourWarning,
   requireEnvArg,
   requireEnvVar,
@@ -32,13 +33,13 @@ const apply = hasFlag('apply');
 const concurrency = intFlag('concurrency') ?? 8;
 const { db, projectId } = initFirestore();
 
-const extractor = new DeepSeekExtractor(requireEnvVar('DEEPSEEK_API_KEY'), requireEnvVar('DEEPSEEK_MODEL'));
+const extractor = createExtractor(llmFlag());
 const fetcher = new Fetcher(requireEnvVar('CRAWLER_CONTACT'));
 
 console.log(`${apply ? 'APPLYING' : 'DRY RUN'}: crawl (env ${env}, project ${projectId}, model ${extractor.model})`);
-peakHourWarning();
+peakHourWarning(extractor.provider);
 
-const options = { limit: intFlag('limit') ?? DEFAULT_CRAWL_LIMIT, pantryId: flag('pantry') };
+const options = { limit: intFlag('limit') ?? DEFAULT_CRAWL_LIMIT, pantryId: flag('pantry'), llm: extractor.provider };
 let runRef: FirebaseFirestore.DocumentReference | null = null;
 
 if (apply) {
@@ -46,6 +47,7 @@ if (apply) {
   const run: CrawlRunDocument = {
     env,
     mode: 'apply',
+    model: extractor.model,
     status: 'running',
     startedAt: now,
     heartbeatAt: now,

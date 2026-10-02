@@ -2,7 +2,7 @@
  * LLM extraction behind one interface (same pattern as the API's geocoders),
  * so the provider can be swapped in one place.
  */
-import type { MappingTarget, TargetValue } from '@pantry-finder/shared';
+import type { LlmProvider, MappingTarget, TargetValue } from '@pantry-finder/shared';
 
 /** One page as shown to the LLM: numbered text blocks. */
 export interface PageForExtraction {
@@ -38,6 +38,7 @@ export interface Usage {
 }
 
 export interface Extractor {
+  readonly provider: LlmProvider;
   readonly model: string;
   /**
    * First visit: where on the pages each target's value is, and what it is,

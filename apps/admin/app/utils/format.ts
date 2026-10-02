@@ -1,4 +1,4 @@
-import type { MappingTarget, ReviewItemStatus, ReviewItemType, SiteCheckStatus, SuspiciousReason, TextTarget } from '@pantry-finder/shared'
+import type { LlmCompareStatus, MappingTarget, ReviewItemStatus, ReviewItemType, SiteCheckStatus, SuspiciousReason, TextTarget } from '@pantry-finder/shared'
 import { parseTarget } from '@pantry-finder/shared'
 
 export const formatDateTime = (iso?: string): string =>
@@ -96,11 +96,27 @@ export const SUSPICIOUS_REASON_LABELS: Record<SuspiciousReason, string> = {
 
 export const deepClone = <T>(value: T): T => JSON.parse(JSON.stringify(value))
 
-// DeepSeek off-peak prices, USD per 1M tokens (api-docs.deepseek.com, 2026-09;
-// cache-miss input). Used only for the LLM eval cost estimate.
+// USD per 1M tokens, used only for the LLM eval cost estimates. DeepSeek:
+// off-peak, cache-miss input (api-docs.deepseek.com, 2026-09). Gemini: paid
+// tier, output includes thinking tokens (ai.google.dev/gemini-api/docs/pricing,
+// 2026-10; the 3.6–3.8 Flash prices double on 2027-01-01).
 export const MODEL_PRICES: Record<string, { input: number; output: number }> = {
   'deepseek-flash': { input: 0.15, output: 0.6 },
   'deepseek-v4-pro': { input: 0.66, output: 1.98 },
+  'gemini-3.1-flash-lite': { input: 0.25, output: 1.5 },
+  'gemini-3.5-flash-lite': { input: 0.3, output: 2.5 },
+  'gemini-3.5-flash': { input: 1.5, output: 9 },
+  'gemini-3.6-flash': { input: 0.75, output: 3.75 },
+  'gemini-3.7-flash': { input: 0.75, output: 3.75 },
+  'gemini-3.8-flash': { input: 0.75, output: 3.75 },
+  'gemini-3.1-pro-preview': { input: 2, output: 12 },
+}
+
+export const LLM_COMPARE_STATUS_COLORS: Record<LlmCompareStatus, 'warning' | 'info' | 'success' | 'error'> = {
+  queued: 'warning',
+  running: 'info',
+  completed: 'success',
+  failed: 'error',
 }
 
 /** Estimated USD cost, or null for a model without a known price. */

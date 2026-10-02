@@ -12,6 +12,8 @@ import type {
   CrawlRunStatus,
   EvalGrade,
   EvalVariantKey,
+  LlmCompareResult,
+  LlmCompareStatus,
   PantryChangeKind,
   ReviewItemStatus,
   ReviewItemType,
@@ -203,6 +205,8 @@ export interface CrawlRunDocument {
   // while queued (the worker fills it in).
   env: string;
   mode: CrawlRunMode;
+  // Model id the run extracts with; written when the run starts.
+  model?: string;
   status: CrawlRunStatus;
   // Request time while queued, then when the worker picked it up.
   startedAt: Timestamp;
@@ -293,4 +297,25 @@ export interface LlmEvalItemDocument {
     { model: string; proposals: TargetProposal[]; inputTokens: number; outputTokens: number; error?: string }
   >;
   grades: Record<EvalVariantKey, Partial<Record<MappingTarget, EvalGrade>>>;
+}
+
+// Both LLMs' first-visit extraction of one pantry's site (`llm_compares/{id}`):
+// queued by the admin (LLM eval page), filled in by the crawler worker.
+// Touches no pantry data.
+export interface LlmCompareDocument {
+  pantryId: string;
+  pantryName: string;
+  status: LlmCompareStatus;
+  // Admin email.
+  requestedBy: string;
+  createdAt: Timestamp;
+  finishedAt?: Timestamp;
+  // The fields below are written by the worker.
+  env?: string;
+  url?: string;
+  pages?: string[];
+  serviceNames?: string[];
+  current?: { target: MappingTarget; value: TargetValue }[];
+  results?: LlmCompareResult[];
+  error?: string;
 }

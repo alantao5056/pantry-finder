@@ -9,6 +9,18 @@
   .candidate-picked {
     @apply border-(--ui-primary) bg-(--ui-bg-elevated);
   }
+  /* One row of the LLM comparison: the field name, then `--compare-cols` equal value columns. */
+  .compare-row {
+    @apply grid gap-4 px-3 py-3 border-t border-(--ui-border);
+    grid-template-columns: 9rem repeat(var(--compare-cols), minmax(0, 1fr));
+  }
+  /* Its column headings: a shaded band above the rows. */
+  .compare-head {
+    @apply border-t-0 rounded-md bg-(--ui-bg-elevated) text-xs uppercase font-semibold text-(--ui-text-highlighted);
+  }
+  .compare-head + .compare-row {
+    @apply border-t-0;
+  }
   /* Page text a crawler value was read from. */
   .raw-text {
     @apply text-xs font-mono whitespace-pre-wrap bg-(--ui-bg-muted) rounded p-2 max-h-48 overflow-auto;

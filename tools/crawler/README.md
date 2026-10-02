@@ -17,8 +17,14 @@ Without `--apply` nothing is written — but fetches and **LLM calls are real**
 
 ```sh
 cp tools/crawler/.env.example tools/crawler/.env.dev01   # likewise .env.dev02 / .env.prod
-# edit: Firebase service account, DEEPSEEK_API_KEY, CRAWLER_CONTACT, REDIS_URL
+# edit: Firebase service account, DEEPSEEK_API_KEY, GEMINI_API_KEY, CRAWLER_CONTACT, REDIS_URL
 ```
+
+Two LLMs are supported, behind one `Extractor` interface (`extract/`):
+**DeepSeek** (the default) and **Gemini**, each with its own API key and model
+(`DEEPSEEK_MODEL`, `GEMINI_MODEL`). A run uses one of them — `--llm gemini` on
+the CLI, or the LLM choice on the admin's Crawler page. A provider without a
+key only fails the runs that ask for it.
 
 `REDIS_URL` points at the Redis the environment's API caches in. After each
 automatic update the crawler deletes the API's cached copies of that pantry
@@ -51,6 +57,7 @@ From `tools/crawler`:
 npm run crawl:dev01                          # dry run on the 100 least recently crawled pantries
 npm run crawl:dev01 -- --limit 5 --apply     # 5 of them, writing results
 npm run crawl:dev01 -- --pantry <pantryId>   # one pantry (any site)
+npm run crawl:dev01 -- --llm gemini          # with Gemini instead of DeepSeek
 ```
 
 Each run takes the `--limit` (default 100) pantries of the crawl queue with the
@@ -115,8 +122,9 @@ comparison live in the admin site.
 
 ## Starting runs from the admin (worker)
 
-The admin's **Crawler** page can start the same runs: dry run or apply, a
-number of pantries (default 100) or one pantry ID, and stop a run in progress.
+The admin's **Crawler** page can start the same runs: dry run or apply, the
+LLM, a number of pantries (default 100) or one pantry ID, and stop a run in
+progress.
 The API only queues the run (`crawl_runs` doc with status `queued`); the
 **worker** — a long-running process — picks it up, crawls, and streams the log
 into `crawl_runs/{id}/log`, which the page shows under **Log**.
@@ -154,7 +162,18 @@ and `DEEPSEEK_MODEL_PRO`. Grade them blind in the admin (**LLM eval**), then
 set `DEEPSEEK_MODEL`. Touches no pantry data.
 
 DeepSeek prices double Mon–Fri 01:00–04:00 and 06:00–10:00 UTC; both scripts
-warn when started then.
+warn when started then (crawl runs only when they use DeepSeek).
+
+## Comparing the LLMs on one pantry
+
+On the admin's **LLM eval** page, enter a pantry ID and **Run comparison**. The
+API queues an `llm_compares` doc; the worker (so it must be running) fetches
+the pantry's site once and asks both providers for all
+fields, as on a first visit — existing mappings are ignored. The result page
+shows a row per field: the stored value, then each LLM's best candidate, with
+tokens, estimated cost and time per LLM. Nothing is written to the pantry,
+`crawl_sources` or the review queue; the LLM calls are real. A provider
+without an API key shows its error in its own column.
 
 ## Debugging
 

@@ -2,6 +2,9 @@
 import {
   ACTIVE_CRAWL_RUN_STATUSES,
   DEFAULT_CRAWL_LIMIT,
+  DEFAULT_LLM_PROVIDER,
+  LLM_PROVIDERS,
+  LLM_PROVIDER_LABELS,
   MAX_CRAWL_LIMIT,
   isPeakHour,
 } from '@pantry-finder/shared'
@@ -11,6 +14,7 @@ import type {
   CrawlRunStatus,
   CrawlRunSummary,
   ListCrawlRunsResponse,
+  LlmProvider,
   StartCrawlRunRequest,
 } from '@pantry-finder/shared'
 import type { TableColumn } from '@nuxt/ui'
@@ -57,12 +61,19 @@ const MODE_ITEMS: { label: string; value: CrawlRunMode; description: string }[] 
   { label: 'Apply', value: 'apply', description: 'Updates pantries and files review items.' },
 ]
 
-const form = reactive<{ mode: CrawlRunMode; limit: number; pantryId: string }>({
+const LLM_ITEMS = LLM_PROVIDERS.map((value) => ({ label: LLM_PROVIDER_LABELS[value], value }))
+
+const form = reactive<{ mode: CrawlRunMode; llm: LlmProvider; limit: number; pantryId: string }>({
   mode: 'dry-run',
+  llm: DEFAULT_LLM_PROVIDER,
   limit: DEFAULT_CRAWL_LIMIT,
   pantryId: '',
 })
 const peak = isPeakHour()
+
+/** "Gemini · gemini-3.5-flash-lite"; the model is known once the worker picked the run up. */
+const llmLine = (run: CrawlRunSummary) =>
+  [run.options.llm && LLM_PROVIDER_LABELS[run.options.llm], run.model].filter(Boolean).join(' · ')
 const confirmOpen = ref(false)
 const starting = ref(false)
 
@@ -75,8 +86,8 @@ const start = async () => {
   starting.value = true
   try {
     const body: StartCrawlRunRequest = form.pantryId.trim()
-      ? { mode: form.mode, pantryId: form.pantryId.trim() }
-      : { mode: form.mode, limit: form.limit }
+      ? { mode: form.mode, llm: form.llm, pantryId: form.pantryId.trim() }
+      : { mode: form.mode, llm: form.llm, limit: form.limit }
     const run = await api<CrawlRunSummary>('/admin/crawl-runs', { method: 'POST', body })
     confirmOpen.value = false
     toast.add({ title: 'Crawl queued', description: 'The crawler worker picks it up in a moment.', color: 'success' })
@@ -186,6 +197,7 @@ onBeforeUnmount(() => clearInterval(timer))
       </template>
       <div class="flex flex-col gap-4">
         <URadioGroup v-model="form.mode" :items="MODE_ITEMS" orientation="horizontal" />
+        <URadioGroup v-model="form.llm" :items="LLM_ITEMS" legend="LLM" orientation="horizontal" />
         <div class="flex flex-wrap items-end gap-4">
           <UFormField label="Pantries" hint="least recently crawled first">
             <UInputNumber
@@ -212,7 +224,7 @@ onBeforeUnmount(() => clearInterval(timer))
           <template v-if="activeRun">Only one run at a time: wait for the current one or stop it.</template>
         </p>
         <UAlert
-          v-if="peak"
+          v-if="peak && form.llm === 'deepseek'"
           color="warning"
           variant="subtle"
           icon="i-lucide-clock"
@@ -240,6 +252,7 @@ onBeforeUnmount(() => clearInterval(timer))
           <div class="text-xs text-(--ui-text-muted)">
             {{ row.original.options.pantryId ? `pantry ${row.original.options.pantryId}` : `${row.original.options.limit ?? DEFAULT_CRAWL_LIMIT} pantries` }}
           </div>
+          <div v-if="llmLine(row.original)" class="text-xs text-(--ui-text-muted)">{{ llmLine(row.original) }}</div>
         </template>
         <template #status-cell="{ row }">
           <div class="flex flex-wrap gap-1">
@@ -330,7 +343,7 @@ onBeforeUnmount(() => clearInterval(timer))
         <p class="text-sm">
           Crawls
           {{ form.pantryId.trim() ? `pantry ${form.pantryId.trim()}` : `the ${form.limit} least recently crawled pantries` }}
-          and <strong>writes the results</strong>: confirmed mappings update live pantry data (revertible from the
+          with {{ LLM_PROVIDER_LABELS[form.llm] }} and <strong>writes the results</strong>: confirmed mappings update live pantry data (revertible from the
           change log) and new findings go to the review queue.
         </p>
       </template>

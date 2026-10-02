@@ -32,6 +32,7 @@ function toSummary(id: string, run: CrawlRunDocument): CrawlRunSummary {
     env: run.env,
     // Runs are only recorded in apply mode; older docs predate the field.
     mode: run.mode ?? 'apply',
+    model: run.model,
     status: run.status,
     startedAt: run.startedAt.toDate().toISOString(),
     finishedAt: run.finishedAt?.toDate().toISOString(),

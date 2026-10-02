@@ -7,7 +7,13 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { cert, initializeApp, type Credential } from 'firebase-admin/app';
 import { getFirestore, type Firestore } from 'firebase-admin/firestore';
-import { isPeakHour } from '@pantry-finder/shared';
+import {
+  DEFAULT_LLM_PROVIDER,
+  LLM_PROVIDERS,
+  isLlmProvider,
+  isPeakHour,
+  type LlmProvider,
+} from '@pantry-finder/shared';
 import { consoleLogger, type Logger } from './logger.js';
 
 export const ENVS = ['dev01', 'dev02', 'prod'] as const;
@@ -82,9 +88,16 @@ export function initFirestore(): { db: Firestore; projectId: string } {
   return { db: getFirestore(), projectId };
 }
 
+/** The provider named by `--llm` (default DeepSeek). */
+export function llmFlag(): LlmProvider {
+  const raw = flag('llm') ?? DEFAULT_LLM_PROVIDER;
+  if (!isLlmProvider(raw)) throw new Error(`--llm must be one of ${LLM_PROVIDERS.join(', ')} (got ${raw}).`);
+  return raw;
+}
+
 /** DeepSeek prices double at peak time (`isPeakHour`); runs are best started outside it. */
-export function peakHourWarning(logger: Logger = consoleLogger): void {
-  if (isPeakHour()) {
+export function peakHourWarning(provider: LlmProvider, logger: Logger = consoleLogger): void {
+  if (provider === 'deepseek' && isPeakHour()) {
     logger.warn('WARNING: this is DeepSeek peak time (Mon–Fri 01–04 / 06–10 UTC), when prices double.');
   }
 }

@@ -44,6 +44,7 @@ export const COLLECTIONS = {
   fieldMappings: 'field_mappings',
   extractionCache: 'extraction_cache',
   llmEvals: 'llm_evals',
+  llmCompares: 'llm_compares',
 } as const;
 
 // Subcollection of a `crawl_runs` doc holding the worker's log chunks.

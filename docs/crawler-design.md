@@ -101,7 +101,8 @@ the bad value.
 ## LLM
 
 - Provider: **DeepSeek**, behind an `Extractor` interface (same pattern as
-  `Geocoder`) so the provider can be swapped in one place.
+  `Geocoder`) so the provider can be swapped in one place. **Gemini** was added
+  later as a second provider, selectable per run.
 - Used for: (1) proposing field mappings on first visit to a site;
   (2) parsing free-text regions (mainly schedules) into `ScheduleSchema[]`.
 - JSON output mode; responses validated with zod.
@@ -333,6 +334,17 @@ Decisions made while building M2, on top of the design above. Usage:
 - **LLM:** DeepSeek's OpenAI-compatible `/chat/completions` in JSON mode via
   Node's built-in fetch (no SDK); responses validated with zod. Model ids as of
   2026-09: `deepseek-flash` (V4.1 Flash), `deepseek-v4-pro` (V4 Pro).
+- **Second provider (Gemini):** same `Extractor` interface, through Gemini's
+  OpenAI-compatible endpoint, so both share `OpenAiChatExtractor` and differ
+  only in URL and thinking control (`reasoning_effort`; Gemini 3 can't switch
+  thinking off). `extract/factory.ts` builds the extractor for a run's
+  `options.llm` (default DeepSeek; chosen with `--llm` or in the admin), and
+  the run doc records the model id used.
+- **One-pantry comparison:** the admin queues an `llm_compares` doc; the worker
+  fetches the site once, runs the first-visit extraction for every target
+  through both providers and stores the results side by side (stored value,
+  each provider's candidates, site checks, tokens, duration). Read-only with
+  respect to pantry data, `crawl_sources` and the review queue.
 - **Tier comparison:** `compare-tiers` stores both models' proposals per site in
   `llm_evals/{id}/items`, with A/B shuffled per site; the admin grades each
   target per side (correct / partial / wrong) and shows accuracy, tokens and

@@ -33,7 +33,7 @@ const fetcher = new Fetcher(requireEnvVar('CRAWLER_CONTACT'));
 console.log(
   `${apply ? 'APPLYING' : 'DRY RUN'}: compare ${extractors.map((e) => e.model).join(' vs ')} on ${sampleSize} sites (env ${env}, project ${projectId})`,
 );
-peakHourWarning();
+peakHourWarning('deepseek');
 
 // Fisher–Yates over the eligible pantries; fetch failures are replaced from
 // the rest of the shuffled list until the sample is full.

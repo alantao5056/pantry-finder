@@ -35,5 +35,8 @@ router.put('/app-config', adminController.updateAppConfig.bind(adminController))
 router.get('/llm-evals',adminController.listLlmEvals.bind(adminController));
 router.get('/llm-evals/:id', adminController.getLlmEval.bind(adminController));
 router.post('/llm-evals/:id/items/:itemId/grade', adminController.gradeLlmEval.bind(adminController));
+router.get('/llm-compares', adminController.listLlmCompares.bind(adminController));
+router.post('/llm-compares', adminController.startLlmCompare.bind(adminController));
+router.get('/llm-compares/:id', adminController.getLlmCompare.bind(adminController));
 
 export default router;

@@ -16,9 +16,12 @@ import type {
 } from '@pantry-finder/shared';
 import {
   DEFAULT_CRAWL_LIMIT,
+  DEFAULT_LLM_PROVIDER,
+  LLM_PROVIDERS,
   MAX_CACHE_TTL_MINUTES,
   MAX_CRAWL_LIMIT,
   MIN_CACHE_TTL_MINUTES,
+  isLlmProvider,
   isMappingTarget,
   isValidStateSlug,
   normalizeEmail,
@@ -30,6 +33,7 @@ import { ReviewError, ReviewService } from '../services/review.service';
 import { CrawlRunError, CrawlRunService, type CrawlRunErrorCode } from '../services/crawl-run.service';
 import { MappingReviewService } from '../services/mapping-review.service';
 import { ChangeLogService } from '../services/change-log.service';
+import { LlmCompareError, LlmCompareService, type LlmCompareErrorCode } from '../services/llm-compare.service';
 import { LlmEvalService } from '../services/llm-eval.service';
 import { PantryCacheService } from '../services/pantry-cache.service';
 import { RedisStatusService } from '../services/redis-status.service';
@@ -90,6 +94,12 @@ const CRAWL_RUN_ERROR_STATUS: Record<CrawlRunErrorCode, { status: number; error:
   not_found: { status: 404, error: 'Crawl run not found.' },
   active_run: { status: 409, error: 'A crawl run is already queued or running.' },
   not_active: { status: 409, error: 'This run has already finished.' },
+};
+
+const LLM_COMPARE_ERROR_STATUS: Record<LlmCompareErrorCode, { status: number; error: string }> = {
+  not_found: { status: 404, error: 'Comparison not found.' },
+  pantry_not_found: { status: 404, error: 'Pantry not found.' },
+  no_website: { status: 400, error: 'This pantry has no website to crawl.' },
 };
 
 const PANTRY_WRITE_ERROR_STATUS:Record<PantryWriteErrorCode, number> = {
@@ -212,6 +222,7 @@ export class AdminController {
   private readonly mappingReviewService = new MappingReviewService();
   private readonly changeLogService = new ChangeLogService();
   private readonly llmEvalService = new LlmEvalService();
+  private readonly llmCompareService = new LlmCompareService();
   private readonly pantryCacheService = new PantryCacheService();
   private readonly redisStatusService = new RedisStatusService();
 
@@ -303,8 +314,13 @@ export class AdminController {
       res.status(400).json({ error: `limit must be a whole number from 1 to ${MAX_CRAWL_LIMIT}.` });
       return;
     }
+    const llm = body.llm ?? DEFAULT_LLM_PROVIDER;
+    if (!isLlmProvider(llm)) {
+      res.status(400).json({ error: `llm must be one of ${LLM_PROVIDERS.join(', ')}.` });
+      return;
+    }
     await this.handleCrawlRunErrors(res, async () => {
-      const options = pantryId ? { pantryId, limit: 1 } : { limit: limit as number };
+      const options = pantryId ? { pantryId, limit: 1, llm } : { limit: limit as number, llm };
       res.json(await this.crawlRunService.startRun(mode, options, req.user!.sub));
     });
   }
@@ -460,6 +476,41 @@ export class AdminController {
       await this.llmEvalService.grade(String(req.params.id), String(req.params.itemId), variant, target, grade);
       res.json({ ok: true });
     });
+  }
+
+  public async listLlmCompares(_req: AuthedRequest, res: Response): Promise<void> {
+    res.json({ compares: await this.llmCompareService.list() });
+  }
+
+  public async getLlmCompare(req: AuthedRequest, res: Response): Promise<void> {
+    await this.handleLlmCompareErrors(res, async () => {
+      res.json(await this.llmCompareService.get(String(req.params.id)));
+    });
+  }
+
+  public async startLlmCompare(req: AuthedRequest, res: Response): Promise<void> {
+    const pantryId = str(((req.body ?? {}) as Record<string, unknown>).pantryId, 100);
+    // A slash would make it a path into another collection.
+    if (!pantryId || pantryId.includes('/')) {
+      res.status(400).json({ error: 'pantryId is required.' });
+      return;
+    }
+    await this.handleLlmCompareErrors(res, async () => {
+      res.json(await this.llmCompareService.start(pantryId, req.user!.sub));
+    });
+  }
+
+  private async handleLlmCompareErrors(res: Response, fn: () => Promise<void>): Promise<void> {
+    try {
+      await fn();
+    } catch (err) {
+      if (err instanceof LlmCompareError) {
+        const { status, error } = LLM_COMPARE_ERROR_STATUS[err.code];
+        res.status(status).json({ error });
+        return;
+      }
+      throw err;
+    }
   }
 
   private async handlePantryWriteErrors(res: Response, fn: () => Promise<void>): Promise<void> {

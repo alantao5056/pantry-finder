@@ -140,10 +140,27 @@ export interface CrawlRunCounts {
 
 export type CrawlRunMode = 'dry-run' | 'apply';
 
+/** The LLMs the crawler can extract with (tools/crawler/extract). */
+export type LlmProvider = 'deepseek' | 'gemini';
+
+export const LLM_PROVIDERS: readonly LlmProvider[] = ['deepseek', 'gemini'];
+export const DEFAULT_LLM_PROVIDER: LlmProvider = 'deepseek';
+
+export const LLM_PROVIDER_LABELS: Record<LlmProvider, string> = {
+  deepseek: 'DeepSeek',
+  gemini: 'Gemini',
+};
+
+export function isLlmProvider(value: unknown): value is LlmProvider {
+  return (LLM_PROVIDERS as readonly unknown[]).includes(value);
+}
+
 export interface CrawlRunSummary {
   id: string;
   env: string;
   mode: CrawlRunMode;
+  /** Model id the run extracts with; set once the crawler picks the run up. */
+  model?: string;
   status: CrawlRunStatus;
   startedAt: string;
   finishedAt?: string;
@@ -161,6 +178,8 @@ export interface CrawlRunSummary {
 export interface CrawlRunOptions {
   limit?: number;
   pantryId?: string;
+  /** Absent on runs from before the choice existed (DeepSeek). */
+  llm?: LlmProvider;
 }
 
 export interface ListCrawlRunsResponse {
@@ -173,6 +192,8 @@ export interface StartCrawlRunRequest {
   limit?: number;
   /** Crawl just this pantry. */
   pantryId?: string;
+  /** Default DeepSeek. */
+  llm?: LlmProvider;
 }
 
 export const DEFAULT_CRAWL_LIMIT = 100;
@@ -494,4 +515,58 @@ export interface GradeLlmEvalRequest {
   variant: EvalVariantKey;
   target: MappingTarget;
   grade: EvalGrade;
+}
+
+// ---- LLM comparison on one pantry ----
+
+/** `queued`: requested from the admin, waiting for the crawler worker. */
+export type LlmCompareStatus = 'queued' | 'running' | 'completed' | 'failed';
+
+/** One LLM's first-visit extraction of the pantry's site. */
+export interface LlmCompareResult {
+  provider: LlmProvider;
+  model: string;
+  proposals: TargetProposal[];
+  /** Addresses / phone numbers the LLM read off the site, checked against the stored ones. */
+  addressCheck?: SiteCheck;
+  /** Absent when the pantry has no phone to compare. */
+  phoneCheck?: SiteCheck;
+  /** Phone numbers as written on the site. */
+  phones: string[];
+  inputTokens: number;
+  outputTokens: number;
+  durationMs: number;
+  error?: string;
+}
+
+export interface LlmCompareSummary {
+  id: string;
+  pantryId: string;
+  pantryName: string;
+  status: LlmCompareStatus;
+  createdAt: string;
+  finishedAt?: string;
+  requestedBy: string;
+}
+
+export interface LlmCompareDetail extends LlmCompareSummary {
+  /** Homepage after redirects. */
+  url?: string;
+  /** The pages shown to both LLMs. */
+  pages: string[];
+  /** Service names by index, for labelling `services.<i>.schedules` targets. */
+  serviceNames: string[];
+  /** Every target asked for, with the pantry's stored value. */
+  current: { target: MappingTarget; value: TargetValue }[];
+  results: LlmCompareResult[];
+  /** Why the comparison as a whole failed (site unreachable, …). */
+  error?: string;
+}
+
+export interface StartLlmCompareRequest {
+  pantryId: string;
+}
+
+export interface ListLlmComparesResponse {
+  compares: LlmCompareSummary[];
 }

@@ -55,7 +55,7 @@ const grade = async (item: LlmEvalItem, variant: EvalVariantKey, target: Mapping
 <template>
   <div class="flex flex-col gap-4">
     <div>
-      <UButton to="/llm-evals" label="LLM tier comparison" icon="i-lucide-arrow-left" color="neutral" variant="link" class="px-0" />
+      <UButton to="/llm-evals" label="LLM eval" icon="i-lucide-arrow-left" color="neutral" variant="link" class="px-0" />
     </div>
 
     <UAlert v-if="error" color="error" variant="subtle" :title="apiErrorMessage(error)" />
