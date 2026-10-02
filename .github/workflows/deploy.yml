@@ -74,6 +74,7 @@ jobs:
 
             cat > .env.production << 'EOF'
             NUXT_PUBLIC_API_BASE=${{ secrets.NUXT_PUBLIC_API_BASE }}
+            NUXT_API_BASE_INTERNAL=${{ secrets.NUXT_API_BASE_INTERNAL }}
             NUXT_PUBLIC_GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
             NUXT_PUBLIC_MICROSOFT_CLIENT_ID=${{ secrets.MICROSOFT_CLIENT_ID }}
             NUXT_PUBLIC_GA_MEASUREMENT_ID=${{ secrets.GA_MEASUREMENT_ID }}

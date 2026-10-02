@@ -6,6 +6,9 @@ export default defineNuxtConfig({
   css: ['~/assets/css/main.css', 'leaflet/dist/leaflet.css'],
   devtools: { enabled: true },
   runtimeConfig: {
+    // Server-only: where SSR reaches the API directly on the same host
+    // (e.g. http://127.0.0.1:8080). Empty = use public.apiBase.
+    apiBaseInternal: process.env.NUXT_API_BASE_INTERNAL || '',
     public: {
       apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:8080',
       photonBase: process.env.NUXT_PUBLIC_PHOTON_BASE || '',

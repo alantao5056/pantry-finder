@@ -9,6 +9,10 @@ import {
   USER_SEARCH_WINDOW_MS,
   SUBMISSION_LIMIT,
   SUBMISSION_WINDOW_MS,
+  BROWSE_BURST_LIMIT,
+  BROWSE_BURST_WINDOW_MS,
+  BROWSE_HOURLY_LIMIT,
+  BROWSE_HOURLY_WINDOW_MS,
 } from '../config/constants';
 
 const limiter = createRateLimiter();
@@ -142,6 +146,68 @@ export async function rateLimitSubmission(
       retryAfter: retryAfterSec,
     });
     return;
+  }
+
+  next();
+}
+
+const BROWSE_WINDOWS = [
+  { suffix: 'm', limit: BROWSE_BURST_LIMIT, windowMs: BROWSE_BURST_WINDOW_MS },
+  { suffix: 'h', limit: BROWSE_HOURLY_LIMIT, windowMs: BROWSE_HOURLY_WINDOW_MS },
+];
+
+function isLoopback(ip: string): boolean {
+  return ip === '::1' || ip.startsWith('127.') || ip.startsWith('::ffff:127.');
+}
+
+/**
+ * Throttles the browse endpoints (/states/*, /pantries/:id) so one client
+ * can't walk every city page at full speed — each cold city costs Firestore
+ * reads. Keyed by user when logged in, else by IP, in its own buckets (never
+ * touches the search quota). Fails open like the other limiters.
+ *
+ * SSR fetches reach the API over loopback with the visitor's X-Forwarded-For
+ * (see apps/web useApi), so req.ip is the real visitor. A loopback req.ip
+ * means that header went missing; skip rather than throttle every visitor in
+ * one shared bucket.
+ */
+export async function rateLimitBrowse(
+  req: AuthedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  let key: string;
+  if (req.user?.sub) {
+    key = `browse:user:${req.user.sub}`;
+  } else if (req.ip && !isLoopback(req.ip)) {
+    key = `browse:ip:${req.ip}`;
+  } else {
+    next();
+    return;
+  }
+
+  for (const { suffix, limit, windowMs } of BROWSE_WINDOWS) {
+    let result;
+    try {
+      result = await limiter.consume(`${key}:${suffix}`, limit, windowMs);
+    } catch (err) {
+      console.error('Browse rate limit check failed, allowing request:', err);
+      next();
+      return;
+    }
+
+    if (!result.allowed) {
+      const retryAfterSec = Math.ceil(result.retryAfterMs / 1000);
+      res.setHeader('Retry-After', String(retryAfterSec));
+      res.status(429).json({
+        error: 'rate_limited',
+        message: 'Too many requests. Please slow down and try again shortly.',
+        limit,
+        windowSeconds: Math.round(windowMs / 1000),
+        retryAfter: retryAfterSec,
+      });
+      return;
+    }
   }
 
   next();

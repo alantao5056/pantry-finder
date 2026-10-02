@@ -46,7 +46,9 @@ units live on the host, not in this repo.
   ```
 
 - Key namespace: everything is under `pf:*` (`pf:geo:*`, `pf:city:*`,
-  `pf:pantry:*`, `pf:user:*`, `pf:rl:*`).
+  `pf:pantry:*`, `pf:user:*`, `pf:rl:*`). Rate-limit buckets: search
+  `pf:rl:ip:*` / `pf:rl:user:*`, submissions `pf:rl:submit:*`, browse
+  endpoints `pf:rl:browse:*`.
 - Flush the city browse cache after a pantry data re-import (instead of
   waiting out the 48h TTL or redeploying):
 

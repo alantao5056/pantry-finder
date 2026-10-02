@@ -32,6 +32,10 @@ const { data, error } = await useAsyncData(
 
 if (error.value) {
   const status = (error.value as { statusCode?: number }).statusCode
+  // Rate-limited by the API (rateLimitBrowse): surface it as a 429, not a 500.
+  if (status === 429) {
+    throw createError({ statusCode: 429, statusMessage: 'Too many requests', fatal: true })
+  }
   // 404 from the API = no covered cities in this state.
   throw createError({
     statusCode: status === 404 ? 404 : 500,

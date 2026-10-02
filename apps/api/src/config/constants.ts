@@ -10,6 +10,14 @@ export const ANON_SEARCH_WINDOW_MS = 24 * 60 * 60 * 1000; // 24 hours
 export const USER_SEARCH_LIMIT = 24;
 export const USER_SEARCH_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 
+// Browse endpoints (/states/*, /pantries/:id). Generous for people and search
+// engines; the point is to slow a single client walking every city page. A
+// city page costs 2 requests (pantries + "more cities"), a detail page 1.
+export const BROWSE_BURST_LIMIT = 60;
+export const BROWSE_BURST_WINDOW_MS = 60 * 1000; // 1 minute
+export const BROWSE_HOURLY_LIMIT = 600;
+export const BROWSE_HOURLY_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+
 // How long the API caches the Firestore appConfig docs (runtime switches).
 export const APP_CONFIG_TTL_MS = 5 * 60 * 1000; // 5 minutes
 

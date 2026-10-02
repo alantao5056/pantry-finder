@@ -19,6 +19,12 @@ const { data: pantry, pending, error } = await useAsyncData(
   { watch: [id] },
 )
 
+// Rate-limited by the API (rateLimitBrowse): a real 429 instead of the
+// "Pantry not found" fallback below.
+if ((error.value as { statusCode?: number } | null)?.statusCode === 429) {
+  throw createError({ statusCode: 429, statusMessage: 'Too many requests', fatal: true })
+}
+
 // Upgrade bare-id or stale-slug URLs to the canonical slug URL with a real 301
 // (avoids duplicate-content). Only runs for found pantries; the canonical param
 // is stable, so this can't loop.

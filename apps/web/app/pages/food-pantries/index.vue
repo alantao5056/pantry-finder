@@ -9,6 +9,10 @@ const { data, error } = await useAsyncData(
 )
 
 if (error.value) {
+  // Rate-limited by the API (rateLimitBrowse): surface it as a 429, not a 500.
+  if ((error.value as { statusCode?: number }).statusCode === 429) {
+    throw createError({ statusCode: 429, statusMessage: 'Too many requests', fatal: true })
+  }
   throw createError({ statusCode: 500, statusMessage: 'Failed to load states.', fatal: true })
 }
 

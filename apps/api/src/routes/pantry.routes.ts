@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { PantryController } from '../controllers/pantry.controller';
 import { PantrySubmissionController } from '../controllers/pantry-submission.controller';
 import { optionalAuth } from '../middleware/auth.middleware';
-import { rateLimitSearch, rateLimitSubmission } from '../middleware/rateLimit.middleware';
+import { rateLimitBrowse, rateLimitSearch, rateLimitSubmission } from '../middleware/rateLimit.middleware';
 
 const router = Router();
 const pantryController = new PantryController();
@@ -21,7 +21,13 @@ router.post(
 
 // Single-pantry detail lookup. Auth is optional (anyone can view a pantry) and
 // it is intentionally not behind rateLimitSearch so opening details doesn't
-// consume a user's search quota.
-router.get('/:id', optionalAuth, pantryController.getPantryById.bind(pantryController));
+// consume a user's search quota; rateLimitBrowse (separate buckets) only
+// throttles bulk walking.
+router.get(
+  '/:id',
+  optionalAuth,
+  rateLimitBrowse,
+  pantryController.getPantryById.bind(pantryController)
+);
 
 export default router;
