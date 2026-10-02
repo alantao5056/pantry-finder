@@ -55,8 +55,8 @@ onBeforeUnmount(() => clearInterval(timer))
 type Verdict = 'same' | 'differ' | 'partial' | 'none'
 
 interface Cell {
-  /** Best candidate first; empty when the LLM didn't propose the field. */
-  candidates: MappingCandidate[]
+  /** The LLM's best candidate; undefined when it didn't propose the field. */
+  best: MappingCandidate | undefined
   matchesStored: boolean
 }
 
@@ -82,10 +82,10 @@ const rows = computed<Row[]>(() => {
   if (!d) return []
   return d.current.map(({ target, value: stored }) => {
     const cells = d.results.map((r): Cell => {
-      const candidates = r.proposals.find((p) => p.target === target)?.candidates ?? []
-      return { candidates, matchesStored: !!candidates[0] && sameTargetValue(target, candidates[0].value, stored) }
+      const best = r.proposals.find((p) => p.target === target)?.candidates[0]
+      return { best, matchesStored: !!best && sameTargetValue(target, best.value, stored) }
     })
-    const found = cells.flatMap((c, i) => (c.candidates[0] ? [{ value: c.candidates[0].value, result: d.results[i]! }] : []))
+    const found = cells.flatMap((c, i) => (c.best ? [{ value: c.best.value, result: d.results[i]! }] : []))
     let verdict: Verdict
     let verdictLabel: string
     if (!found.length) {
@@ -293,31 +293,20 @@ const rerun = async () => {
                 <div><TargetValueView :value="row.stored" /></div>
 
                 <div v-for="(cell, i) in row.cells" :key="data.results[i]!.provider" class="flex flex-col gap-2 min-w-0">
-                  <span v-if="!cell.candidates.length" class="text-sm text-(--ui-text-dimmed)">Not found</span>
+                  <span v-if="!cell.best" class="text-sm text-(--ui-text-dimmed)">Not found</span>
                   <template v-else>
-                    <TargetValueView :value="cell.candidates[0]!.value" />
+                    <TargetValueView :value="cell.best.value" />
                     <div class="flex flex-wrap gap-1">
-                      <UBadge v-if="cell.candidates[0]!.uncertain" label="Unsure" color="warning" variant="subtle" size="sm" />
+                      <UBadge v-if="cell.best.uncertain" label="Unsure" color="warning" variant="subtle" size="sm" />
                       <UBadge v-if="cell.matchesStored" label="= stored" color="neutral" variant="outline" size="sm" />
-                      <UBadge
-                        v-if="cell.candidates.length > 1"
-                        :label="`+${cell.candidates.length - 1} more`"
-                        color="neutral"
-                        variant="subtle"
-                        size="sm"
-                      />
                     </div>
-                    <template v-if="isOpen(row.target)">
-                      <div v-for="(c, n) in cell.candidates" :key="n" class="flex flex-col gap-1">
-                        <div class="text-xs text-(--ui-text-muted) flex flex-wrap gap-x-2">
-                          <span v-if="cell.candidates.length > 1">#{{ n + 1 }}</span>
-                          <ULink :to="c.url" target="_blank" class="truncate">{{ c.url }}</ULink>
-                          <span v-if="c.textAnchor">under “{{ c.textAnchor }}”</span>
-                        </div>
-                        <pre class="raw-text">{{ c.rawText }}</pre>
-                        <TargetValueView v-if="n > 0" :value="c.value" />
+                    <div v-if="isOpen(row.target)" class="flex flex-col gap-1">
+                      <div class="text-xs text-(--ui-text-muted) flex flex-wrap gap-x-2">
+                        <ULink :to="cell.best.url" target="_blank" class="truncate">{{ cell.best.url }}</ULink>
+                        <span v-if="cell.best.textAnchor">under “{{ cell.best.textAnchor }}”</span>
                       </div>
-                    </template>
+                      <pre class="raw-text">{{ cell.best.rawText }}</pre>
+                    </div>
                   </template>
                 </div>
               </div>
