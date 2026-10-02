@@ -5,6 +5,7 @@
 import { createHash } from 'node:crypto';
 import {
   normalizeTargetValue,
+  sameTargetValue,
   type MappingCandidate,
   type TargetProposal,
 } from '@pantry-finder/shared';
@@ -104,7 +105,9 @@ export function toCandidates(pages: LoadedPage[], raw: RawProposal[]): TargetPro
             uncertain: c.uncertain,
           };
         })
-        .filter((c): c is MappingCandidate => c !== null),
+        .filter((c): c is MappingCandidate => c !== null)
+        // A site often repeats a value (body and footer); keep the LLM's best region for each.
+        .filter((c, i, all) => all.findIndex((o) => sameTargetValue(r.target, o.value, c.value)) === i),
     }))
     .filter((p) => p.candidates.length > 0);
 }
