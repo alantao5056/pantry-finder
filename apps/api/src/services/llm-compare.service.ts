@@ -1,5 +1,5 @@
 import { Timestamp } from 'firebase-admin/firestore';
-import type { LlmCompareDetail, LlmCompareSummary } from '@pantry-finder/shared';
+import type { LlmCompareDetail, LlmCompareSummary, LlmProvider, LlmSettings } from '@pantry-finder/shared';
 import { COLLECTIONS, type LlmCompareDocument, type PantryDocument } from '@pantry-finder/shared/firestore';
 import { db } from '../config/firebase';
 
@@ -55,12 +55,17 @@ export class LlmCompareService {
       serviceNames: doc.serviceNames ?? [],
       current: doc.current ?? [],
       results: doc.results ?? [],
+      settings: doc.settings,
       error: doc.error,
     };
   }
 
-  /** Queues a comparison for the worker. */
-  public async start(pantryId: string, requestedBy: string): Promise<LlmCompareSummary> {
+  /** Queues a comparison for the worker; `settings` are validated by the caller. */
+  public async start(
+    pantryId: string,
+    requestedBy: string,
+    settings: Partial<Record<LlmProvider, LlmSettings>>,
+  ): Promise<LlmCompareSummary> {
     const pantrySnap = await db.collection(COLLECTIONS.pantries).doc(pantryId).get();
     if (!pantrySnap.exists) throw new LlmCompareError('pantry_not_found');
     const pantry = pantrySnap.data() as PantryDocument;
@@ -72,6 +77,7 @@ export class LlmCompareService {
       status: 'queued',
       requestedBy,
       createdAt: Timestamp.now(),
+      ...(Object.keys(settings).length ? { settings } : {}),
     };
     const ref = await this.comparesCol.add(doc);
     return toSummary(ref.id, doc);

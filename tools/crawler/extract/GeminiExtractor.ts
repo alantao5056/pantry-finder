@@ -3,6 +3,7 @@
  * Models (ai.google.dev/gemini-api/docs/models, 2026-10): `gemini-3.5-flash-lite`
  * (cheapest), `gemini-3.8-flash`, `gemini-3.1-pro-preview`.
  */
+import type { GeminiReasoningEffort, LlmSettings } from '@pantry-finder/shared';
 import { OpenAiChatExtractor } from './OpenAiChatExtractor.js';
 
 export class GeminiExtractor extends OpenAiChatExtractor {
@@ -18,9 +19,13 @@ export class GeminiExtractor extends OpenAiChatExtractor {
   constructor(
     apiKey: string,
     model: string,
-    private readonly reasoningEffort: string,
+    private readonly reasoningEffort: GeminiReasoningEffort,
   ) {
     super(apiKey, model);
+  }
+
+  get settings(): LlmSettings {
+    return { model: this.model, reasoningEffort: this.reasoningEffort };
   }
 
   protected extraBody(): Record<string, unknown> {

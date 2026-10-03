@@ -339,7 +339,11 @@ Decisions made while building M2, on top of the design above. Usage:
   only in URL and thinking control (`reasoning_effort`; Gemini 3 can't switch
   thinking off). `extract/factory.ts` builds the extractor for a run's
   `options.llm` (default DeepSeek; chosen with `--llm` or in the admin), and
-  the run doc records the model id used.
+  the run doc records the model id used. `options.settings` (`LlmSettings`)
+  optionally overrides the env model and thinking: DeepSeek thinking is off
+  unless an effort (`low` / `high` / `max`) is set; Gemini takes a
+  `reasoning_effort`. Comparisons take the same settings per provider
+  (`llm_compares.settings`) and store the resolved ones on each result.
 - **One-pantry comparison:** the admin queues an `llm_compares` doc; the worker
   fetches the site once, runs the first-visit extraction for every target
   through both providers and stores the results side by side (stored value,

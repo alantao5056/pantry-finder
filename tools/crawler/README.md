@@ -26,6 +26,12 @@ Two LLMs are supported, behind one `Extractor` interface (`extract/`):
 the CLI, or the LLM choice on the admin's Crawler page. A provider without a
 key only fails the runs that ask for it.
 
+The env sets the defaults; a run can override them per provider (admin Crawler
+page, LLM eval comparison, or CLI flags): the model (from `LLM_MODELS` in
+`@pantry-finder/shared`), DeepSeek thinking (off unless an effort `low` /
+`high` / `max` is chosen) and the Gemini reasoning effort (`minimal` / `low` /
+`medium` / `high`, default `GEMINI_REASONING_EFFORT`).
+
 `REDIS_URL` points at the Redis the environment's API caches in. After each
 automatic update the crawler deletes the API's cached copies of that pantry
 (detail page and city list), so the site shows the change at once; without it
@@ -58,6 +64,8 @@ npm run crawl:dev01                          # dry run on the 100 least recently
 npm run crawl:dev01 -- --limit 5 --apply     # 5 of them, writing results
 npm run crawl:dev01 -- --pantry <pantryId>   # one pantry (any site)
 npm run crawl:dev01 -- --llm gemini          # with Gemini instead of DeepSeek
+npm run crawl:dev01 -- --model deepseek-v4-pro --thinking high   # DeepSeek Pro with thinking
+npm run crawl:dev01 -- --llm gemini --effort minimal             # Gemini effort override
 ```
 
 Each run takes the `--limit` (default 100) pantries of the crawl queue with the

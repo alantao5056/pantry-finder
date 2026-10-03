@@ -155,6 +155,64 @@ export function isLlmProvider(value: unknown): value is LlmProvider {
   return (LLM_PROVIDERS as readonly unknown[]).includes(value);
 }
 
+/** DeepSeek `reasoning_effort` when thinking is on (api-docs.deepseek.com, 2026-10). */
+export type DeepSeekReasoningEffort = 'low' | 'high' | 'max';
+export const DEEPSEEK_REASONING_EFFORTS: readonly DeepSeekReasoningEffort[] = ['low', 'high', 'max'];
+
+/** Gemini `reasoning_effort`; the lowest a model accepts depends on the model. */
+export type GeminiReasoningEffort = 'minimal' | 'low' | 'medium' | 'high';
+export const GEMINI_REASONING_EFFORTS: readonly GeminiReasoningEffort[] = ['minimal', 'low', 'medium', 'high'];
+
+/** One provider's settings for a run or comparison; a field left out uses the env default. */
+export interface LlmSettings {
+  model?: string;
+  /** DeepSeek only: absent = thinking off; set = on, with this effort. */
+  thinking?: DeepSeekReasoningEffort;
+  /** Gemini only: absent = GEMINI_REASONING_EFFORT. */
+  reasoningEffort?: GeminiReasoningEffort;
+}
+
+/** The models offered in the admin; add prices for new ones to the admin's MODEL_PRICES. */
+export const LLM_MODELS: Record<LlmProvider, readonly string[]> = {
+  deepseek: ['deepseek-flash', 'deepseek-v4-pro'],
+  gemini: [
+    'gemini-3.1-flash-lite',
+    'gemini-3.5-flash-lite',
+    'gemini-3.5-flash',
+    'gemini-3.6-flash',
+    'gemini-3.7-flash',
+    'gemini-3.8-flash',
+    'gemini-3.1-pro-preview',
+  ],
+};
+
+/** Null when `value` is valid `LlmSettings` for the provider, else what is wrong. */
+export function llmSettingsError(provider: LlmProvider, value: unknown): string | null {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return 'settings must be an object.';
+  const allowed: (keyof LlmSettings)[] = ['model', provider === 'deepseek' ? 'thinking' : 'reasoningEffort'];
+  for (const [key, v] of Object.entries(value)) {
+    if (v === undefined) continue;
+    if (!(allowed as string[]).includes(key)) return `${key} is not a ${LLM_PROVIDER_LABELS[provider]} setting.`;
+  }
+  const s = value as LlmSettings;
+  if (s.model !== undefined && !LLM_MODELS[provider].includes(s.model)) {
+    return `model must be one of ${LLM_MODELS[provider].join(', ')}.`;
+  }
+  if (s.thinking !== undefined && !DEEPSEEK_REASONING_EFFORTS.includes(s.thinking)) {
+    return `thinking must be one of ${DEEPSEEK_REASONING_EFFORTS.join(', ')}.`;
+  }
+  if (s.reasoningEffort !== undefined && !GEMINI_REASONING_EFFORTS.includes(s.reasoningEffort)) {
+    return `reasoningEffort must be one of ${GEMINI_REASONING_EFFORTS.join(', ')}.`;
+  }
+  return null;
+}
+
+/** "thinking high", "thinking off", "effort low", "effort (env)". */
+export function llmSettingsLabel(provider: LlmProvider, settings: LlmSettings | undefined): string {
+  if (provider === 'deepseek') return `thinking ${settings?.thinking ?? 'off'}`;
+  return `effort ${settings?.reasoningEffort ?? '(env)'}`;
+}
+
 export interface CrawlRunSummary {
   id: string;
   env: string;
@@ -180,6 +238,8 @@ export interface CrawlRunOptions {
   pantryId?: string;
   /** Absent on runs from before the choice existed (DeepSeek). */
   llm?: LlmProvider;
+  /** Absent: env defaults (and DeepSeek thinking off). */
+  settings?: LlmSettings;
 }
 
 export interface ListCrawlRunsResponse {
@@ -194,6 +254,8 @@ export interface StartCrawlRunRequest {
   pantryId?: string;
   /** Default DeepSeek. */
   llm?: LlmProvider;
+  /** For `llm`; default the env settings. */
+  settings?: LlmSettings;
 }
 
 export const DEFAULT_CRAWL_LIMIT = 100;
@@ -536,6 +598,8 @@ export interface LlmCompareResult {
   inputTokens: number;
   outputTokens: number;
   durationMs: number;
+  /** The settings the call used, env defaults resolved; absent on older comparisons. */
+  settings?: LlmSettings;
   error?: string;
 }
 
@@ -559,12 +623,16 @@ export interface LlmCompareDetail extends LlmCompareSummary {
   /** Every target asked for, with the pantry's stored value. */
   current: { target: MappingTarget; value: TargetValue }[];
   results: LlmCompareResult[];
+  /** As requested (for running it again); absent providers used the env settings. */
+  settings?: Partial<Record<LlmProvider, LlmSettings>>;
   /** Why the comparison as a whole failed (site unreachable, …). */
   error?: string;
 }
 
 export interface StartLlmCompareRequest {
   pantryId: string;
+  /** Per provider; default the env settings. */
+  settings?: Partial<Record<LlmProvider, LlmSettings>>;
 }
 
 export interface ListLlmComparesResponse {

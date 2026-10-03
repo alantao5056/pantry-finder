@@ -1,10 +1,13 @@
 <script setup lang="ts">
+import { LLM_PROVIDERS, LLM_PROVIDER_LABELS } from '@pantry-finder/shared'
 import type {
   ListLlmComparesResponse,
   ListLlmEvalsResponse,
   LlmCompareSummary,
   LlmEvalModelStats,
   LlmEvalSummary,
+  LlmProvider,
+  LlmSettings,
   StartLlmCompareRequest,
 } from '@pantry-finder/shared'
 
@@ -32,6 +35,7 @@ const refreshAll = async () => {
 // ---- compare on one pantry ----
 
 const pantryId = ref('')
+const settings = reactive<Record<LlmProvider, LlmSettings>>({ deepseek: {}, gemini: {} })
 const starting = ref(false)
 
 const startCompare = async () => {
@@ -39,7 +43,7 @@ const startCompare = async () => {
   if (!id) return
   starting.value = true
   try {
-    const body: StartLlmCompareRequest = { pantryId: id }
+    const body: StartLlmCompareRequest = { pantryId: id, settings }
     const compare = await api<LlmCompareSummary>('/admin/llm-compares', { method: 'POST', body })
     await navigateTo(`/llm-evals/compare/${compare.id}`)
   } catch (err) {
@@ -77,6 +81,12 @@ const costPerThousandSites = (e: LlmEvalSummary, m: LlmEvalModelStats) => {
         <h2 class="font-medium">Compare DeepSeek and Gemini on one pantry</h2>
       </template>
       <div class="flex flex-col gap-4">
+        <div class="grid gap-4 md:grid-cols-2">
+          <div v-for="p in LLM_PROVIDERS" :key="p" class="flex flex-col gap-2">
+            <h3 class="text-sm font-medium">{{ LLM_PROVIDER_LABELS[p] }}</h3>
+            <LlmSettingsFields v-model="settings[p]" :provider="p" />
+          </div>
+        </div>
         <form class="flex flex-wrap items-end gap-4" @submit.prevent="startCompare">
           <UFormField label="Pantry ID">
             <UInput v-model="pantryId" placeholder="Pantry ID" class="w-64" />

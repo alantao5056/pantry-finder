@@ -3,6 +3,10 @@
  * default: fetches and calls the LLM, prints what it would do, writes nothing.
  *
  *   npm run crawl:dev01 -- [--limit N] [--pantry <id>] [--llm deepseek|gemini] [--concurrency N] [--apply]
+ *                          [--model <id>] [--thinking low|high|max] [--effort minimal|low|medium|high]
+ *
+ * `--model` overrides DEEPSEEK_MODEL / GEMINI_MODEL; `--thinking` turns DeepSeek
+ * thinking on (off by default); `--effort` overrides GEMINI_REASONING_EFFORT.
  *
  * Each run takes the `--limit` (default 100) least recently crawled pantries,
  * so repeated runs rotate through all of them; an interrupted run's leftovers
@@ -10,7 +14,7 @@
  * admin (Crawler page), executed by worker.ts.
  */
 import { Timestamp } from 'firebase-admin/firestore';
-import { DEFAULT_CRAWL_LIMIT } from '@pantry-finder/shared';
+import { DEFAULT_CRAWL_LIMIT, llmSettingsLabel } from '@pantry-finder/shared';
 import { COLLECTIONS, type CrawlRunDocument } from '@pantry-finder/shared/firestore';
 import { Fetcher } from './fetch/fetcher.js';
 import { createExtractor } from './extract/factory.js';
@@ -21,6 +25,7 @@ import {
   initFirestore,
   intFlag,
   llmFlag,
+  llmSettingsFlags,
   peakHourWarning,
   requireEnvArg,
   requireEnvVar,
@@ -33,13 +38,23 @@ const apply = hasFlag('apply');
 const concurrency = intFlag('concurrency') ?? 8;
 const { db, projectId } = initFirestore();
 
-const extractor = createExtractor(llmFlag());
+const llm = llmFlag();
+const settings = llmSettingsFlags(llm);
+const extractor = createExtractor(llm, settings);
 const fetcher = new Fetcher(requireEnvVar('CRAWLER_CONTACT'));
 
-console.log(`${apply ? 'APPLYING' : 'DRY RUN'}: crawl (env ${env}, project ${projectId}, model ${extractor.model})`);
+console.log(
+  `${apply ? 'APPLYING' : 'DRY RUN'}: crawl (env ${env}, project ${projectId}, model ${extractor.model}, ` +
+    `${llmSettingsLabel(llm, extractor.settings)})`,
+);
 peakHourWarning(extractor.provider);
 
-const options = { limit: intFlag('limit') ?? DEFAULT_CRAWL_LIMIT, pantryId: flag('pantry'), llm: extractor.provider };
+const options = {
+  limit: intFlag('limit') ?? DEFAULT_CRAWL_LIMIT,
+  pantryId: flag('pantry'),
+  llm,
+  settings: Object.keys(settings).length ? settings : undefined,
+};
 let runRef: FirebaseFirestore.DocumentReference | null = null;
 
 if (apply) {

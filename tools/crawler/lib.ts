@@ -12,7 +12,10 @@ import {
   LLM_PROVIDERS,
   isLlmProvider,
   isPeakHour,
+  llmSettingsError,
+  pruneUndefined,
   type LlmProvider,
+  type LlmSettings,
 } from '@pantry-finder/shared';
 import { consoleLogger, type Logger } from './logger.js';
 
@@ -93,6 +96,19 @@ export function llmFlag(): LlmProvider {
   const raw = flag('llm') ?? DEFAULT_LLM_PROVIDER;
   if (!isLlmProvider(raw)) throw new Error(`--llm must be one of ${LLM_PROVIDERS.join(', ')} (got ${raw}).`);
   return raw;
+}
+
+/** `--model`, `--thinking` (DeepSeek) and `--effort` (Gemini) for the provider. */
+export function llmSettingsFlags(provider: LlmProvider): LlmSettings {
+  const settings = pruneUndefined({
+    model: flag('model'),
+    thinking: flag('thinking'),
+    reasoningEffort: flag('effort'),
+  }) as LlmSettings;
+  const error = llmSettingsError(provider, settings);
+  // The message names the setting (reasoningEffort = --effort).
+  if (error) throw new Error(`--model / --thinking / --effort: ${error}`);
+  return settings;
 }
 
 /** DeepSeek prices double at peak time (`isPeakHour`); runs are best started outside it. */

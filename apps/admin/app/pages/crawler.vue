@@ -7,6 +7,7 @@ import {
   LLM_PROVIDER_LABELS,
   MAX_CRAWL_LIMIT,
   isPeakHour,
+  llmSettingsLabel,
 } from '@pantry-finder/shared'
 import type {
   CrawlRunLogResponse,
@@ -15,6 +16,7 @@ import type {
   CrawlRunSummary,
   ListCrawlRunsResponse,
   LlmProvider,
+  LlmSettings,
   StartCrawlRunRequest,
 } from '@pantry-finder/shared'
 import type { TableColumn } from '@nuxt/ui'
@@ -63,17 +65,29 @@ const MODE_ITEMS: { label: string; value: CrawlRunMode; description: string }[] 
 
 const LLM_ITEMS = LLM_PROVIDERS.map((value) => ({ label: LLM_PROVIDER_LABELS[value], value }))
 
-const form = reactive<{ mode: CrawlRunMode; llm: LlmProvider; limit: number; pantryId: string }>({
+const form = reactive<{
+  mode: CrawlRunMode
+  llm: LlmProvider
+  /** Per provider, so switching LLMs keeps each one's choices. */
+  settings: Record<LlmProvider, LlmSettings>
+  limit: number
+  pantryId: string
+}>({
   mode: 'dry-run',
   llm: DEFAULT_LLM_PROVIDER,
+  settings: { deepseek: {}, gemini: {} },
   limit: DEFAULT_CRAWL_LIMIT,
   pantryId: '',
 })
 const peak = isPeakHour()
 
-/** "Gemini · gemini-3.5-flash-lite"; the model is known once the worker picked the run up. */
-const llmLine = (run: CrawlRunSummary) =>
-  [run.options.llm && LLM_PROVIDER_LABELS[run.options.llm], run.model].filter(Boolean).join(' · ')
+/** "Gemini · gemini-3.5-flash-lite · effort low"; the model is known once the worker picked the run up. */
+const llmLine = (run: CrawlRunSummary) => {
+  const llm = run.options.llm
+  return [llm && LLM_PROVIDER_LABELS[llm], run.model, llm && llmSettingsLabel(llm, run.options.settings)]
+    .filter(Boolean)
+    .join(' · ')
+}
 const confirmOpen = ref(false)
 const starting = ref(false)
 
@@ -85,9 +99,10 @@ const requestStart = () => {
 const start = async () => {
   starting.value = true
   try {
+    const llm = { llm: form.llm, settings: form.settings[form.llm] }
     const body: StartCrawlRunRequest = form.pantryId.trim()
-      ? { mode: form.mode, llm: form.llm, pantryId: form.pantryId.trim() }
-      : { mode: form.mode, llm: form.llm, limit: form.limit }
+      ? { mode: form.mode, ...llm, pantryId: form.pantryId.trim() }
+      : { mode: form.mode, ...llm, limit: form.limit }
     const run = await api<CrawlRunSummary>('/admin/crawl-runs', { method: 'POST', body })
     confirmOpen.value = false
     toast.add({ title: 'Crawl queued', description: 'The crawler worker picks it up in a moment.', color: 'success' })
@@ -198,6 +213,7 @@ onBeforeUnmount(() => clearInterval(timer))
       <div class="flex flex-col gap-4">
         <URadioGroup v-model="form.mode" :items="MODE_ITEMS" orientation="horizontal" />
         <URadioGroup v-model="form.llm" :items="LLM_ITEMS" legend="LLM" orientation="horizontal" />
+        <LlmSettingsFields :key="form.llm" v-model="form.settings[form.llm]" :provider="form.llm" />
         <div class="flex flex-wrap items-end gap-4">
           <UFormField label="Pantries" hint="least recently crawled first">
             <UInputNumber
@@ -343,7 +359,8 @@ onBeforeUnmount(() => clearInterval(timer))
         <p class="text-sm">
           Crawls
           {{ form.pantryId.trim() ? `pantry ${form.pantryId.trim()}` : `the ${form.limit} least recently crawled pantries` }}
-          with {{ LLM_PROVIDER_LABELS[form.llm] }} and <strong>writes the results</strong>: confirmed mappings update live pantry data (revertible from the
+          with {{ LLM_PROVIDER_LABELS[form.llm] }} ({{ form.settings[form.llm].model ?? 'env model' }},
+          {{ llmSettingsLabel(form.llm, form.settings[form.llm]) }}) and <strong>writes the results</strong>: confirmed mappings update live pantry data (revertible from the
           change log) and new findings go to the review queue.
         </p>
       </template>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { LLM_PROVIDER_LABELS, sameTargetValue } from '@pantry-finder/shared'
+import { LLM_PROVIDER_LABELS, llmSettingsLabel, sameTargetValue } from '@pantry-finder/shared'
 import type {
   LlmCompareDetail,
   LlmCompareResult,
@@ -76,6 +76,9 @@ const VERDICT_COLORS: Record<Verdict, 'success' | 'warning' | 'info' | 'neutral'
 }
 
 const label = (r: LlmCompareResult) => LLM_PROVIDER_LABELS[r.provider]
+/** "deepseek-v4-pro · thinking high"; older comparisons stored no settings. */
+const modelLine = (r: LlmCompareResult) =>
+  r.settings ? `${r.model} · ${llmSettingsLabel(r.provider, r.settings)}` : r.model
 
 const rows = computed<Row[]>(() => {
   const d = data.value
@@ -148,7 +151,7 @@ const rerun = async () => {
   if (!data.value) return
   rerunning.value = true
   try {
-    const body: StartLlmCompareRequest = { pantryId: data.value.pantryId }
+    const body: StartLlmCompareRequest = { pantryId: data.value.pantryId, settings: data.value.settings }
     const compare = await api<LlmCompareSummary>('/admin/llm-compares', { method: 'POST', body })
     await navigateTo(`/llm-evals/compare/${compare.id}`)
   } catch (err) {
@@ -208,7 +211,7 @@ const rerun = async () => {
             <template #header>
               <div class="flex flex-wrap items-baseline gap-2">
                 <span class="font-semibold">{{ label(r) }}</span>
-                <span class="text-sm font-mono text-(--ui-text-muted)">{{ r.model }}</span>
+                <span class="text-sm font-mono text-(--ui-text-muted)">{{ modelLine(r) }}</span>
               </div>
             </template>
             <UAlert v-if="r.error" color="error" variant="subtle" :title="r.error" />
@@ -266,7 +269,7 @@ const rerun = async () => {
                 <div>Stored now</div>
                 <div v-for="r in data.results" :key="r.provider">
                   {{ label(r) }}
-                  <div class="font-normal font-mono normal-case text-(--ui-text-muted)">{{ r.model }}</div>
+                  <div class="font-normal font-mono normal-case text-(--ui-text-muted)">{{ modelLine(r) }}</div>
                 </div>
               </div>
 

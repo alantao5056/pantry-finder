@@ -20,7 +20,9 @@ import {
   DEFAULT_LLM_PROVIDER,
   type CrawlRunStatus,
   type LlmCompareStatus,
+  llmSettingsLabel,
   type LlmProvider,
+  type LlmSettings,
 } from '@pantry-finder/shared';
 import {
   COLLECTIONS,
@@ -52,12 +54,14 @@ const runs = db.collection(COLLECTIONS.crawlRuns);
 const compares = db.collection(COLLECTIONS.llmCompares);
 
 // Built on first use, so a provider without an API key only fails the runs that ask for it.
-const extractors = new Map<LlmProvider, Extractor>();
-function extractorFor(provider: LlmProvider): Extractor {
-  let extractor = extractors.get(provider);
+// One per provider and settings (the settings were validated by the API).
+const extractors = new Map<string, Extractor>();
+function extractorFor(provider: LlmProvider, settings: LlmSettings = {}): Extractor {
+  const key = `${provider}:${JSON.stringify(settings)}`;
+  let extractor = extractors.get(key);
   if (!extractor) {
-    extractor = createExtractor(provider);
-    extractors.set(provider, extractor);
+    extractor = createExtractor(provider, settings);
+    extractors.set(key, extractor);
   }
   return extractor;
 }
@@ -191,7 +195,8 @@ async function execute(ref: DocumentReference, run: CrawlRunDocument, extractor:
 
   log.info(
     `Run ${ref.id} by ${run.requestedBy ?? 'unknown'}: ${apply ? 'APPLYING' : 'DRY RUN (nothing is written)'} ` +
-      `(env ${env}, project ${projectId}, model ${extractor.model})`,
+      `(env ${env}, project ${projectId}, model ${extractor.model}, ` +
+      `${llmSettingsLabel(extractor.provider, extractor.settings)})`,
   );
   peakHourWarning(extractor.provider, log);
   try {
@@ -214,10 +219,10 @@ async function drain(): Promise<void> {
       const snap = await runs.where('status', '==', 'queued').get();
       const next = snap.docs.sort((a, b) => a.get('startedAt').toMillis() - b.get('startedAt').toMillis())[0];
       if (!next || shuttingDown) return;
-      const provider = (next.data() as CrawlRunDocument).options?.llm ?? DEFAULT_LLM_PROVIDER;
+      const options = (next.data() as CrawlRunDocument).options;
       let extractor: Extractor;
       try {
-        extractor = extractorFor(provider);
+        extractor = extractorFor(options?.llm ?? DEFAULT_LLM_PROVIDER, options?.settings);
       } catch (err) {
         await reject(next.ref, errorMessage(err));
         continue;

@@ -13,6 +13,7 @@ import {
   type LlmCompareResult,
   type LlmCompareStatus,
   type LlmProvider,
+  type LlmSettings,
 } from '@pantry-finder/shared';
 import { COLLECTIONS, getTargetValue, type LlmCompareDocument } from '@pantry-finder/shared/firestore';
 import { checkAddress } from './address.js';
@@ -27,7 +28,7 @@ export interface CompareConfig {
   fetcher: Fetcher;
   env: string;
   /** Throws when the provider isn't configured. */
-  extractorFor: (provider: LlmProvider) => Extractor;
+  extractorFor: (provider: LlmProvider, settings?: LlmSettings) => Extractor;
 }
 
 /** Moves a queued comparison to `running`; null if it was taken meanwhile. */
@@ -46,10 +47,11 @@ export async function runCompare(config: CompareConfig, ref: DocumentReference):
   const { db, env } = config;
   const doc = await claim(db, ref, env);
   if (!doc) return;
-  console.log(`Compare ${ref.id} by ${doc.requestedBy}: pantry ${doc.pantryId}`);
+  const settings = LLM_PROVIDERS.map((p) => `${p} ${JSON.stringify(doc.settings?.[p] ?? {})}`).join(', ');
+  console.log(`Compare ${ref.id} by ${doc.requestedBy}: pantry ${doc.pantryId} (${settings})`);
   let update: Partial<LlmCompareDocument>;
   try {
-    update = { ...(await compare(config, doc.pantryId)), status: 'completed' };
+    update = { ...(await compare(config, doc)), status: 'completed' };
   } catch (err) {
     console.warn(`Compare ${ref.id} failed: ${errorMessage(err)}`);
     update = { status: 'failed' satisfies LlmCompareStatus, error: errorMessage(err) };
@@ -57,8 +59,9 @@ export async function runCompare(config: CompareConfig, ref: DocumentReference):
   await ref.update(pruneUndefined({ ...update, finishedAt: Timestamp.now() }));
 }
 
-async function compare(config: CompareConfig, pantryId: string): Promise<Partial<LlmCompareDocument>> {
+async function compare(config: CompareConfig, doc: LlmCompareDocument): Promise<Partial<LlmCompareDocument>> {
   const { db, fetcher, extractorFor } = config;
+  const { pantryId } = doc;
   const snap = await db.collection(COLLECTIONS.pantries).doc(pantryId).get();
   const pantry = snap.data() as StoredPantry | undefined;
   if (!pantry) throw new Error('Pantry not found.');
@@ -77,13 +80,16 @@ async function compare(config: CompareConfig, pantryId: string): Promise<Partial
     LLM_PROVIDERS.map(async (provider): Promise<LlmCompareResult> => {
       const startedAt = Date.now();
       let model = '';
+      let settings: LlmSettings | undefined;
       try {
-        const extractor = extractorFor(provider);
+        const extractor = extractorFor(provider, doc.settings?.[provider]);
         model = extractor.model;
+        settings = extractor.settings;
         const { proposals, addresses, phones, usage } = await extractor.proposeMappings(forLlm, ctx);
         return {
           provider,
           model,
+          settings,
           proposals: toCandidates(site, proposals),
           addressCheck: checkAddress(pantry, addresses),
           phoneCheck: checkPhone(pantry, phones),
@@ -95,6 +101,7 @@ async function compare(config: CompareConfig, pantryId: string): Promise<Partial
         return {
           provider,
           model,
+          settings,
           proposals: [],
           phones: [],
           inputTokens: 0,

@@ -1,9 +1,15 @@
 /**
  * Extraction through an OpenAI-compatible chat completions API in JSON mode,
  * via Node's built-in fetch. The providers (DeepSeekExtractor, GeminiExtractor)
- * differ only in endpoint and in how they turn thinking down.
+ * differ only in endpoint and in how they set thinking.
  */
-import { parseTarget, type LlmProvider, type MappingTarget, type TargetValue } from '@pantry-finder/shared';
+import {
+  parseTarget,
+  type LlmProvider,
+  type LlmSettings,
+  type MappingTarget,
+  type TargetValue,
+} from '@pantry-finder/shared';
 import type { Extractor, PageForExtraction, PantryContext, RawProposal, Usage } from './Extractor.js';
 import {
   parseParseResponse,
@@ -28,6 +34,8 @@ export abstract class OpenAiChatExtractor implements Extractor {
     private readonly apiKey: string,
     readonly model: string,
   ) {}
+
+  abstract readonly settings: LlmSettings;
 
   /** Provider-specific request fields, on top of model / messages / JSON mode. */
   protected abstract extraBody(): Record<string, unknown>;

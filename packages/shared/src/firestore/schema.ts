@@ -14,6 +14,8 @@ import type {
   EvalVariantKey,
   LlmCompareResult,
   LlmCompareStatus,
+  LlmProvider,
+  LlmSettings,
   PantryChangeKind,
   ReviewItemStatus,
   ReviewItemType,
@@ -310,6 +312,8 @@ export interface LlmCompareDocument {
   requestedBy: string;
   createdAt: Timestamp;
   finishedAt?: Timestamp;
+  // Per provider, as requested; absent providers use the env settings.
+  settings?: Partial<Record<LlmProvider, LlmSettings>>;
   // The fields below are written by the worker.
   env?: string;
   url?: string;

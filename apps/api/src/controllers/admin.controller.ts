@@ -7,6 +7,8 @@ import type {
   CrawlRunMode,
   EvalGrade,
   EvalVariantKey,
+  LlmProvider,
+  LlmSettings,
   MappingTarget,
   PantryDraft,
   ReviewItemStatus,
@@ -24,8 +26,10 @@ import {
   isLlmProvider,
   isMappingTarget,
   isValidStateSlug,
+  llmSettingsError,
   normalizeEmail,
   parseTarget,
+  pruneUndefined,
 } from '@pantry-finder/shared';
 import { PantryWriteError, type PantryWriteErrorCode } from '@pantry-finder/shared/firestore';
 import { AuthedRequest } from '../middleware/auth.middleware';
@@ -101,6 +105,12 @@ const LLM_COMPARE_ERROR_STATUS: Record<LlmCompareErrorCode, { status: number; er
   pantry_not_found: { status: 404, error: 'Pantry not found.' },
   no_website: { status: 400, error: 'This pantry has no website to crawl.' },
 };
+
+/** Validated settings without undefined fields; undefined when nothing is set (env defaults). */
+function nonEmptySettings(settings: LlmSettings | undefined): LlmSettings | undefined {
+  const pruned = pruneUndefined(settings ?? {});
+  return Object.keys(pruned).length ? pruned : undefined;
+}
 
 const PANTRY_WRITE_ERROR_STATUS:Record<PantryWriteErrorCode, number> = {
   not_found: 404,
@@ -319,8 +329,17 @@ export class AdminController {
       res.status(400).json({ error: `llm must be one of ${LLM_PROVIDERS.join(', ')}.` });
       return;
     }
+    const settingsError = body.settings === undefined ? null : llmSettingsError(llm, body.settings);
+    if (settingsError) {
+      res.status(400).json({ error: `settings: ${settingsError}` });
+      return;
+    }
+    const settings = nonEmptySettings(body.settings as LlmSettings | undefined);
     await this.handleCrawlRunErrors(res, async () => {
-      const options = pantryId ? { pantryId, limit: 1, llm } : { limit: limit as number, llm };
+      // Firestore rejects undefined fields.
+      const options = pruneUndefined(
+        pantryId ? { pantryId, limit: 1, llm, settings } : { limit: limit as number, llm, settings },
+      );
       res.json(await this.crawlRunService.startRun(mode, options, req.user!.sub));
     });
   }
@@ -489,14 +508,34 @@ export class AdminController {
   }
 
   public async startLlmCompare(req: AuthedRequest, res: Response): Promise<void> {
-    const pantryId = str(((req.body ?? {}) as Record<string, unknown>).pantryId, 100);
+    const body = (req.body ?? {}) as Record<string, unknown>;
+    const pantryId = str(body.pantryId, 100);
     // A slash would make it a path into another collection.
     if (!pantryId || pantryId.includes('/')) {
       res.status(400).json({ error: 'pantryId is required.' });
       return;
     }
+    const raw = body.settings ?? {};
+    if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
+      res.status(400).json({ error: 'settings must be an object.' });
+      return;
+    }
+    const settings: Partial<Record<LlmProvider, LlmSettings>> = {};
+    for (const [provider, value] of Object.entries(raw)) {
+      if (!isLlmProvider(provider)) {
+        res.status(400).json({ error: `settings: ${provider} is not an LLM.` });
+        return;
+      }
+      const error = llmSettingsError(provider, value);
+      if (error) {
+        res.status(400).json({ error: `settings.${provider}: ${error}` });
+        return;
+      }
+      const s = nonEmptySettings(value as LlmSettings);
+      if (s) settings[provider] = s;
+    }
     await this.handleLlmCompareErrors(res, async () => {
-      res.json(await this.llmCompareService.start(pantryId, req.user!.sub));
+      res.json(await this.llmCompareService.start(pantryId, req.user!.sub, settings));
     });
   }
 
