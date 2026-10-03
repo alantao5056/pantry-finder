@@ -15,8 +15,8 @@ const FIELD_GUIDE = `Targets:
 - "contactName": a named contact person for the pantry (not the organization name).
 - "aboutUs": a short description of the food pantry / food ministry itself: what it does, who it serves, how long it has run, who runs it (as written on the site, may be condensed, max ~600 characters). When the pantry is run by a church or other larger organization, prefer text about the food program over the organization's general "About Us". Don't use church history, beliefs, worship, denominational statements or unrelated ministries. Fall back to the host organization's description only if it clearly mentions its food assistance, and set uncertain to true in that case.
 - "notes": practical information for people seeking food: eligibility, what to bring, registration, service area, drive-through, etc. Condense to max ~600 characters.
-- "schedules": the times when people can actually get food from the pantry (food distribution / pick-up hours). Not the opening hours of the church, agency or office that hosts it.
-- "services.<i>.schedules": hours of one specific service listed below, when the site gives hours for that service specifically.
+- "schedules": the pantry's own overall hours: the times when people can actually get food from the pantry (food distribution / pick-up hours). Not the opening hours of the church, agency or office that hosts it, and not hours that belong to one specific service listed below.
+- "services.<i>.schedules": hours of one specific service listed below, when the context (heading, nearby text, the service's name or category) shows the hours are for that service.
 - "services.<i>.notes": practical information that applies to one specific service listed below (its eligibility, what to bring, registration, how it works), when the site gives it for that service specifically. Condense to max ~300 characters. Don't repeat the pantry-wide "notes" here; leave it out when the site says nothing specific to that service.
 
 A schedule value is an array of {"weekDay","startTime","endTime","everyOtherWeekIndicator","notes"}:
@@ -28,10 +28,18 @@ A schedule value is an array of {"weekDay","startTime","endTime","everyOtherWeek
 Distribution hours vs. organization hours: a church or agency's office/building hours (e.g. "Office hours Mon–Fri 8:00 AM–5:00 PM") are usually NOT the pantry's food distribution times (e.g. "Food pantry: Tuesday 3:00–4:00 PM"). Only use hours the text explicitly ties to the food pantry / food distribution / pick-up. Never merge or substitute organization hours for distribution hours. Ignore office hours, worship services, thrift-store hours, volunteer shifts and events.
 If the pages only give the organization's general hours, leave schedules out. If it is unclear whether some hours are for food distribution, set uncertain to true.`;
 
+// Propose-only: the parse prompt's target is already fixed, so deciding which
+// target a set of hours belongs to doesn't apply there.
+const SCHEDULE_ASSIGNMENT = `Pantry schedules vs. service schedules: one set of hours belongs to exactly one target. Never return the same hours for both "schedules" and a "services.<i>.schedules" target, or for two services.
+- If the pages give only one set of hours, decide from context (headings, nearby text, the service names listed below) whether it is the pantry's overall hours ("schedules") or the hours of one specific service ("services.<i>.schedules"), and return it for that target only. If you can't tell, pick the more likely one and set uncertain to true.
+- If the pages give two or more different sets of hours, decide for each set what it describes: one may be the pantry's overall hours and another a service's hours, or they may be the hours of two different services (then leave "schedules" out). Don't merge different sets into one value.`;
+
 export function proposeSystemPrompt(): string {
   return `You extract facts about a food pantry from its website. The pages are given as numbered text blocks: "[p0b12] text".
 
 ${FIELD_GUIDE}
+
+${SCHEDULE_ASSIGNMENT}
 
 For each requested target that the pages actually state, return up to ${MAX_CANDIDATES} candidate regions, best first. A candidate is the smallest set of consecutive blocks (all on the same page) that contains the value, plus the value parsed from exactly that text. Do not guess values that aren't on the page; omit targets you can't find. Set "uncertain": true when you're unsure the region is right or the parse is exact.
 
