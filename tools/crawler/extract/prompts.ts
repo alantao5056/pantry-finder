@@ -15,8 +15,8 @@ const FIELD_GUIDE = `Targets:
 - "contactName": a named contact person for the pantry (not the organization name).
 - "aboutUs": a short description of the food pantry / food ministry itself: what it does, who it serves, how long it has run, who runs it (as written on the site, may be condensed, max ~600 characters). When the pantry is run by a church or other larger organization, prefer text about the food program over the organization's general "About Us". Don't use church history, beliefs, worship, denominational statements or unrelated ministries. Fall back to the host organization's description only if it clearly mentions its food assistance, and set uncertain to true in that case.
 - "notes": practical information for people seeking food: eligibility, what to bring, registration, service area, drive-through, etc. Condense to max ~600 characters.
-- "schedules": the pantry's own overall hours: the times when people can actually get food from the pantry (food distribution / pick-up hours). Not the opening hours of the church, agency or office that hosts it, and not hours that belong to one specific service listed below.
-- "services.<i>.schedules": hours of one specific service listed below, when the context (heading, nearby text, the service's name or category) shows the hours are for that service.
+- "schedules": the organization's overall opening hours: when the pantry organization, or the church, agency or office that hosts it, is open in general (headings like "Hours", "Office hours", "Open", "Building hours"). Usually the widest set of hours on the site. Not the hours of one activity such as food shopping, distribution or pick-up; those belong to a service.
+- "services.<i>.schedules": when one specific service listed below is available: food shopping / distribution / pick-up times, or a program's hours. Headings like "Shopping hours", "Pantry hours", "Distribution", "Pick-up" are service hours; match them to the service by its name or category.
 - "services.<i>.notes": practical information that applies to one specific service listed below (its eligibility, what to bring, registration, how it works), when the site gives it for that service specifically. Condense to max ~300 characters. Don't repeat the pantry-wide "notes" here; leave it out when the site says nothing specific to that service.
 
 A schedule value is an array of {"weekDay","startTime","endTime","everyOtherWeekIndicator","notes"}:
@@ -25,14 +25,18 @@ A schedule value is an array of {"weekDay","startTime","endTime","everyOtherWeek
 - One entry per day per time range.
 - everyOtherWeekIndicator: true only for "every other week".
 - Anything that doesn't fit (e.g. "2nd and 4th Tuesday of the month", "except holidays", "by appointment") goes in that entry's notes, and set uncertain to true when the pattern can't be represented exactly.
-Distribution hours vs. organization hours: a church or agency's office/building hours (e.g. "Office hours Mon–Fri 8:00 AM–5:00 PM") are usually NOT the pantry's food distribution times (e.g. "Food pantry: Tuesday 3:00–4:00 PM"). Only use hours the text explicitly ties to the food pantry / food distribution / pick-up. Never merge or substitute organization hours for distribution hours. Ignore office hours, worship services, thrift-store hours, volunteer shifts and events.
-If the pages only give the organization's general hours, leave schedules out. If it is unclear whether some hours are for food distribution, set uncertain to true.`;
+Organization hours vs. service hours: the times when people can get food (e.g. "Food pantry: Tuesday 3:00–4:00 PM", "Shopping hours") are the hours of a service, and are usually narrower than the organization's general hours (e.g. "Office hours Mon–Fri 8:00 AM–5:00 PM"). Service hours go to the matching "services.<i>.schedules" and never to "schedules"; general / office hours go to "schedules" and never to a service. Never merge the two.
+- If the pages give no general hours, hours of another activity that show when the place is staffed (e.g. donation / drop-off hours) are the organization's hours: use them for "schedules". If general hours are also given, use the general hours and ignore the donation hours.
+- If hours are for an activity that matches none of the services listed below, leave them out; don't fall back to "schedules".
+- Ignore worship services, thrift-store hours, volunteer shifts and one-off events.
+- If it is unclear whether some hours are general or for one service, set uncertain to true.
+Example: a page with "Shopping hours: Monday 12:30 pm - 2:30 pm, Friday 9:30 am - 12:00 pm" and "Donation hours: Monday-Saturday 8 a.m. to 5 p.m." gives the shopping hours for the food pantry service's "services.<i>.schedules" and the donation hours for "schedules".`;
 
 // Propose-only: the parse prompt's target is already fixed, so deciding which
 // target a set of hours belongs to doesn't apply there.
-const SCHEDULE_ASSIGNMENT = `Pantry schedules vs. service schedules: one set of hours belongs to exactly one target. Never return the same hours for both "schedules" and a "services.<i>.schedules" target, or for two services.
-- If the pages give only one set of hours, decide from context (headings, nearby text, the service names listed below) whether it is the pantry's overall hours ("schedules") or the hours of one specific service ("services.<i>.schedules"), and return it for that target only. If you can't tell, pick the more likely one and set uncertain to true.
-- If the pages give two or more different sets of hours, decide for each set what it describes: one may be the pantry's overall hours and another a service's hours, or they may be the hours of two different services (then leave "schedules" out). Don't merge different sets into one value.`;
+const SCHEDULE_ASSIGNMENT = `Assigning hours to targets: one set of hours belongs to exactly one target. Never return the same hours for both "schedules" and a "services.<i>.schedules" target, or for two services.
+- If the pages give only one set of hours, decide from context (headings, nearby text, the service names listed below) whether it is the hours of one specific service ("services.<i>.schedules": tied to getting food or to a program) or the organization's general hours ("schedules"), and return it for that target only. If you can't tell, pick the more likely one and set uncertain to true.
+- If the pages give two or more different sets of hours, decide for each set what it describes: the narrower, activity-specific sets are service hours and the widest general set is the organization's hours, or they may be the hours of two different services (then leave "schedules" out). Don't merge different sets into one value.`;
 
 export function proposeSystemPrompt(): string {
   return `You extract facts about a food pantry from its website. The pages are given as numbered text blocks: "[p0b12] text".
@@ -74,7 +78,7 @@ export function parseSystemPrompt(): string {
 
 ${FIELD_GUIDE}
 
-Answer with JSON only: {"value": <string or schedule array>, "uncertain": <bool>}. If the text doesn't contain a value for the target, answer {"value": null, "uncertain": true}. For a schedules target, if the text only gives the organization's/office's hours and not food distribution hours, answer {"value": null, "uncertain": true}.`;
+Answer with JSON only: {"value": <string or schedule array>, "uncertain": <bool>}. If the text doesn't contain a value for the target, answer {"value": null, "uncertain": true}. The target is already decided: for a schedules target, parse the hours the text gives without judging whether they are organization or service hours.`;
 }
 
 export function parseUserPrompt(target: MappingTarget, rawText: string, ctx: PantryContext): string {
