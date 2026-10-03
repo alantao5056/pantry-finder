@@ -104,7 +104,7 @@ What a run does per pantry:
    `PantryFinderBot/1.0 (+CRAWLER_CONTACT)`). A page that looks client-rendered
    (almost no text) is flagged `needsBrowser` in `crawl_sources` and skipped.
 2. **Targets without a mapping** (phone, email, contact name, about, notes,
-   pantry hours, each service's hours): fetches up to 5 likely same-site pages
+   pantry hours, each service's hours and notes): fetches up to 5 likely same-site pages
    (hours/contact/about…), asks the LLM where each value is, and files one
    `new_mapping` review item with up to 3 candidate regions per target. Not
    repeated while that review is pending, nor while the pages are unchanged.

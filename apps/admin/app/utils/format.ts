@@ -77,13 +77,14 @@ const TEXT_TARGET_LABELS: Record<TextTarget, string> = {
   website: 'Website',
 }
 
-/** "Phone", "Hours (pantry)", "Hours — Food Bank" for `services.<i>.schedules`. */
+/** "Phone", "Hours (pantry)", "Hours — Food Bank" / "Notes — Food Bank" for `services.<i>.*`. */
 export const targetLabel = (target: MappingTarget, serviceNames: string[] = []): string => {
   const parsed = parseTarget(target)
   if (!parsed) return target
   if (parsed.kind === 'text') return TEXT_TARGET_LABELS[parsed.field]
   if (parsed.serviceIndex === null) return 'Hours (pantry)'
-  return `Hours — ${serviceNames[parsed.serviceIndex] ?? `service #${parsed.serviceIndex + 1}`}`
+  const service = serviceNames[parsed.serviceIndex] ?? `service #${parsed.serviceIndex + 1}`
+  return `${parsed.kind === 'serviceNotes' ? 'Notes' : 'Hours'} — ${service}`
 }
 
 export const SUSPICIOUS_REASON_LABELS: Record<SuspiciousReason, string> = {

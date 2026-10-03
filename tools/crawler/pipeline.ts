@@ -89,7 +89,7 @@ export function targetsFor(p: StoredPantry): MappingTarget[] {
     'aboutUs',
     'notes',
     'schedules',
-    ...(p.services ?? []).map((_s, i) => `services.${i}.schedules` as MappingTarget),
+    ...(p.services ?? []).flatMap((_s, i) => [`services.${i}.schedules`, `services.${i}.notes`] as MappingTarget[]),
   ];
 }
 

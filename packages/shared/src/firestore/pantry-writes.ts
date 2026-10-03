@@ -84,6 +84,7 @@ export function getTargetValue(pantry: StoredPantry, target: MappingTarget): Tar
   const parsed = parseTarget(target);
   if (!parsed) return undefined;
   if (parsed.kind === 'text') return pantry[parsed.field];
+  if (parsed.kind === 'serviceNotes') return pantry.services?.[parsed.serviceIndex]?.notes;
   if (parsed.serviceIndex === null) return pantry.schedules ?? [];
   return pantry.services?.[parsed.serviceIndex]?.schedules;
 }
@@ -112,7 +113,7 @@ export function planFieldUpdates(pantry: StoredPantry, updates: FieldUpdate[]): 
   for (const u of updates) {
     const parsed = parseTarget(u.target);
     if (!parsed) throw new PantryWriteError('bad_target', `Unknown target ${u.target}`);
-    if (parsed.kind === 'schedules' && parsed.serviceIndex !== null && !pantry.services?.[parsed.serviceIndex]) {
+    if (parsed.kind !== 'text' && parsed.serviceIndex !== null && !pantry.services?.[parsed.serviceIndex]) {
       throw new PantryWriteError('bad_target', `Pantry has no service #${parsed.serviceIndex}`);
     }
     const oldValue = getTargetValue(pantry, u.target);
@@ -163,6 +164,12 @@ export function writeFieldUpdates(
       // A new website goes to the front of the crawl queue; a cleared one
       // leaves it (tools/crawler/select.ts).
       if (parsed.field === 'website') update.lastCrawledAt = c.newValue === '' ? FieldValue.delete() : null;
+    } else if (parsed.kind === 'serviceNotes') {
+      // Emptied notes are dropped from the service rather than stored as ''.
+      services ??= (pantry.services ?? []).map((s) => ({ ...s }));
+      const { notes: _notes, ...rest } = services[parsed.serviceIndex];
+      services[parsed.serviceIndex] = c.newValue === '' ? rest : { ...rest, notes: c.newValue as string };
+      update.services = services;
     } else if (parsed.serviceIndex === null) {
       update.schedules = pruneUndefined(c.newValue);
     } else {

@@ -17,6 +17,7 @@ const FIELD_GUIDE = `Targets:
 - "notes": practical information for people seeking food: eligibility, what to bring, registration, service area, drive-through, etc. Condense to max ~600 characters.
 - "schedules": the times when people can actually get food from the pantry (food distribution / pick-up hours). Not the opening hours of the church, agency or office that hosts it.
 - "services.<i>.schedules": hours of one specific service listed below, when the site gives hours for that service specifically.
+- "services.<i>.notes": practical information that applies to one specific service listed below (its eligibility, what to bring, registration, how it works), when the site gives it for that service specifically. Condense to max ~300 characters. Don't repeat the pantry-wide "notes" here; leave it out when the site says nothing specific to that service.
 
 A schedule value is an array of {"weekDay","startTime","endTime","everyOtherWeekIndicator","notes"}:
 - weekDay: full English day name ("Monday").
@@ -71,7 +72,7 @@ Answer with JSON only: {"value": <string or schedule array>, "uncertain": <bool>
 export function parseUserPrompt(target: MappingTarget, rawText: string, ctx: PantryContext): string {
   const parsed = parseTarget(target);
   const service =
-    parsed?.kind === 'schedules' && parsed.serviceIndex !== null
+    parsed && parsed.kind !== 'text' && parsed.serviceIndex !== null
       ? ctx.services.find((s) => s.index === parsed.serviceIndex)
       : undefined;
   return `Pantry: ${ctx.name} (${ctx.city}, ${ctx.state})

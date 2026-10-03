@@ -51,8 +51,8 @@ on the page; fields are then located within that row.
 
 **Applied to live `pantries` automatically**, with a change-log entry per
 field, when the field mapping is already confirmed:
-`phone`, `email`, `schedules` (top-level or per-service), `aboutUs`, `notes`,
-`contactName`, `website`.
+`phone`, `email`, `schedules` (top-level or per-service), `aboutUs`, `notes`
+(top-level or per-service), `contactName`, `website`.
 
 **Always routed to human review:**
 
@@ -268,7 +268,8 @@ Decisions made while building M2, on top of the design above. Usage:
   candidate's raw text is read back through its selector, exactly as later runs
   read it, so the stored `lastRawHash` matches.
 - **Targets:** `phone`, `email`, `contactName`, `aboutUs`, `notes`, `schedules`,
-  `services.<i>.schedules` (`MappingTarget` in `packages/shared/src/crawl.ts`).
+  `services.<i>.schedules`, `services.<i>.notes` (`MappingTarget` in
+  `packages/shared/src/crawl.ts`).
   `email` (pantry field added with the crawler; public) is stored lowercased
   without `mailto:`.
 - **Address check:** the first-visit proposal call also asks the LLM for the
