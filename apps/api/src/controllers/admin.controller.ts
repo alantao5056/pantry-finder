@@ -34,7 +34,12 @@ import {
 import { PantryWriteError, type PantryWriteErrorCode } from '@pantry-finder/shared/firestore';
 import { AuthedRequest } from '../middleware/auth.middleware';
 import { ReviewError, ReviewService } from '../services/review.service';
-import { CrawlRunError, CrawlRunService, type CrawlRunErrorCode } from '../services/crawl-run.service';
+import {
+  CrawlRunError,
+  CrawlRunService,
+  LIST_LIMIT as CRAWL_RUN_LIST_LIMIT,
+  type CrawlRunErrorCode,
+} from '../services/crawl-run.service';
 import { MappingReviewService } from '../services/mapping-review.service';
 import { ChangeLogService } from '../services/change-log.service';
 import { LlmCompareError, LlmCompareService, type LlmCompareErrorCode } from '../services/llm-compare.service';
@@ -301,8 +306,13 @@ export class AdminController {
     });
   }
 
-  public async listCrawlRuns(_req: AuthedRequest, res: Response): Promise<void> {
-    res.json({ runs: await this.crawlRunService.listRuns() });
+  public async listCrawlRuns(req: AuthedRequest, res: Response): Promise<void> {
+    const limit = Number(req.query.limit ?? CRAWL_RUN_LIST_LIMIT);
+    if (!Number.isInteger(limit) || limit < 1 || limit > CRAWL_RUN_LIST_LIMIT) {
+      res.status(400).json({ error: `limit must be an integer from 1 to ${CRAWL_RUN_LIST_LIMIT}.` });
+      return;
+    }
+    res.json({ runs: await this.crawlRunService.listRuns(limit) });
   }
 
   public async getCrawlRun(req: AuthedRequest, res: Response): Promise<void> {

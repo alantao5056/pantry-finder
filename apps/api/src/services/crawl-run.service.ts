@@ -10,7 +10,7 @@ import { COLLECTIONS, CRAWL_RUN_LOG, CRAWL_STALE_MS, type CrawlRunLogDocument } 
 import { db } from '../config/firebase';
 import { CrawlRunDocument } from '../models/crawl-run.schema';
 
-const LIST_LIMIT = 50;
+export const LIST_LIMIT = 50;
 
 export type CrawlRunErrorCode = 'not_found' | 'active_run' | 'not_active';
 
@@ -53,8 +53,8 @@ export class CrawlRunService {
   private readonly runsCol = db.collection(COLLECTIONS.crawlRuns);
 
   /** Most recent runs first. */
-  public async listRuns(): Promise<CrawlRunSummary[]> {
-    const snapshot = await this.runsCol.orderBy('startedAt', 'desc').limit(LIST_LIMIT).get();
+  public async listRuns(limit = LIST_LIMIT): Promise<CrawlRunSummary[]> {
+    const snapshot = await this.runsCol.orderBy('startedAt', 'desc').limit(limit).get();
     return snapshot.docs.map((doc) => toSummary(doc.id, doc.data() as CrawlRunDocument));
   }
 
