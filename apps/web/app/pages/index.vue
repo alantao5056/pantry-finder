@@ -9,12 +9,12 @@ usePageSeo({
   brandSuffix: false,
 })
 
-// pantryCountDisplay / cityCountDisplay come from app/utils/siteStats.ts (auto-imported),
+// pantryCountDisplay / cityCountDisplay / stateCountDisplay come from app/utils/siteStats.ts (auto-imported),
 // which reads app/data/site-stats.json — regenerated from Firestore by the sitemap tool.
 const STATS = [
   { number: pantryCountDisplay, label: 'Food Pantries Listed',   icon: '🏪' },
   { number: cityCountDisplay,   label: 'Cities Covered',         icon: '📍' },
-  { number: '28K+',             label: 'Families Served Monthly', icon: '👨‍👩‍👧‍👦' },
+  { number: stateCountDisplay,  label: 'States Covered',         icon: '🗺️' },
   { number: '100%',             label: 'Free, Always',           icon: '💚' },
 ]
 
@@ -39,29 +39,7 @@ const CATEGORIES = [
   { icon: '🌿', label: 'Halal & Kosher' },
 ]
 
-const TESTIMONIALS = [
-  {
-    quote: 'I was too ashamed to ask for help, but PantryFinder made it feel simple and private. Found a pantry two blocks from my apartment within minutes.',
-    name: 'Maria T.', location: 'Newton, MA', avatar: 'MT', color: '#dcf4e6',
-  },
-  {
-    quote: 'As a pantry coordinator, getting listed here tripled our walk-in traffic. The families we now reach would have never found us otherwise.',
-    name: 'Pastor James K.', location: 'Waltham, MA', avatar: 'JK', color: '#faf5ec',
-  },
-  {
-    quote: 'The schedule info is so accurate. I drove 20 minutes and they were actually open — with halal options too. I cried, honestly.',
-    name: 'Aisha M.', location: 'Brighton, MA', avatar: 'AM', color: '#f0faf4',
-  },
-]
-
 const { tags: quickTags } = useNearbyTags()
-
-const OPERATOR_FEATURES = [
-  { icon: '⚡', text: 'Live in under 5 minutes' },
-  { icon: '📅', text: 'Real-time schedule management' },
-  { icon: '📊', text: "See who's visiting your listing" },
-  { icon: '💸', text: 'Completely free, forever' },
-]
 
 const searchBar = ref<{ setAddress: (value: string) => void } | null>(null)
 
@@ -291,53 +269,11 @@ onUnmounted(() => {
       </div>
     </section>
 
-    <!-- ══ TESTIMONIALS ══ -->
-    <section class="py-[100px] px-6 bg-white">
-      <div class="max-w-[1120px] mx-auto">
-        <div class="text-center mb-16">
-          <span class="tag-pill reveal" style="background: var(--cream-warm); color: #a07850;">Community Voices</span>
-          <h2
-            class="font-serif font-semibold reveal mt-4"
-            style="font-size: clamp(28px, 3.5vw, 46px); color: var(--text-dark); letter-spacing: -0.02em; line-height: 1.15;"
-          >
-            Real people,<br/>
-            <span class="font-serif italic font-medium" style="color: var(--green-mid);">real stories</span>
-          </h2>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div
-            v-for="(t, i) in TESTIMONIALS"
-            :key="t.name"
-            class="testimonial-card reveal"
-            :style="{ transitionDelay: `${i * 0.15}s` }"
-          >
-            <div class="flex gap-0.5">
-              <span v-for="n in 5" :key="n" style="color: #fc7e0a; font-size: 14px;">★</span>
-            </div>
-            <p class="text-[15px] leading-[1.75] font-light italic my-4 mb-6" style="color: var(--text-mid);">
-              "{{ t.quote }}"
-            </p>
-            <div class="flex items-center gap-3 pt-5 border-t" style="border-color: var(--border-soft);">
-              <div
-                class="w-10 h-10 rounded-full flex items-center justify-center font-semibold text-[13px] shrink-0"
-                :style="{ background: t.color, color: 'var(--green-dark)' }"
-              >{{ t.avatar }}</div>
-              <div>
-                <div class="font-semibold text-[14px]" style="color: var(--text-dark);">{{ t.name }}</div>
-                <div class="text-[13px]" style="color: var(--text-soft);">{{ t.location }}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
     <!-- ══ FOR PANTRY OPERATORS ══ -->
     <section class="py-[100px] px-6" style="background: var(--cream-light);">
       <div class="max-w-[1120px] mx-auto">
         <div
-          class="bg-white rounded-[28px] p-16 grid grid-cols-1 md:grid-cols-[1fr_auto] gap-12 items-center border-[1.5px]"
+          class="bg-white rounded-[28px] p-16 border-[1.5px]"
           style="border-color: var(--border-soft); box-shadow: 0 4px 40px rgba(30,122,71,0.06);"
         >
           <div>
@@ -346,36 +282,17 @@ onUnmounted(() => {
               class="font-serif font-semibold reveal mt-4 mb-4"
               style="font-size: clamp(28px, 3.5vw, 44px); color: var(--text-dark); letter-spacing: -0.02em; line-height: 1.15;"
             >
-              Run a pantry?<br/>List it
+              Run a pantry? List it
               <span class="font-serif italic font-medium" style="color: var(--green-mid);">for free.</span>
             </h2>
             <p
               class="reveal text-[16px] leading-[1.75] font-light"
               style="color: var(--text-mid); max-width: 480px;"
             >
-              Thousands of families search PantryFinder every week. Get listed in minutes — manage your schedule, food availability, and contact info all in one place.
+              Tell us your pantry's hours, services, and contact info. Our team reviews each submission and publishes it so neighbors nearby can find you.
             </p>
             <div class="reveal flex gap-3 mt-8">
-              <button
-                type="button"
-                class="btn-primary"
-              >Add Your Pantry →</button>
-              <button
-                type="button"
-                class="btn-secondary"
-              >Learn More</button>
-            </div>
-          </div>
-
-          <div class="reveal-right flex flex-col gap-4 min-w-[240px]">
-            <div
-              v-for="f in OPERATOR_FEATURES"
-              :key="f.text"
-              class="flex items-center gap-3 px-4.5 py-3.5 rounded-[12px]"
-              style="background: var(--green-light); padding: 14px 18px;"
-            >
-              <span class="text-[20px]">{{ f.icon }}</span>
-              <span class="text-[14px] font-medium" style="color: var(--text-mid);">{{ f.text }}</span>
+              <NuxtLink to="/add-pantry" class="btn-primary">Add Your Pantry →</NuxtLink>
             </div>
           </div>
         </div>

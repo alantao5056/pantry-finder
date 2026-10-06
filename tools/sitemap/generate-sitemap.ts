@@ -14,7 +14,7 @@
  * is re-imported, or the browse index and sitemap go stale together.
  *
  * As a side effect it also refreshes the landing-page stats (total pantries +
- * distinct cities) in apps/web/app/data/site-stats.json, which the web app reads
+ * distinct cities + distinct states) in apps/web/app/data/site-stats.json, which the web app reads
  * via app/utils/siteStats.ts. This commits to the repo, so re-run it whenever the
  * pantry dataset changes meaningfully and commit the updated JSON.
  *
@@ -110,11 +110,11 @@ function roundDown(n: number, step: number): number {
   return Math.floor(n / step) * step;
 }
 
-// Refresh the two landing-page numbers in apps/web/app/data/site-stats.json.
+// Refresh the three landing-page numbers in apps/web/app/data/site-stats.json.
 // We rewrite the JSON (parse → mutate → stringify) rather than editing index.vue, but
 // we still guard the target: if the file is gone or its shape changed, fail loudly so
 // the script can't silently stop updating the numbers the site depends on.
-function updateSiteStats(pantryCount: number, cityCount: number): void {
+function updateSiteStats(pantryCount: number, cityCount: number, stateCount: number): void {
   if (!fs.existsSync(STATS_PATH)) {
     throw new Error(
       `Site stats file not found at ${STATS_PATH}. The web app expects it ` +
@@ -127,14 +127,19 @@ function updateSiteStats(pantryCount: number, cityCount: number): void {
   } catch (err) {
     throw new Error(`Could not parse ${STATS_PATH} as JSON: ${(err as Error).message}`);
   }
-  if (typeof json.pantryCount !== 'number' || typeof json.cityCount !== 'number') {
+  if (
+    typeof json.pantryCount !== 'number' ||
+    typeof json.cityCount !== 'number' ||
+    typeof json.stateCount !== 'number'
+  ) {
     throw new Error(
-      `${STATS_PATH} is missing the expected numeric "pantryCount"/"cityCount" keys — ` +
+      `${STATS_PATH} is missing the expected numeric "pantryCount"/"cityCount"/"stateCount" keys — ` +
         'its shape may have changed. Update generate-sitemap.ts to match.',
     );
   }
   json.pantryCount = roundDown(pantryCount, 100);
   json.cityCount = roundDown(cityCount, 10);
+  json.stateCount = stateCount;
   json.generatedAt = new Date().toISOString();
   fs.writeFileSync(STATS_PATH, `${JSON.stringify(json, null, 2)}\n`, 'utf8');
 }
@@ -302,9 +307,10 @@ async function main(): Promise<void> {
       `${staleCount} stale docs deleted) in Firestore`,
   );
 
-  updateSiteStats(snapshot.size, cityDocs.size);
+  updateSiteStats(snapshot.size, cityDocs.size, stateDocs.size);
   console.log(
-    `Updated site stats (${snapshot.size} pantries, ${cityDocs.size} cities) in ${STATS_PATH}`,
+    `Updated site stats (${snapshot.size} pantries, ${cityDocs.size} cities, ` +
+      `${stateDocs.size} states) in ${STATS_PATH}`,
   );
 
   process.exit(0);

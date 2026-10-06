@@ -538,5 +538,7 @@ const serviceTextClass = (category: string) => {
       </p>
       <button type="button" class="btn-primary" @click="goBack">Back to results</button>
     </div>
+
+    <FooterSimple />
   </div>
 </template>

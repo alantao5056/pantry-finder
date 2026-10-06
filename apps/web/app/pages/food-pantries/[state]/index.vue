@@ -134,6 +134,6 @@ useHead(() => ({
       </div>
     </div>
 
-    <Footer />
+    <FooterSimple />
   </div>
 </template>

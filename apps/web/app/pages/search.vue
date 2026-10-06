@@ -65,8 +65,9 @@ const lastSearchSucceeded = ref(false)
 const selectedPantry = ref<Pantry | null>(null)
 
 // List ⇄ map view. `mapSelectedId` is the pin highlighted on the map (distinct
-// from `selectedPantry`, which drives the detail popup modal).
-const viewMode = ref<'list' | 'map'>('list')
+// from `selectedPantry`, which drives the detail popup modal). `?view=map` (the
+// footer's Map View link) opens straight into the map.
+const viewMode = ref<'list' | 'map'>(route.query.view === 'map' ? 'map' : 'list')
 const mapSelectedId = ref<string | null>(null)
 
 // Each runSearch call gets a fresh token. Older in-flight requests check

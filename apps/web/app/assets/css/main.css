@@ -197,6 +197,13 @@
   }
   .footer-link:hover { color: white; }
 
+  /* Dark footer surface + its copyright/tagline text (Footer, FooterSimple, FooterBar). */
+  .footer-shell { background: #1a2e1e; }
+  .footer-fineprint {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.3);
+  }
+
   /* Size modifiers — override family-default padding / font-size / radius. */
   .btn--sm {
     padding: 8px 18px;
@@ -1156,17 +1163,6 @@
 .tag-pill {
   display: inline-block; padding: 4px 14px; border-radius: 100px;
   font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
-}
-
-/* Testimonial card */
-.testimonial-card {
-  background: white; border-radius: 20px;
-  padding: 28px; border: 1.5px solid #edf3ef;
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
-}
-.testimonial-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 40px rgba(30,122,71,0.1);
 }
 
 /* ──────────────────────────────────────────────────────────

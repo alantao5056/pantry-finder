@@ -318,6 +318,6 @@ const viewMode = ref<'list' | 'map'>('list')
       </div>
     </div>
 
-    <Footer />
+    <FooterSimple />
   </div>
 </template>

@@ -220,11 +220,11 @@ async function onSubmit() {
 </script>
 
 <template>
-  <div class="min-h-[calc(100dvh-4rem-1px)]" style="background: var(--cream-light);">
+  <div class="min-h-[calc(100dvh-4rem-1px)] flex flex-col" style="background: var(--cream-light);">
     <!-- ── Success state ──────────────────────────────────────────────── -->
     <div
       v-if="submitted"
-      class="flex items-center justify-center px-6 py-20 min-h-[calc(100dvh-4rem-1px)]"
+      class="flex-1 flex items-center justify-center px-6 py-20"
     >
       <LogoMessage
         class="max-w-[520px] w-full"
@@ -258,7 +258,7 @@ async function onSubmit() {
         </div>
       </div>
 
-      <form class="max-w-[760px] mx-auto px-6 pt-8 pb-20" @submit.prevent="onSubmit">
+      <form class="w-full max-w-[760px] mx-auto px-6 pt-8 pb-20" @submit.prevent="onSubmit">
         <!-- Validation banner -->
         <div
           v-if="formInvalid"
@@ -635,5 +635,7 @@ async function onSubmit() {
         <option v-for="n in SERVICE_NAME_OPTIONS" :key="n" :value="n" />
       </datalist>
     </template>
+
+    <FooterSimple />
   </div>
 </template>

@@ -10,9 +10,8 @@ const onLogout = async () => {
 
 const navLinks = [
   { label: 'Find Pantries', href: '/search', type: 'route' as const },
-  { label: 'How It Works',  href: '/#how-it-works', type: 'route' as const },
+  { label: 'Browse by City', href: '/food-pantries', type: 'route' as const },
   { label: 'Add a Pantry',  href: '/add-pantry', type: 'route' as const },
-  { label: 'Volunteer',     href: '#', type: 'anchor' as const },
 ]
 </script>
 

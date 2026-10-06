@@ -282,11 +282,13 @@ const fetchFromOverpass = async (
   }
 }
 
+let pendingLoad: Promise<void> | null = null
+
 export const useNearbyTags = () => {
   const config = useRuntimeConfig()
-  const tags = ref<string[]>([])
+  const tags = useState<string[]>('nearby-tags', () => [])
 
-  onMounted(async () => {
+  const load = async () => {
     // Step 1 — IP-derived tags. Cached independently; no write on failure.
     let resolved = readIpCache()
     if (!resolved) {
@@ -338,6 +340,10 @@ export const useNearbyTags = () => {
       tags.value = [...resolved.tags, ...neighbors]
       writeNeighborsCache(neighbors)
     }
+  }
+
+  onMounted(() => {
+    pendingLoad ??= load().finally(() => { pendingLoad = null })
   })
 
   return { tags }

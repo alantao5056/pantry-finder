@@ -1,21 +1,26 @@
 <script setup lang="ts">
-const columns = [
+const { tags: nearbyTags } = useNearbyTags()
+
+// Map View searches the visitor's area (first "Try:" tag, if any) in map view.
+const mapViewTo = computed(() => {
+  const location = nearbyTags.value[0]
+  const query = location ? { location, radius: '5', view: 'map' } : { view: 'map' }
+  return { path: '/search', query }
+})
+
+const columns = computed(() => [
   {
     heading: 'For Visitors',
     links: [
       { label: 'Find Pantries', to: '/search', type: 'route' as const },
       { label: 'Browse by City', to: '/food-pantries', type: 'route' as const },
-      { label: 'Map View',       to: '#', type: 'anchor' as const },
-      { label: 'Food Categories', to: '#', type: 'anchor' as const },
-      { label: 'FAQ',            to: '#', type: 'anchor' as const },
+      { label: 'Map View',       to: mapViewTo.value, type: 'route' as const },
     ],
   },
   {
     heading: 'For Pantries',
     links: [
-      { label: 'Add Your Pantry',   to: '#', type: 'anchor' as const },
-      { label: 'Manage Listing',    to: '#', type: 'anchor' as const },
-      { label: 'Volunteer',         to: '#', type: 'anchor' as const },
+      { label: 'Add Your Pantry',   to: '/add-pantry', type: 'route' as const },
       { label: 'Partner With Us',   to: '#', type: 'anchor' as const },
     ],
   },
@@ -23,26 +28,22 @@ const columns = [
     heading: 'Organization',
     links: [
       { label: 'About Us',        to: '#', type: 'anchor' as const },
-      { label: 'Press',           to: '#', type: 'anchor' as const },
       { label: 'Contact',         to: '#', type: 'anchor' as const },
       { label: 'Privacy Policy',  to: '#', type: 'anchor' as const },
     ],
   },
-]
+])
 </script>
 
 <template>
-  <footer style="background: #1a2e1e;" class="py-[60px] px-6 pb-9">
+  <footer class="footer-shell py-[60px] px-6 pb-9">
     <div class="max-w-[1120px] mx-auto">
       <div class="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_1fr] gap-12 mb-12">
         <!-- Brand column -->
         <div>
-          <div class="flex items-center gap-2 mb-4">
-            <img src="/logo.png" alt="PantryFinder logo" class="w-9 h-9 object-contain" />
-            <span class="font-serif font-semibold text-[18px] text-white">PantryFinder</span>
-          </div>
+          <FooterBrand class="mb-4" />
           <p class="text-[14px] leading-[1.75] font-light max-w-[280px]" style="color: rgba(255,255,255,0.45);">
-            Connecting communities with food resources since 2021. Free, private, and always here.
+            Connecting communities with food resources since 2026. Free, private, and always here.
           </p>
         </div>
 
@@ -68,10 +69,7 @@ const columns = [
         </div>
       </div>
 
-      <div class="pt-7 flex flex-wrap justify-between items-center gap-4 border-t" style="border-color: rgba(255,255,255,0.08);">
-        <span class="text-[13px]" style="color: rgba(255,255,255,0.3);">© 2025 PantryFinder. Made with care for every community.</span>
-        <span class="text-[13px]" style="color: rgba(255,255,255,0.3);">Free forever · No ads · No tracking</span>
-      </div>
+      <FooterBar class="pt-7 border-t" style="border-color: rgba(255,255,255,0.08);" />
     </div>
   </footer>
 </template>
