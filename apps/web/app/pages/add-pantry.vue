@@ -246,7 +246,7 @@ async function onSubmit() {
           <div class="flex items-start gap-[18px]">
             <div class="text-[40px] leading-none">🏪</div>
             <div>
-              <h1 class="font-serif text-[clamp(26px,3.5vw,32px)] font-bold leading-tight mb-2" style="color: var(--text-dark);">
+              <h1 class="text-[clamp(26px,3.5vw,32px)] font-bold leading-tight mb-2" style="color: var(--text-dark);">
                 Add a Pantry
               </h1>
               <p class="text-[15px] leading-relaxed max-w-[540px]" style="color: var(--text-mid);">
@@ -277,7 +277,7 @@ async function onSubmit() {
           <div class="form-section-head">
             <div class="form-section-icon">📋</div>
             <div>
-              <div class="font-serif text-[17px] font-semibold leading-tight" style="color: var(--text-dark);">Pantry Information</div>
+              <div class="text-[17px] font-semibold leading-tight" style="color: var(--text-dark);">Pantry Information</div>
               <div class="text-[13px] mt-0.5" style="color: var(--text-soft);">Required details to identify and locate the pantry</div>
             </div>
           </div>
@@ -381,7 +381,7 @@ async function onSubmit() {
           <div class="form-section-head">
             <div class="form-section-icon">📞</div>
             <div>
-              <div class="font-serif text-[17px] font-semibold leading-tight" style="color: var(--text-dark);">Contact Information</div>
+              <div class="text-[17px] font-semibold leading-tight" style="color: var(--text-dark);">Contact Information</div>
               <div class="text-[13px] mt-0.5" style="color: var(--text-soft);">Optional — helps visitors reach the pantry</div>
             </div>
           </div>
@@ -407,7 +407,7 @@ async function onSubmit() {
           <div class="form-section-head">
             <div class="form-section-icon">🕐</div>
             <div>
-              <div class="font-serif text-[17px] font-semibold leading-tight" style="color: var(--text-dark);">Operating Hours</div>
+              <div class="text-[17px] font-semibold leading-tight" style="color: var(--text-dark);">Operating Hours</div>
               <div class="text-[13px] mt-0.5" style="color: var(--text-soft);">General pantry hours. Service-specific hours can be added per service below.</div>
             </div>
           </div>
@@ -426,7 +426,7 @@ async function onSubmit() {
           <div class="form-section-head">
             <div class="form-section-icon">🤝</div>
             <div>
-              <div class="font-serif text-[17px] font-semibold leading-tight" style="color: var(--text-dark);">Services</div>
+              <div class="text-[17px] font-semibold leading-tight" style="color: var(--text-dark);">Services</div>
               <div class="text-[13px] mt-0.5" style="color: var(--text-soft);">Add each service the pantry runs — its food types and its own hours</div>
             </div>
           </div>
@@ -542,7 +542,7 @@ async function onSubmit() {
           <div class="form-section-head">
             <div class="form-section-icon">👤</div>
             <div>
-              <div class="font-serif text-[17px] font-semibold leading-tight" style="color: var(--text-dark);">Your Information</div>
+              <div class="text-[17px] font-semibold leading-tight" style="color: var(--text-dark);">Your Information</div>
               <div class="text-[13px] mt-0.5" style="color: var(--text-soft);">Required — so we can verify the listing and follow up if needed</div>
             </div>
           </div>

@@ -182,13 +182,13 @@ const serviceTextClass = (category: string) => {
       <div class="bg-white border-b border-[var(--border-soft)]">
         <div class="max-w-[1100px] mx-auto px-6 pt-8 pb-7">
           <div class="flex items-start gap-5">
-            <div class="hidden sm:flex shrink-0 w-[68px] h-[68px] rounded-[18px] items-center justify-center font-serif text-[28px] font-bold text-[var(--green-dark)] border-2 border-[#c8e8d4] shadow-[0_4px_16px_rgba(30,122,71,0.12)] bg-gradient-to-br from-[#dcf4e6] to-[#a8dbbf]">
+            <div class="hidden sm:flex shrink-0 w-[68px] h-[68px] rounded-[18px] items-center justify-center text-[28px] font-bold text-[var(--green-dark)] border-2 border-[#c8e8d4] shadow-[0_4px_16px_rgba(30,122,71,0.12)] bg-gradient-to-br from-[#dcf4e6] to-[#a8dbbf]">
               {{ pantry.name.charAt(0) }}
             </div>
 
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2.5 flex-wrap mb-1.5">
-                <h1 class="font-serif text-[clamp(22px,3vw,30px)] font-bold text-gray-900 leading-tight">
+                <h1 class="text-[clamp(22px,3vw,30px)] font-bold text-gray-900 leading-tight">
                   {{ pantry.name }}
                 </h1>
                 <span v-if="openNow" class="status-pill status-pill--open">
@@ -284,7 +284,7 @@ const serviceTextClass = (category: string) => {
               <span class="detail-section-icon">
                 <UIcon name="i-lucide-info" class="size-4" />
               </span>
-              <h2 class="font-serif text-[17px] font-bold text-gray-900">About This Pantry</h2>
+              <h2 class="text-[17px] font-bold text-gray-900">About This Pantry</h2>
             </div>
             <p class="detail-body">{{ pantry.about }}</p>
           </section>
@@ -295,7 +295,7 @@ const serviceTextClass = (category: string) => {
               <span class="detail-section-icon">
                 <UIcon name="i-lucide-clipboard-list" class="size-4" />
               </span>
-              <h2 class="font-serif text-[17px] font-bold text-gray-900">Good to Know</h2>
+              <h2 class="text-[17px] font-bold text-gray-900">Good to Know</h2>
             </div>
             <p class="detail-body">{{ pantry.notes }}</p>
           </section>
@@ -306,7 +306,7 @@ const serviceTextClass = (category: string) => {
               <span class="detail-section-icon">
                 <UIcon name="i-lucide-calendar" class="size-4" />
               </span>
-              <h2 class="font-serif text-[17px] font-bold text-gray-900">Hours &amp; Schedule</h2>
+              <h2 class="text-[17px] font-bold text-gray-900">Hours &amp; Schedule</h2>
             </div>
 
             <div v-if="schedulesByDay.length > 0">
@@ -353,7 +353,7 @@ const serviceTextClass = (category: string) => {
               <span class="detail-section-icon">
                 <UIcon name="i-lucide-star" class="size-4" />
               </span>
-              <h2 class="font-serif text-[17px] font-bold text-gray-900">Services Offered</h2>
+              <h2 class="text-[17px] font-bold text-gray-900">Services Offered</h2>
             </div>
 
             <div
@@ -512,13 +512,13 @@ const serviceTextClass = (category: string) => {
             <div class="detail-eyebrow">Community</div>
             <div class="grid grid-cols-2 gap-3">
               <div class="text-center px-2.5 py-3.5 bg-[#fff1f2] rounded-xl border border-[#fca5a5]">
-                <div class="font-serif text-[22px] font-bold text-[#e11d48]">{{ localCount }}</div>
+                <div class="text-[22px] font-bold text-[#e11d48]">{{ localCount }}</div>
                 <div class="text-[11px] font-medium text-[#9b1c3a] mt-0.5">
                   {{ localCount === 1 ? 'love' : 'loves' }}
                 </div>
               </div>
               <div class="text-center px-2.5 py-3.5 bg-[var(--green-light)] rounded-xl border border-[#b8e8cc]">
-                <div class="font-serif text-[22px] font-bold text-[var(--green-dark)]">—</div>
+                <div class="text-[22px] font-bold text-[var(--green-dark)]">—</div>
                 <div class="text-[11px] font-medium text-[#1a6038] mt-0.5">followers</div>
               </div>
             </div>
@@ -532,7 +532,7 @@ const serviceTextClass = (category: string) => {
       <div class="w-16 h-16 bg-yellow-50 rounded-full flex items-center justify-center mx-auto mb-4">
         <UIcon name="i-lucide-map-pin-off" class="size-7 text-yellow-500" />
       </div>
-      <h1 class="font-serif text-[24px] font-semibold text-gray-900 mb-2.5">Pantry not found</h1>
+      <h1 class="text-[24px] font-semibold text-gray-900 mb-2.5">Pantry not found</h1>
       <p class="text-gray-500 text-[15px] leading-relaxed mb-6">
         We couldn't find this pantry. It may have been removed, or the link may be incorrect.
       </p>

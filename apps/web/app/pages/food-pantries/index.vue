@@ -61,7 +61,7 @@ useHead(() => ({
     <!-- Header -->
     <div class="bg-white border-b border-[var(--border-soft)] px-6">
       <div class="max-w-[1100px] mx-auto pt-9 pb-8">
-        <h1 class="font-serif text-[clamp(24px,3.5vw,34px)] font-bold text-gray-900 leading-tight mb-2">
+        <h1 class="text-[clamp(24px,3.5vw,34px)] font-bold text-gray-900 leading-tight mb-2">
           Browse Food Pantries by State &amp; City
         </h1>
         <p class="text-[15px] leading-[1.7] text-gray-600 max-w-[640px]">

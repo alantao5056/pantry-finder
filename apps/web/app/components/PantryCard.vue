@@ -66,7 +66,7 @@ const onCardKeydown = (event: KeyboardEvent) => {
     <div class="px-5 py-[18px] flex-1">
       <!-- Header: name + status -->
       <div class="flex justify-between items-start gap-2.5 mb-2">
-        <h3 class="font-serif text-[18px] font-semibold text-[var(--text-dark)] leading-[1.3] flex-1">{{ pantry.name }}</h3>
+        <h3 class="text-[18px] font-semibold text-[var(--text-dark)] leading-[1.3] flex-1">{{ pantry.name }}</h3>
         <div class="flex flex-col items-end gap-1 shrink-0">
           <span
             v-if="openNow"

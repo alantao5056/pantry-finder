@@ -144,7 +144,7 @@ onBeforeUnmount(() => {
             </div>
             <div class="flex-1 min-w-0 pr-10">
               <div class="flex items-center gap-2.5 flex-wrap mb-1.5">
-                <h2 class="font-serif text-[clamp(20px,3vw,26px)] font-bold text-gray-900 leading-tight">
+                <h2 class="text-[clamp(20px,3vw,26px)] font-bold text-gray-900 leading-tight">
                   {{ pantry.name }}
                 </h2>
                 <span

@@ -54,7 +54,7 @@ const makeIcon = (p: Pantry, selected: boolean): DivIcon => {
   const initial = escapeHtml(p.name.charAt(0).toUpperCase())
   return L!.divIcon({
     className: '',
-    html: `<div style="background:${color};color:white;border-radius:50% 50% 50% 0;width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-size:${selected ? 17 : 15}px;font-weight:700;box-shadow:${shadow};border:${ring};transform:rotate(-45deg)"><span style="transform:rotate(45deg)">${initial}</span></div>`,
+    html: `<div style="background:${color};color:white;border-radius:50% 50% 50% 0;width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;font-family:'Inter',sans-serif;font-size:${selected ? 17 : 15}px;font-weight:700;box-shadow:${shadow};border:${ring};transform:rotate(-45deg)"><span style="transform:rotate(45deg)">${initial}</span></div>`,
     iconSize: [size, size],
     iconAnchor: [size / 2, size],
     popupAnchor: [0, -size + 4],
@@ -65,11 +65,11 @@ const makeIcon = (p: Pantry, selected: boolean): DivIcon => {
 // across popup open/close — no window globals (unlike the design doc reference).
 const makePopup = (p: Pantry): HTMLElement => {
   const wrap = document.createElement('div')
-  wrap.style.cssText = "font-family:'DM Sans',sans-serif;min-width:180px"
+  wrap.style.cssText = "font-family:'Inter',sans-serif;min-width:180px"
 
   const name = document.createElement('strong')
   name.textContent = p.name
-  name.style.cssText = "display:block;font-family:'Playfair Display',serif;font-size:14px;color:#1a2e1e"
+  name.style.cssText = "display:block;font-family:'Inter',sans-serif;font-size:14px;color:#1a2e1e"
 
   const addr = document.createElement('small')
   addr.textContent = p.address
@@ -170,7 +170,7 @@ watch(() => props.selectedId, () => applySelection())
    consumer's classes (flex stretch on search, h-[240px] on the detail card), so
    we only style appearance here, never size. */
 :deep(.leaflet-container) {
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
   background: var(--green-light);
 }
 :deep(.leaflet-popup-content) {

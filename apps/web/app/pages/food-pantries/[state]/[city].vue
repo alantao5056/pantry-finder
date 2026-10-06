@@ -182,7 +182,7 @@ const viewMode = ref<'list' | 'map'>('list')
     <!-- Header -->
     <div class="bg-white border-b border-[var(--border-soft)] px-6">
       <div class="max-w-[1100px] mx-auto pt-5 pb-4">
-        <h1 class="font-serif text-[clamp(24px,3.5vw,34px)] font-bold text-gray-900 leading-tight mb-2">
+        <h1 class="text-[clamp(24px,3.5vw,34px)] font-bold text-gray-900 leading-tight mb-2">
           Food Pantries in {{ cityName }}, {{ stateAbbr }}
         </h1>
         <p class="text-[15px] leading-[1.7] text-gray-600 max-w-[680px]">
@@ -282,7 +282,7 @@ const viewMode = ref<'list' | 'map'>('list')
 
         <!-- More cities in this state -->
         <section v-if="moreCities.length > 0" class="mt-12">
-          <h2 class="font-serif text-[20px] font-bold text-gray-900 mb-4">
+          <h2 class="text-[20px] font-bold text-gray-900 mb-4">
             More Cities in {{ stateFullName }}
           </h2>
           <div class="flex flex-wrap gap-2">

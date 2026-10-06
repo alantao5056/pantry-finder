@@ -105,11 +105,11 @@ onUnmounted(() => {
 
           <!-- Headline -->
           <h1
-            class="font-serif font-semibold mb-5"
+            class="font-semibold mb-5"
             style="font-size: clamp(40px, 6vw, 76px); line-height: 1.08; color: var(--text-dark); letter-spacing: -0.02em;"
           >
             Find Food Pantries,
-            <span class="font-serif italic font-medium" style="color: var(--green-dark);">Near You</span>
+            <span class="italic font-medium" style="color: var(--green-dark);">Near You</span>
           </h1>
 
           <!-- Sub -->
@@ -177,7 +177,7 @@ onUnmounted(() => {
             :style="{ borderColor: 'var(--border-soft)', transitionDelay: `${i * 0.1}s` }"
           >
             <div class="text-[28px] mb-2.5">{{ s.icon }}</div>
-            <div class="font-serif font-semibold text-[3rem] leading-none" style="color: var(--green-dark);">{{ s.number }}</div>
+            <div class="font-semibold text-[3rem] leading-none" style="color: var(--green-dark);">{{ s.number }}</div>
             <div class="text-[14px] mt-2 font-normal" style="color: var(--text-soft);">{{ s.label }}</div>
           </div>
         </div>
@@ -190,11 +190,11 @@ onUnmounted(() => {
         <div class="text-center mb-16">
           <span class="tag-pill reveal" style="background: #dcf4e6; color: var(--green-dark);">How It Works</span>
           <h2
-            class="font-serif font-semibold reveal mt-4"
+            class="font-semibold reveal mt-4"
             style="font-size: clamp(32px, 4vw, 52px); color: var(--text-dark); letter-spacing: -0.02em; line-height: 1.15;"
           >
             Three steps to your<br/>
-            <span class="font-serif italic font-medium" style="color: var(--green-mid);">nearest pantry</span>
+            <span class="italic font-medium" style="color: var(--green-mid);">nearest pantry</span>
           </h2>
         </div>
 
@@ -213,7 +213,7 @@ onUnmounted(() => {
           >
             <div class="mb-6">
               <span
-                class="block w-14 text-center font-serif text-[16px] font-semibold mb-2"
+                class="block w-14 text-center text-[16px] font-semibold mb-2"
                 style="color: #b8e8cc; letter-spacing: 0.12em;"
               >{{ s.num }}</span>
               <div
@@ -223,7 +223,7 @@ onUnmounted(() => {
                 <UIcon :name="s.icon" class="size-7" />
               </div>
             </div>
-            <h3 class="font-serif font-semibold text-[22px] mb-3" style="color: var(--text-dark);">{{ s.title }}</h3>
+            <h3 class="font-semibold text-[22px] mb-3" style="color: var(--text-dark);">{{ s.title }}</h3>
             <p class="text-[15px] leading-[1.7] font-light" style="color: var(--text-mid);">{{ s.desc }}</p>
           </div>
         </div>
@@ -237,7 +237,7 @@ onUnmounted(() => {
           <div>
             <span class="tag-pill reveal" style="background: white; color: var(--green-dark);">What's Available</span>
             <h2
-              class="font-serif font-semibold reveal mt-4 mb-5"
+              class="font-semibold reveal mt-4 mb-5"
               style="font-size: clamp(28px, 3.5vw, 46px); color: var(--text-dark); letter-spacing: -0.02em; line-height: 1.15;"
             >
               Food for every<br/>need &amp; culture
@@ -279,11 +279,11 @@ onUnmounted(() => {
           <div>
             <span class="tag-pill reveal" style="background: var(--cream-warm); color: #a07850;">For Pantry Operators</span>
             <h2
-              class="font-serif font-semibold reveal mt-4 mb-4"
+              class="font-semibold reveal mt-4 mb-4"
               style="font-size: clamp(28px, 3.5vw, 44px); color: var(--text-dark); letter-spacing: -0.02em; line-height: 1.15;"
             >
               Run a pantry? List it
-              <span class="font-serif italic font-medium" style="color: var(--green-mid);">for free.</span>
+              <span class="italic font-medium" style="color: var(--green-mid);">for free.</span>
             </h2>
             <p
               class="reveal text-[16px] leading-[1.75] font-light"
@@ -304,7 +304,7 @@ onUnmounted(() => {
       <div class="max-w-[700px] mx-auto text-center relative z-[1]">
         <img src="/logo.png" alt="" class="w-20 h-20 object-contain mx-auto mb-5" />
         <h2
-          class="reveal font-serif font-semibold text-white mb-4"
+          class="reveal font-semibold text-white mb-4"
           style="font-size: clamp(30px, 4vw, 54px); letter-spacing: -0.02em; line-height: 1.1;"
         >
           No one should go<br/>hungry in our community.

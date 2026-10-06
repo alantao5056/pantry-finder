@@ -159,7 +159,7 @@ async function onSubmit() {
           <div class="flex items-center gap-4 mb-7">
             <img src="/logo.png" alt="PantryFinder logo" class="w-16 h-16 object-contain shrink-0" />
             <div>
-              <h2 class="font-serif font-semibold text-[22px] mb-1.5" style="color: var(--text-dark);">
+              <h2 class="font-semibold text-[22px] mb-1.5" style="color: var(--text-dark);">
                 {{ tab === 'login' ? 'Welcome back' : 'Join the community' }}
               </h2>
               <p class="text-[14px]" style="color: var(--text-soft);">

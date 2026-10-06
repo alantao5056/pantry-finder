@@ -15,7 +15,7 @@ const messages = computed(() =>
 <template>
   <div class="flex flex-col items-center text-center">
     <img src="/logo.png" alt="PantryFinder logo" class="w-20 h-20 object-contain mb-4" />
-    <h3 class="font-serif text-[22px] text-gray-900 mb-2">{{ title }}</h3>
+    <h3 class="text-[22px] text-gray-900 mb-2">{{ title }}</h3>
     <p
       v-for="(m, i) in messages"
       :key="i"

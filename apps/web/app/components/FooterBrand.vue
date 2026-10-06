@@ -12,7 +12,7 @@ defineProps<{ small?: boolean }>()
       :class="small ? 'w-7 h-7' : 'w-9 h-9'"
     />
     <span
-      class="font-serif font-semibold text-white"
+      class="font-semibold text-white"
       :class="small ? 'text-[16px]' : 'text-[18px]'"
     >PantryFinder</span>
   </div>

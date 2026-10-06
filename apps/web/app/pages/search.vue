@@ -391,7 +391,7 @@ const mapActive = computed(() => viewMode.value === 'map' && resultsReady.value)
               <div class="w-16 h-16 bg-yellow-50 rounded-full flex items-center justify-center mx-auto mb-4">
                 <UIcon name="i-lucide-map-pin-off" class="size-7 text-yellow-500" />
               </div>
-              <h3 class="font-serif text-[22px] text-gray-900 mb-2">We couldn't find that address</h3>
+              <h3 class="text-[22px] text-gray-900 mb-2">We couldn't find that address</h3>
               <p class="text-gray-500 text-[15px]">Try entering a city, ZIP code, or a more complete street address.</p>
             </div>
 
@@ -414,7 +414,7 @@ const mapActive = computed(() => viewMode.value === 'map' && resultsReady.value)
               <div class="w-16 h-16 bg-yellow-50 rounded-full flex items-center justify-center mb-4">
                 <UIcon name="i-lucide-clock" class="size-7 text-yellow-600" />
               </div>
-              <h3 class="font-serif text-[22px] text-gray-900 mb-2">You've hit the search limit</h3>
+              <h3 class="text-[22px] text-gray-900 mb-2">You've hit the search limit</h3>
               <p class="text-gray-500 text-[15px] max-w-[420px]">{{ rateLimited.message }}</p>
               <div style="flex: 3 1 0" />
             </div>
@@ -427,7 +427,7 @@ const mapActive = computed(() => viewMode.value === 'map' && resultsReady.value)
               <div class="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
                 <UIcon name="i-lucide-alert-circle" class="size-7 text-red-500" />
               </div>
-              <h3 class="font-serif text-[22px] text-gray-900 mb-2">Something went wrong</h3>
+              <h3 class="text-[22px] text-gray-900 mb-2">Something went wrong</h3>
               <p class="text-gray-500 text-[15px] mb-5">We hit an error fetching pantries. Please try again.</p>
               <button
                 class="bg-forest-700 hover:bg-forest-800 text-white rounded-lg px-5 py-2 text-[14px] font-medium transition-colors"
@@ -443,7 +443,7 @@ const mapActive = computed(() => viewMode.value === 'map' && resultsReady.value)
               <div class="w-16 h-16 bg-forest-50 rounded-full flex items-center justify-center mx-auto mb-4">
                 <UIcon name="i-lucide-search" class="size-7 text-forest-400" />
               </div>
-              <h3 class="font-serif text-[22px] text-gray-900 mb-2">No pantries found</h3>
+              <h3 class="text-[22px] text-gray-900 mb-2">No pantries found</h3>
               <p class="text-gray-500 text-[15px]">Try increasing the search radius or entering a different location.</p>
             </div>
 
