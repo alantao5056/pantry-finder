@@ -27,11 +27,11 @@ const emit = defineEmits<{
       <div class="flex justify-between items-start gap-2 mb-1.5">
         <span
           class="font-semibold text-[14px] leading-[1.3]"
-          :class="p.id === selectedId ? 'text-[#ea580c]' : 'text-[var(--text-dark)]'"
+          :class="p.id === selectedId ? 'text-[var(--accent-text)]' : 'text-[var(--text-dark)]'"
         >{{ p.name }}</span>
         <span
           v-if="isOpenToday(p.schedules)"
-          class="shrink-0 bg-green-100 text-[var(--green-dark)] text-[10px] font-bold px-[7px] py-0.5 rounded-full"
+          class="shrink-0 bg-[var(--open-wash)] text-[var(--open-text)] text-[10px] font-bold px-[7px] py-0.5 rounded-full"
         >OPEN</span>
       </div>
       <div class="text-[12px] text-[var(--text-soft)] mb-1">{{ p.address }}</div>

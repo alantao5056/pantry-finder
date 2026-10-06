@@ -48,7 +48,7 @@ useHead(() => ({
 </script>
 
 <template>
-  <div class="min-h-[calc(100dvh-4rem-1px)] bg-[#f5f7f5] font-sans">
+  <div class="min-h-[calc(100dvh-4rem-1px)] bg-[var(--cream-light)] font-sans">
     <!-- Breadcrumb bar -->
     <div class="crumb-bar">
       <nav class="crumb-row" aria-label="Breadcrumb">
@@ -67,7 +67,7 @@ useHead(() => ({
         <p class="text-[15px] leading-[1.7] text-gray-600 max-w-[640px]">
           {{ totalPantries.toLocaleString() }} free food pantries across
           {{ totalCities.toLocaleString() }} cities. Pick your state to find every
-          covered city near you — or
+          covered city near you, or
           <NuxtLink to="/search" class="btn-link-accent">search by address</NuxtLink> instead.
         </p>
       </div>

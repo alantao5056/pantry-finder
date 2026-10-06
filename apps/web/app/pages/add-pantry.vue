@@ -38,14 +38,6 @@ const FOOD_OPTIONS = [
   'Pet Food / Supplies', 'Diapers', 'Bread & Bakery', 'Other',
 ]
 
-const FOOD_EMOJI: Record<string, string> = {
-  'Dairy': '🥛', 'Eggs': '🥚', 'Fruits & Vegetables': '🥦', 'Meat': '🥩',
-  'Shelf Stable/Non-Perishable Goods': '🥫', 'Prepared Food / Grab and Go': '🍱',
-  'Household Products': '🧹', 'Toiletries / Hygiene Products': '🧴',
-  'Pet Food / Supplies': '🐾', 'Diapers': '👶', 'Bread & Bakery': '🍞', 'Other': '📦',
-}
-const foodEmoji = (f: string) => FOOD_EMOJI[f] ?? '🍽️'
-
 // Categories match the buckets the pantry detail page colour-codes.
 const SERVICE_CATEGORIES = [
   'Food Program',
@@ -243,18 +235,13 @@ async function onSubmit() {
       <!-- Header -->
       <div class="bg-white border-b" style="border-color: var(--border-soft);">
         <div class="max-w-[760px] mx-auto px-6 pt-10 pb-8">
-          <div class="flex items-start gap-[18px]">
-            <div class="text-[40px] leading-none">🏪</div>
-            <div>
-              <h1 class="text-[clamp(26px,3.5vw,32px)] font-bold leading-tight mb-2" style="color: var(--text-dark);">
-                Add a Pantry
-              </h1>
-              <p class="text-[15px] leading-relaxed max-w-[540px]" style="color: var(--text-mid);">
-                Know a food pantry that isn’t listed yet? Share what you know and our team will
-                review and publish it. The more detail you provide, the better.
-              </p>
-            </div>
-          </div>
+          <h1 class="text-[clamp(26px,3.5vw,32px)] font-bold leading-tight mb-2" style="color: var(--text-dark);">
+            Add a Pantry
+          </h1>
+          <p class="text-[15px] leading-relaxed max-w-[540px]" style="color: var(--text-mid);">
+            Know a food pantry that isn’t listed yet? Share what you know and our team will
+            review and publish it. The more detail you provide, the better.
+          </p>
         </div>
       </div>
 
@@ -262,11 +249,10 @@ async function onSubmit() {
         <!-- Validation banner -->
         <div
           v-if="formInvalid"
-          class="flex items-center gap-3 rounded-[14px] px-5 py-3.5 mb-6"
-          style="background: #fff5f5; border: 1.5px solid #fca5a5;"
+          class="alert-error alert-error--outlined flex items-center gap-3 rounded-[14px] px-5 py-3.5 mb-6"
         >
-          <UIcon name="i-lucide-info" class="size-[18px] shrink-0" style="color: #e11d48;" />
-          <span class="text-sm font-medium" style="color: #be123c;">
+          <UIcon name="i-lucide-info" class="size-[18px] shrink-0 text-[var(--danger)]" />
+          <span class="text-sm font-medium">
             Please complete the required fields marked with a red asterisk (*). Each time slot needs a
             day, open, and close time, and each service needs a name.
           </span>
@@ -275,7 +261,6 @@ async function onSubmit() {
         <!-- Pantry Information -->
         <section class="form-section-card">
           <div class="form-section-head">
-            <div class="form-section-icon">📋</div>
             <div>
               <div class="text-[17px] font-semibold leading-tight" style="color: var(--text-dark);">Pantry Information</div>
               <div class="text-[13px] mt-0.5" style="color: var(--text-soft);">Required details to identify and locate the pantry</div>
@@ -365,7 +350,7 @@ async function onSubmit() {
               id="ap-about"
               v-model="form.about"
               rows="3"
-              placeholder="Any helpful context — parking, entrance location, languages spoken, eligibility requirements…"
+              placeholder="Any helpful context: parking, entrance location, languages spoken, eligibility requirements…"
               class="form-textarea"
             />
           </div>
@@ -379,10 +364,9 @@ async function onSubmit() {
         <!-- Contact Information -->
         <section class="form-section-card">
           <div class="form-section-head">
-            <div class="form-section-icon">📞</div>
             <div>
               <div class="text-[17px] font-semibold leading-tight" style="color: var(--text-dark);">Contact Information</div>
-              <div class="text-[13px] mt-0.5" style="color: var(--text-soft);">Optional — helps visitors reach the pantry</div>
+              <div class="text-[13px] mt-0.5" style="color: var(--text-soft);">Optional. Helps visitors reach the pantry</div>
             </div>
           </div>
 
@@ -405,7 +389,6 @@ async function onSubmit() {
         <!-- Operating Hours (pantry-level) -->
         <section class="form-section-card">
           <div class="form-section-head">
-            <div class="form-section-icon">🕐</div>
             <div>
               <div class="text-[17px] font-semibold leading-tight" style="color: var(--text-dark);">Operating Hours</div>
               <div class="text-[13px] mt-0.5" style="color: var(--text-soft);">General pantry hours. Service-specific hours can be added per service below.</div>
@@ -414,8 +397,8 @@ async function onSubmit() {
 
           <ScheduleRowsEditor v-model="schedules" add-label="Add a time slot" :show-errors="attempted" />
 
-          <div class="mt-3.5 px-4 py-3 rounded-[12px]" style="background: var(--cream-warm); border: 1px solid #e8d5b0;">
-            <p class="text-xs leading-relaxed" style="color: #a07850;">
+          <div class="mt-3.5 px-4 py-3 rounded-[12px] border border-[var(--accent-border)] bg-[var(--accent-wash)]">
+            <p class="text-xs leading-relaxed text-[var(--accent-text)]">
               <strong>Tip:</strong> For appointment-only slots, add a note in the Notes field.
             </p>
           </div>
@@ -424,10 +407,9 @@ async function onSubmit() {
         <!-- Services -->
         <section class="form-section-card">
           <div class="form-section-head">
-            <div class="form-section-icon">🤝</div>
             <div>
               <div class="text-[17px] font-semibold leading-tight" style="color: var(--text-dark);">Services</div>
-              <div class="text-[13px] mt-0.5" style="color: var(--text-soft);">Add each service the pantry runs — its food types and its own hours</div>
+              <div class="text-[13px] mt-0.5" style="color: var(--text-soft);">Add each service the pantry runs, with its food types and its own hours</div>
             </div>
           </div>
 
@@ -439,7 +421,7 @@ async function onSubmit() {
           <div
             v-for="(service, si) in services"
             :key="si"
-            class="rounded-[16px] border p-4 sm:p-5 mb-4"
+            class="rounded-[10px] border p-4 sm:p-5 mb-4"
             style="border-color: var(--border-soft); background: var(--green-light);"
           >
             <div class="flex items-center justify-between gap-3 mb-4">
@@ -447,7 +429,7 @@ async function onSubmit() {
               <button
                 type="button"
                 class="inline-flex items-center gap-1.5 text-[12px] font-medium"
-                style="color: #e11d48;"
+                style="color: var(--danger);"
                 @click="removeService(si)"
               >
                 <UIcon name="i-lucide-trash-2" class="size-3.5" /> Remove
@@ -516,7 +498,7 @@ async function onSubmit() {
                     class="accent-[var(--green-dark)] w-3.5 h-3.5"
                     @change="toggleFood(service, f)"
                   />
-                  {{ foodEmoji(f) }} {{ f }}
+                  {{ f }}
                 </label>
               </div>
             </div>
@@ -540,10 +522,9 @@ async function onSubmit() {
         <!-- Your Information -->
         <section class="form-section-card">
           <div class="form-section-head">
-            <div class="form-section-icon">👤</div>
             <div>
               <div class="text-[17px] font-semibold leading-tight" style="color: var(--text-dark);">Your Information</div>
-              <div class="text-[13px] mt-0.5" style="color: var(--text-soft);">Required — so we can verify the listing and follow up if needed</div>
+              <div class="text-[13px] mt-0.5" style="color: var(--text-soft);">Required so we can verify the listing and follow up if needed</div>
             </div>
           </div>
 
@@ -613,13 +594,12 @@ async function onSubmit() {
         <!-- Submit -->
         <p
           v-if="serverError"
-          class="text-sm rounded-[12px] px-4 py-3 mb-4"
-          style="color: #b91c1c; background: #fef2f2;"
+          class="alert-error text-sm rounded-[12px] px-4 py-3 mb-4"
         >{{ serverError }}</p>
 
         <div class="flex items-center justify-between gap-4 flex-wrap mt-2">
           <p class="text-[13px] leading-relaxed max-w-[400px]" style="color: var(--text-soft);">
-            Fields marked <span style="color: #e11d48;">*</span> are required. All other information is
+            Fields marked <span class="text-[var(--danger)]">*</span> are required. All other information is
             optional but helps us publish accurate listings faster.
           </p>
           <button

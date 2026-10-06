@@ -188,8 +188,8 @@ const viewMode = ref<'list' | 'map'>('list')
         <p class="text-[15px] leading-[1.7] text-gray-600 max-w-[680px]">
           {{ pantryCount.toLocaleString() }} free food
           {{ pantryCount === 1 ? 'pantry' : 'pantries' }} in {{ cityName }},
-          {{ stateFullName }}<template v-if="totalPages === 1 && openTodayCount > 0">
-            — {{ openTodayCount }} open today</template>.
+          {{ stateFullName }}<template v-if="totalPages === 1 && openTodayCount > 0">, with
+            {{ openTodayCount }} open today</template>.
           <template v-if="foodTypes.length > 0">
             Available food includes {{ foodTypes.slice(0, 4).join(', ').toLowerCase() }}.
           </template>
@@ -225,7 +225,7 @@ const viewMode = ref<'list' | 'map'>('list')
         <span class="text-[14px] text-gray-500">
           <span class="font-bold text-gray-900">{{ pantryCount.toLocaleString() }}</span>
           {{ pantryCount === 1 ? 'pantry' : 'pantries' }} in
-          <span class="font-semibold text-forest-700">{{ cityName }}, {{ stateAbbr }}</span>
+          <span class="font-semibold text-[var(--green-dark)]">{{ cityName }}, {{ stateAbbr }}</span>
           <template v-if="totalPages > 1"> — page {{ page }} of {{ totalPages }}</template>
         </span>
       </div>

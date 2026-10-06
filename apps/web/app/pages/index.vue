@@ -4,7 +4,7 @@ const { show } = useAuthModal()
 usePageSeo({
   title: 'PantryFinder - Find Free Food Pantries Near You',
   description:
-    'Find free food pantries near you with PantryFinder. Search 1,400+ pantries across 60+ cities by address — see hours, available food, and contact info.',
+    'Find free food pantries near you with PantryFinder. Search 1,400+ pantries across 60+ cities by address to see hours, available food, and contact info.',
   path: '/',
   brandSuffix: false,
 })
@@ -12,10 +12,10 @@ usePageSeo({
 // pantryCountDisplay / cityCountDisplay / stateCountDisplay come from app/utils/siteStats.ts (auto-imported),
 // which reads app/data/site-stats.json — regenerated from Firestore by the sitemap tool.
 const STATS = [
-  { number: pantryCountDisplay, label: 'Food Pantries Listed',   icon: '🏪' },
-  { number: cityCountDisplay,   label: 'Cities Covered',         icon: '📍' },
-  { number: stateCountDisplay,  label: 'States Covered',         icon: '🗺️' },
-  { number: '100%',             label: 'Free, Always',           icon: '💚' },
+  { number: pantryCountDisplay, label: 'Food Pantries Listed' },
+  { number: cityCountDisplay,   label: 'Cities Covered' },
+  { number: stateCountDisplay,  label: 'States Covered' },
+  { number: '100%',             label: 'Free, Always' },
 ]
 
 const STEPS = [
@@ -25,18 +25,18 @@ const STEPS = [
 ]
 
 const CATEGORIES = [
-  { icon: '🥦', label: 'Fresh Produce' },
-  { icon: '🥩', label: 'Meat & Protein' },
-  { icon: '🥛', label: 'Dairy & Eggs' },
-  { icon: '🍞', label: 'Bread & Bakery' },
-  { icon: '🥫', label: 'Canned Goods' },
-  { icon: '🌾', label: 'Dry Goods' },
-  { icon: '🍼', label: 'Baby Food' },
-  { icon: '🐾', label: 'Pet Supplies' },
-  { icon: '🧴', label: 'Personal Care' },
-  { icon: '🏠', label: 'Household Items' },
-  { icon: '❄️', label: 'Frozen Meals' },
-  { icon: '🌿', label: 'Halal & Kosher' },
+  'Fresh Produce',
+  'Meat & Protein',
+  'Dairy & Eggs',
+  'Bread & Bakery',
+  'Canned Goods',
+  'Dry Goods',
+  'Baby Food',
+  'Pet Supplies',
+  'Personal Care',
+  'Household Items',
+  'Frozen Meals',
+  'Halal & Kosher',
 ]
 
 const { tags: quickTags } = useNearbyTags()
@@ -54,7 +54,7 @@ const onTagClick = (tag: string) => {
 let revealObserver: IntersectionObserver | null = null
 
 onMounted(() => {
-  const els = document.querySelectorAll('.reveal, .reveal-left, .reveal-right')
+  const els = document.querySelectorAll('.reveal')
   revealObserver = new IntersectionObserver((entries) => {
     entries.forEach((e) => {
       if (e.isIntersecting) e.target.classList.add('visible')
@@ -73,8 +73,8 @@ onUnmounted(() => {
 
     <!-- ══ HERO ══ -->
     <section
-      class="relative flex flex-col justify-center"
-      style="background: linear-gradient(160deg, #f0faf4 0%, #fdfbf7 55%, #faf5ec 100%); min-height: 92vh;"
+      class="relative flex flex-col justify-center px-6"
+      style="background: linear-gradient(160deg, var(--green-wash) 0%, var(--cream-light) 45%, var(--cream-warm) 100%); min-height: 92vh;"
     >
       <!-- Decorative watermark clip layer: scopes overflow-hidden to just the logo, so
            the hero itself doesn't clip the SearchBar dropdown overflowing below it. -->
@@ -89,19 +89,8 @@ onUnmounted(() => {
         />
       </div>
 
-      <div class="max-w-[1120px] mx-auto py-[20px] pb-[100px] relative z-[1]">
+      <div class="w-full max-w-[760px] mx-auto py-[20px] pb-[100px] relative z-[1]">
         <div class="max-w-[760px]">
-
-          <!-- Eyebrow -->
-          <div
-            class="inline-flex items-center gap-2 bg-white border-[1.5px] rounded-[100px] px-4 py-1.5 mb-7"
-            style="border-color: #b8e8cc; box-shadow: 0 2px 12px rgba(30,122,71,0.08);"
-          >
-            <img src="/shopping-bag.png" alt="" class="w-6 h-6 object-contain" />
-            <span class="text-[13px] font-semibold tracking-wide" style="color: var(--green-dark);">
-              Free • Community-Powered • Always Up-to-Date
-            </span>
-          </div>
 
           <!-- Headline -->
           <h1
@@ -176,7 +165,6 @@ onUnmounted(() => {
             :class="i < 3 ? 'md:border-r' : ''"
             :style="{ borderColor: 'var(--border-soft)', transitionDelay: `${i * 0.1}s` }"
           >
-            <div class="text-[28px] mb-2.5">{{ s.icon }}</div>
             <div class="font-semibold text-[3rem] leading-none" style="color: var(--green-dark);">{{ s.number }}</div>
             <div class="text-[14px] mt-2 font-normal" style="color: var(--text-soft);">{{ s.label }}</div>
           </div>
@@ -188,7 +176,7 @@ onUnmounted(() => {
     <section id="how-it-works" class="py-[100px] px-6" style="background: var(--cream-light);">
       <div class="max-w-[1120px] mx-auto">
         <div class="text-center mb-16">
-          <span class="tag-pill reveal" style="background: #dcf4e6; color: var(--green-dark);">How It Works</span>
+          <span class="tag-pill tag-pill--green reveal">How It Works</span>
           <h2
             class="font-semibold reveal mt-4"
             style="font-size: clamp(32px, 4vw, 52px); color: var(--text-dark); letter-spacing: -0.02em; line-height: 1.15;"
@@ -202,7 +190,7 @@ onUnmounted(() => {
           <!-- Connector line -->
           <div
             class="hidden md:block absolute left-0 right-0 h-0 z-0"
-            style="top: 58px; border-top: 2px dashed #b8e8cc;"
+            style="top: 58px; border-top: 2px dashed var(--green-border);"
           ></div>
 
           <div
@@ -214,11 +202,11 @@ onUnmounted(() => {
             <div class="mb-6">
               <span
                 class="block w-14 text-center text-[16px] font-semibold mb-2"
-                style="color: #b8e8cc; letter-spacing: 0.12em;"
+                style="color: var(--green-soft); letter-spacing: 0.12em;"
               >{{ s.num }}</span>
               <div
                 class="w-14 h-14 rounded-2xl flex items-center justify-center border-2"
-                style="background: var(--green-light); border-color: #b8e8cc; color: var(--green-dark);"
+                style="background: var(--green-light); border-color: var(--green-border); color: var(--green-dark);"
               >
                 <UIcon :name="s.icon" class="size-7" />
               </div>
@@ -235,7 +223,7 @@ onUnmounted(() => {
       <div class="max-w-[1120px] mx-auto">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-20 items-center">
           <div>
-            <span class="tag-pill reveal" style="background: white; color: var(--green-dark);">What's Available</span>
+            <span class="tag-pill tag-pill--white reveal">What's Available</span>
             <h2
               class="font-semibold reveal mt-4 mb-5"
               style="font-size: clamp(28px, 3.5vw, 46px); color: var(--text-dark); letter-spacing: -0.02em; line-height: 1.15;"
@@ -246,7 +234,7 @@ onUnmounted(() => {
               class="reveal text-[16px] leading-[1.75] font-light mb-8"
               style="color: var(--text-mid); max-width: 420px;"
             >
-              Our pantries collectively stock a wide variety of items — from fresh produce to culturally specific ingredients, baby essentials to pet supplies. No one slips through.
+              Our pantries collectively stock a wide variety of items, from fresh produce to culturally specific ingredients, baby essentials to pet supplies. No one slips through.
             </p>
             <NuxtLink
               to="/search"
@@ -257,13 +245,10 @@ onUnmounted(() => {
           <div class="flex flex-wrap gap-2.5">
             <div
               v-for="(c, i) in CATEGORIES"
-              :key="c.label"
+              :key="c"
               class="cat-pill reveal"
               :style="{ transitionDelay: `${(i % 4) * 0.08}s` }"
-            >
-              <span class="text-[18px]">{{ c.icon }}</span>
-              <span>{{ c.label }}</span>
-            </div>
+            >{{ c }}</div>
           </div>
         </div>
       </div>
@@ -274,10 +259,10 @@ onUnmounted(() => {
       <div class="max-w-[1120px] mx-auto">
         <div
           class="bg-white rounded-[28px] p-16 border-[1.5px]"
-          style="border-color: var(--border-soft); box-shadow: 0 4px 40px rgba(30,122,71,0.06);"
+          style="border-color: var(--border-soft); box-shadow: 0 4px 40px rgba(0,0,0,0.04);"
         >
           <div>
-            <span class="tag-pill reveal" style="background: var(--cream-warm); color: #a07850;">For Pantry Operators</span>
+            <span class="tag-pill tag-pill--warm reveal">For Pantry Operators</span>
             <h2
               class="font-semibold reveal mt-4 mb-4"
               style="font-size: clamp(28px, 3.5vw, 44px); color: var(--text-dark); letter-spacing: -0.02em; line-height: 1.15;"
@@ -302,7 +287,6 @@ onUnmounted(() => {
     <!-- ══ CTA BAND ══ -->
     <section class="cta-band py-[90px] px-6">
       <div class="max-w-[700px] mx-auto text-center relative z-[1]">
-        <img src="/logo.png" alt="" class="w-20 h-20 object-contain mx-auto mb-5" />
         <h2
           class="reveal font-semibold text-white mb-4"
           style="font-size: clamp(30px, 4vw, 54px); letter-spacing: -0.02em; line-height: 1.1;"
@@ -313,7 +297,7 @@ onUnmounted(() => {
           class="reveal text-[18px] mb-11 leading-[1.65] font-light"
           style="color: rgba(255,255,255,0.7);"
         >
-          Start your search now — it takes less than 30 seconds to find a pantry near you.
+          Start your search now. It takes less than 30 seconds to find a pantry near you.
         </p>
         <div class="reveal flex gap-3 justify-center flex-wrap">
           <NuxtLink

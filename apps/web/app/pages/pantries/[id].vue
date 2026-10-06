@@ -112,11 +112,6 @@ const schedulesByDay = computed(() => {
     .filter(group => group.slots.length > 0)
 })
 
-const dayBadgeStyle = (day: string) => {
-  const color = dayColor(day)
-  return { color, backgroundColor: `${color}14` }
-}
-
 const serviceSchedulesByDay = (service: Service) => {
   const valid = service.schedules.filter(s => (s.weekDay && s.start) || s.notes)
   return DAY_ORDER
@@ -129,30 +124,16 @@ const serviceFoods = (service: Service) => [...new Set(service.food)]
 const serviceProgram = (service: Service) =>
   service.program && service.program !== service.category ? service.program : service.category
 
-const serviceDotClass = (category: string) => {
-  if (category === 'Food Program') return 'bg-[var(--green-mid)]'
-  if (category === 'Healthcare Screenings/Referrals') return 'bg-blue-500'
-  if (category === 'Housing Assistance') return 'bg-orange-500'
-  if (category === 'Tax/Financial Support') return 'bg-violet-500'
-  return 'bg-gray-500'
-}
-const serviceTextClass = (category: string) => {
-  if (category === 'Food Program') return 'text-[var(--green-dark)]'
-  if (category === 'Healthcare Screenings/Referrals') return 'text-blue-700'
-  if (category === 'Housing Assistance') return 'text-orange-700'
-  if (category === 'Tax/Financial Support') return 'text-violet-700'
-  return 'text-gray-700'
-}
 </script>
 
 <template>
-  <div class="min-h-[calc(100dvh-4rem-1px)] bg-[#f5f7f5] font-sans">
+  <div class="min-h-[calc(100dvh-4rem-1px)] bg-[var(--cream-light)] font-sans">
     <!-- Loading -->
     <div
       v-if="pending && !pantry"
       class="flex items-center justify-center py-24 text-gray-500 gap-3"
     >
-      <UIcon name="i-lucide-loader-2" class="size-6 animate-spin text-forest-500" />
+      <UIcon name="i-lucide-loader-2" class="size-6 animate-spin text-[var(--green-mid)]" />
       <span class="text-[15px]">Loading pantry…</span>
     </div>
 
@@ -160,7 +141,7 @@ const serviceTextClass = (category: string) => {
     <div v-else-if="pantry">
       <!-- Breadcrumb bar -->
       <div class="bg-white border-b border-[var(--border-soft)] px-6">
-        <div class="max-w-[1100px] mx-auto h-11 flex items-center gap-2 text-[13px] text-gray-400">
+        <div class="max-w-[1100px] mx-auto h-11 flex items-center gap-2 text-[13px] text-gray-500">
           <button
             type="button"
             class="flex items-center gap-1.5 text-[var(--text-mid)] font-medium hover:text-[var(--green-dark)] transition-colors"
@@ -170,7 +151,7 @@ const serviceTextClass = (category: string) => {
             Back to results
           </button>
           <span class="text-gray-300">›</span>
-          <NuxtLink to="/search" class="text-gray-400 no-underline hover:text-[var(--green-dark)]">
+          <NuxtLink to="/search" class="text-gray-500 no-underline hover:text-[var(--green-dark)]">
             Food Pantries
           </NuxtLink>
           <span class="text-gray-300">›</span>
@@ -182,17 +163,10 @@ const serviceTextClass = (category: string) => {
       <div class="bg-white border-b border-[var(--border-soft)]">
         <div class="max-w-[1100px] mx-auto px-6 pt-8 pb-7">
           <div class="flex items-start gap-5">
-            <div class="hidden sm:flex shrink-0 w-[68px] h-[68px] rounded-[18px] items-center justify-center text-[28px] font-bold text-[var(--green-dark)] border-2 border-[#c8e8d4] shadow-[0_4px_16px_rgba(30,122,71,0.12)] bg-gradient-to-br from-[#dcf4e6] to-[#a8dbbf]">
-              {{ pantry.name.charAt(0) }}
-            </div>
-
             <div class="flex-1 min-w-0">
-              <div class="flex items-center gap-2.5 flex-wrap mb-1.5">
-                <h1 class="text-[clamp(22px,3vw,30px)] font-bold text-gray-900 leading-tight">
-                  {{ pantry.name }}
-                </h1>
+              <div class="flex flex-col items-start gap-2 mb-1.5">
                 <span v-if="openNow" class="status-pill status-pill--open">
-                  <span class="size-1.5 rounded-full bg-green-500" />
+                  <span class="status-dot" />
                   OPEN NOW
                 </span>
                 <span v-else-if="openToday" class="status-pill status-pill--today">OPEN TODAY</span>
@@ -200,6 +174,9 @@ const serviceTextClass = (category: string) => {
                   v-else-if="pantry.schedules.length > 0"
                   class="status-pill status-pill--closed"
                 >CLOSED TODAY</span>
+                <h1 class="text-[clamp(22px,3vw,30px)] font-bold text-gray-900 leading-tight">
+                  {{ pantry.name }}
+                </h1>
               </div>
 
               <div class="flex flex-wrap gap-x-4 gap-y-1.5 mb-5">
@@ -278,36 +255,18 @@ const serviceTextClass = (category: string) => {
       <div class="max-w-[1100px] mx-auto px-6 pt-8 pb-16 grid gap-7 items-start lg:grid-cols-[1fr_360px]">
         <!-- Left column -->
         <div class="flex flex-col gap-6">
-          <!-- About -->
-          <section v-if="pantry.about" class="detail-card px-7 py-6">
-            <div class="detail-section-title">
-              <span class="detail-section-icon">
-                <UIcon name="i-lucide-info" class="size-4" />
-              </span>
-              <h2 class="text-[17px] font-bold text-gray-900">About This Pantry</h2>
-            </div>
-            <p class="detail-body">{{ pantry.about }}</p>
-          </section>
-
           <!-- Good to Know (pantry notes) -->
-          <section v-if="pantry.notes" class="detail-card px-7 py-6">
-            <div class="detail-section-title">
-              <span class="detail-section-icon">
-                <UIcon name="i-lucide-clipboard-list" class="size-4" />
-              </span>
-              <h2 class="text-[17px] font-bold text-gray-900">Good to Know</h2>
-            </div>
+          <section v-if="pantry.notes" class="detail-callout">
+            <h2 class="detail-callout-title">
+              <UIcon name="i-lucide-info" class="size-3.5" />
+              Good to Know
+            </h2>
             <p class="detail-body">{{ pantry.notes }}</p>
           </section>
 
           <!-- Hours & Schedule -->
           <section class="detail-card px-7 py-6">
-            <div class="detail-section-title">
-              <span class="detail-section-icon">
-                <UIcon name="i-lucide-calendar" class="size-4" />
-              </span>
-              <h2 class="text-[17px] font-bold text-gray-900">Hours &amp; Schedule</h2>
-            </div>
+            <h2 class="detail-section-title">Hours &amp; Schedule</h2>
 
             <div v-if="schedulesByDay.length > 0">
               <div
@@ -318,7 +277,7 @@ const serviceTextClass = (category: string) => {
               >
                 <span
                   class="schedule-day w-fit text-[12px]"
-                  :style="dayBadgeStyle(group.day)"
+                  :class="{ 'is-today': isToday(group.day) }"
                 >{{ group.day.slice(0, 3).toUpperCase() }}</span>
                 <div class="flex flex-col gap-1.5">
                   <div
@@ -349,23 +308,18 @@ const serviceTextClass = (category: string) => {
 
           <!-- Services Offered -->
           <section class="detail-card px-7 py-6">
-            <div class="detail-section-title">
-              <span class="detail-section-icon">
-                <UIcon name="i-lucide-star" class="size-4" />
-              </span>
-              <h2 class="text-[17px] font-bold text-gray-900">Services Offered</h2>
-            </div>
+            <h2 class="detail-section-title">Services Offered</h2>
 
             <div
               v-for="(service, i) in uniqueServices"
               :key="`${service.name}-${i}`"
             >
-              <div v-if="i > 0" class="h-px bg-[#f0f4f1] my-5" />
+              <div v-if="i > 0" class="h-px bg-[var(--border-soft)] my-5" />
 
-              <div class="flex items-center gap-2 mb-3 flex-wrap">
-                <span class="size-2 rounded-full shrink-0" :class="serviceDotClass(service.category)" />
+              <div class="flex items-center gap-2 mb-3 flex-wrap" :class="serviceTone(service.category)">
+                <span class="service-dot size-2" />
                 <span class="font-bold text-[15px] text-gray-900">{{ service.name }}</span>
-                <span class="text-[12.5px]" :class="serviceTextClass(service.category)">
+                <span class="service-program text-[12.5px]">
                   {{ serviceProgram(service) }}
                 </span>
               </div>
@@ -382,7 +336,7 @@ const serviceTextClass = (category: string) => {
               >
                 <span
                   class="schedule-day w-fit"
-                  :style="dayBadgeStyle(group.day)"
+                  :class="{ 'is-today': isToday(group.day) }"
                 >{{ group.day.slice(0, 3).toUpperCase() }}</span>
                 <div class="flex flex-col gap-1">
                   <div
@@ -417,17 +371,23 @@ const serviceTextClass = (category: string) => {
                   :key="food"
                   class="food-pill bg-[var(--green-light)]"
                 >
-                  <span class="text-[13px]">{{ foodEmoji(food) }}</span>{{ food }}
+                  {{ food }}
                 </span>
               </div>
 
               <div
                 v-if="serviceSchedulesByDay(service).length === 0 && !serviceNoDayNote(service) && serviceFoods(service).length === 0 && !service.notes"
-                class="pl-4 text-[13px] italic text-gray-400"
+                class="pl-4 text-[13px] italic text-gray-500"
               >
                 Contact pantry for details.
               </div>
             </div>
+          </section>
+
+          <!-- About -->
+          <section v-if="pantry.about" class="detail-card px-7 py-6">
+            <h2 class="detail-section-title">About This Pantry</h2>
+            <p class="detail-body">{{ pantry.about }}</p>
           </section>
         </div>
 
@@ -502,7 +462,7 @@ const serviceTextClass = (category: string) => {
                 :key="food"
                 class="food-pill bg-[var(--green-light)]"
               >
-                <span class="text-[14px]">{{ foodEmoji(food) }}</span>{{ food }}
+                {{ food }}
               </span>
             </div>
           </div>
@@ -511,15 +471,15 @@ const serviceTextClass = (category: string) => {
           <div class="detail-card p-5">
             <div class="detail-eyebrow">Community</div>
             <div class="grid grid-cols-2 gap-3">
-              <div class="text-center px-2.5 py-3.5 bg-[#fff1f2] rounded-xl border border-[#fca5a5]">
-                <div class="text-[22px] font-bold text-[#e11d48]">{{ localCount }}</div>
-                <div class="text-[11px] font-medium text-[#9b1c3a] mt-0.5">
+              <div class="text-center px-2.5 py-3.5 bg-[var(--danger-wash)] rounded-xl border border-[var(--danger-border)]">
+                <div class="text-[22px] font-bold text-[var(--danger)]">{{ localCount }}</div>
+                <div class="text-[11px] font-medium text-[var(--danger-text)] mt-0.5">
                   {{ localCount === 1 ? 'love' : 'loves' }}
                 </div>
               </div>
-              <div class="text-center px-2.5 py-3.5 bg-[var(--green-light)] rounded-xl border border-[#b8e8cc]">
+              <div class="text-center px-2.5 py-3.5 bg-[var(--green-light)] rounded-xl border border-[var(--green-border)]">
                 <div class="text-[22px] font-bold text-[var(--green-dark)]">—</div>
-                <div class="text-[11px] font-medium text-[#1a6038] mt-0.5">followers</div>
+                <div class="text-[11px] font-medium text-[var(--green-darker)] mt-0.5">followers</div>
               </div>
             </div>
           </div>
@@ -529,8 +489,8 @@ const serviceTextClass = (category: string) => {
 
     <!-- Not found / error -->
     <div v-else class="text-center px-6 py-24 max-w-[460px] mx-auto">
-      <div class="w-16 h-16 bg-yellow-50 rounded-full flex items-center justify-center mx-auto mb-4">
-        <UIcon name="i-lucide-map-pin-off" class="size-7 text-yellow-500" />
+      <div class="state-icon state-icon--warn mx-auto mb-4">
+        <UIcon name="i-lucide-map-pin-off" class="size-7" />
       </div>
       <h1 class="text-[24px] font-semibold text-gray-900 mb-2.5">Pantry not found</h1>
       <p class="text-gray-500 text-[15px] leading-relaxed mb-6">

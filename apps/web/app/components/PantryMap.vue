@@ -37,19 +37,19 @@ const escapeHtml = (s: string) =>
   ))
 
 const markerColor = (p: Pantry, selected: boolean): string => {
-  if (selected) return '#f97316'
-  if (isHearted(p.id)) return '#e11d48'
-  if (isOpenNow(p.schedules)) return '#1e7a47'
-  return '#8aab97'
+  if (selected) return 'var(--accent)'
+  if (isHearted(p.id)) return 'var(--danger)'
+  if (isOpenNow(p.schedules)) return 'var(--green-dark)'
+  return 'var(--text-soft)'
 }
 
 // Teardrop pin with the pantry's first initial (ported from the v2.1 design doc).
 const makeIcon = (p: Pantry, selected: boolean): DivIcon => {
   const color = markerColor(p, selected)
   const size = selected ? 44 : 36
-  const ring = selected ? '3px solid #fff' : '2.5px solid white'
+  const ring = selected ? '3px solid white' : '2.5px solid white'
   const shadow = selected
-    ? '0 0 0 3px rgba(249,115,22,0.35), 0 4px 14px rgba(0,0,0,0.25)'
+    ? '0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent), 0 4px 14px rgba(0,0,0,0.25)'
     : '0 3px 10px rgba(0,0,0,0.2)'
   const initial = escapeHtml(p.name.charAt(0).toUpperCase())
   return L!.divIcon({
@@ -69,11 +69,11 @@ const makePopup = (p: Pantry): HTMLElement => {
 
   const name = document.createElement('strong')
   name.textContent = p.name
-  name.style.cssText = "display:block;font-family:'Inter',sans-serif;font-size:14px;color:#1a2e1e"
+  name.style.cssText = "display:block;font-family:'Inter',sans-serif;font-size:14px;color:var(--text-dark)"
 
   const addr = document.createElement('small')
   addr.textContent = p.address
-  addr.style.cssText = 'display:block;margin-top:2px;color:#8aab97'
+  addr.style.cssText = 'display:block;margin-top:2px;color:var(--text-soft)'
 
   wrap.append(name, addr)
 
@@ -81,7 +81,7 @@ const makePopup = (p: Pantry): HTMLElement => {
     const btn = document.createElement('button')
     btn.type = 'button'
     btn.textContent = 'View Details'
-    btn.style.cssText = 'margin-top:10px;background:#1e7a47;color:white;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;width:100%;font-family:inherit'
+    btn.style.cssText = 'margin-top:10px;background:var(--green-dark);color:white;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;width:100%;font-family:inherit'
     btn.addEventListener('click', () => emit('select', p))
     wrap.append(btn)
   }

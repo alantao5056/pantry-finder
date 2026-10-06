@@ -54,18 +54,18 @@ const clearAll = () => emit('update:modelValue', { ...EMPTY_FILTERS })
       <!-- Header -->
       <div class="flex justify-between items-center mb-5">
         <div class="flex items-center gap-2">
-          <UIcon name="i-lucide-sliders-horizontal" class="size-[15px] text-forest-700" />
-          <span class="font-bold text-[14px] text-forest-700">Filters</span>
+          <UIcon name="i-lucide-sliders-horizontal" class="size-[15px] text-[var(--green-dark)]" />
+          <span class="font-bold text-[14px] text-[var(--green-dark)]">Filters</span>
           <span
             v-if="activeCount > 0"
-            class="bg-forest-700 text-white rounded-full text-[11px] font-semibold px-2 py-[1px]"
+            class="bg-[var(--green-dark)] text-white rounded-full text-[11px] font-semibold px-2 py-[1px]"
           >{{ activeCount }}</span>
         </div>
         <div class="flex items-center gap-1">
           <button
             v-if="activeCount > 0"
             type="button"
-            class="bg-transparent border-none text-amber-600 hover:text-amber-700 text-[12px] font-semibold"
+            class="bg-transparent border-none text-[var(--accent-text)] hover:text-[var(--accent)] text-[12px] font-semibold"
             @click="clearAll"
           >Clear all</button>
           <button

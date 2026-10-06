@@ -53,33 +53,21 @@ const onCardKeydown = (event: KeyboardEvent) => {
 
 <template>
   <div
-    class="bg-white rounded-[20px] border-[1.5px] border-[var(--border-soft)] overflow-hidden transition-all duration-200 shadow-[0_2px_12px_rgba(28,69,50,0.06)] hover:shadow-[0_8px_32px_rgba(28,69,50,0.12)] hover:-translate-y-0.5 flex flex-col"
+    class="bg-white rounded-xl border-[1.5px] border-[var(--border-soft)] overflow-hidden transition-colors duration-200 shadow-[0_2px_12px_rgba(0,0,0,0.05)] hover:border-[var(--green-soft)] flex flex-col"
     role="button"
     tabindex="0"
     :aria-label="`View details for ${pantry.name}`"
     @click="emit('select', pantry)"
     @keydown="onCardKeydown"
   >
-    <!-- Color accent bar -->
-    <div class="h-1 shrink-0 bg-linear-to-r from-[var(--text-dark)] via-[var(--green-dark)] to-[var(--green-mid)]" />
-
     <div class="px-5 py-[18px] flex-1">
       <!-- Header: name + status -->
       <div class="flex justify-between items-start gap-2.5 mb-2">
         <h3 class="text-[18px] font-semibold text-[var(--text-dark)] leading-[1.3] flex-1">{{ pantry.name }}</h3>
         <div class="flex flex-col items-end gap-1 shrink-0">
-          <span
-            v-if="openNow"
-            class="bg-green-100 text-green-900 text-[11px] font-bold px-2.5 py-0.5 rounded-full tracking-wide"
-          >OPEN NOW</span>
-          <span
-            v-else-if="openToday"
-            class="bg-yellow-100 text-yellow-800 text-[11px] font-bold px-2.5 py-0.5 rounded-full"
-          >OPEN TODAY</span>
-          <span
-            v-else-if="hasSchedules"
-            class="bg-gray-100 text-gray-500 text-[11px] font-semibold px-2.5 py-0.5 rounded-full"
-          >CLOSED TODAY</span>
+          <span v-if="openNow" class="status-pill status-pill--open">OPEN NOW</span>
+          <span v-else-if="openToday" class="status-pill status-pill--today">OPEN TODAY</span>
+          <span v-else-if="hasSchedules" class="status-pill status-pill--closed">CLOSED TODAY</span>
         </div>
       </div>
 
@@ -120,7 +108,7 @@ const onCardKeydown = (event: KeyboardEvent) => {
           <span v-for="(s, i) in days.slice(0, 2)" :key="i">
             <span v-if="i > 0"> • </span>{{ s.weekDay.slice(0, 3) }} {{ s.start }}–{{ s.end }}
           </span>
-          <span v-if="days.length > 2" class="text-gray-400"> +{{ days.length - 2 }} more</span>
+          <span v-if="days.length > 2" class="text-gray-500"> +{{ days.length - 2 }} more</span>
         </div>
       </div>
 
@@ -133,9 +121,9 @@ const onCardKeydown = (event: KeyboardEvent) => {
           <span
             v-for="f in visibleFoods"
             :key="f"
-            class="bg-[var(--green-light)] text-[var(--green-dark)] border border-[var(--green-soft)] text-[11px] font-medium px-2 py-[3px] rounded-full inline-flex items-center gap-1"
+            class="bg-[var(--green-light)] text-[var(--green-dark)] border border-[var(--green-border)] text-[11px] font-medium px-2 py-[3px] rounded-full inline-flex items-center gap-1"
           >
-            <span class="inline-flex justify-center w-4 shrink-0 text-[12px]">{{ foodEmoji(f) }}</span>{{ f }}
+            {{ f }}
           </span>
           <span
             v-if="extraFoods > 0"
@@ -153,8 +141,8 @@ const onCardKeydown = (event: KeyboardEvent) => {
           <span
             v-for="(s, i) in visibleServices"
             :key="i"
-            class="text-[11px] font-medium px-[9px] py-[3px] rounded-full border"
-            :class="serviceColorClasses(s.category)"
+            class="service-chip"
+            :class="serviceTone(s.category)"
           >{{ s.name }}</span>
           <span
             v-if="extraServices > 0"
@@ -175,11 +163,11 @@ const onCardKeydown = (event: KeyboardEvent) => {
       >
         <UIcon
           :name="(hearted || hovered) ? 'i-heroicons-heart-solid' : 'i-heroicons-heart'"
-          class="size-3.5 transition-colors text-rose-600"
+          class="size-3.5 transition-colors text-[var(--danger)]"
         />
-        <span class="text-[13px] font-semibold transition-colors text-rose-600">{{ localCount }}</span>
+        <span class="text-[13px] font-semibold transition-colors text-[var(--danger)]">{{ localCount }}</span>
       </button>
-      <span class="text-[12px] text-gray-400">loves</span>
+      <span class="text-[12px] text-gray-500">loves</span>
     </div>
   </div>
 </template>

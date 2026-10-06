@@ -66,18 +66,18 @@ defineExpose({
     <div
       class="search-wrap flex border-[1.5px] overflow-hidden"
       :class="showRadius
-        ? 'rounded-[14px] shadow-[0_2px_12px_rgba(30,122,71,0.06)]'
-        : 'rounded-[18px] shadow-[0_4px_24px_rgba(30,122,71,0.08)]'"
+        ? 'rounded-[14px] shadow-[0_2px_12px_rgba(0,0,0,0.05)]'
+        : 'rounded-[18px] shadow-[0_4px_24px_rgba(0,0,0,0.06)]'"
     >
       <!-- Address input -->
       <div
-        class="flex-1 flex items-center"
-        :class="showRadius ? 'gap-2.5 px-[18px]' : 'gap-3 px-5'"
+        class="flex-1 min-w-0 flex items-center"
+        :class="showRadius ? 'gap-2.5 px-[18px]' : 'gap-2 px-4 sm:gap-3 sm:px-5'"
       >
         <svg
           viewBox="0 0 24 24"
           fill="none"
-          :stroke="showRadius ? '#2d9a5f' : '#82d4a7'"
+          :stroke="showRadius ? 'var(--green-mid)' : 'var(--green-soft)'"
           stroke-width="2"
           stroke-linecap="round"
           stroke-linejoin="round"
@@ -97,7 +97,7 @@ defineExpose({
           :aria-expanded="isOpen"
           aria-controls="address-suggestions"
           :aria-activedescendant="activeIndex >= 0 ? `address-suggestion-${activeIndex}` : undefined"
-          class="flex-1 bg-transparent border-none outline-none placeholder:text-gray-400 font-sans"
+          class="flex-1 min-w-0 bg-transparent border-none outline-none placeholder:text-gray-400 font-sans"
           :class="showRadius ? 'text-[14px] py-[13px]' : 'text-[15px] py-[18px]'"
           style="color: var(--text-dark);"
           @focus="onFocus"
@@ -129,7 +129,7 @@ defineExpose({
       <button
         type="button"
         class="search-submit border-none text-white font-semibold cursor-pointer whitespace-nowrap font-sans flex items-center justify-center gap-[7px]"
-        :class="showRadius ? 'text-[14px] px-6' : 'text-[15px] px-7'"
+        :class="showRadius ? 'text-[14px] px-6' : 'text-[15px] px-5 sm:px-7'"
         @click="onSubmit"
       >
         <svg
@@ -146,7 +146,8 @@ defineExpose({
           <circle cx="11" cy="11" r="8" />
           <path d="m21 21-4.35-4.35" />
         </svg>
-        <span>{{ showRadius ? 'Search' : 'Search Pantries' }}</span>
+        <!-- The landing-page label drops " Pantries" on phones so the input keeps its width. -->
+        <span>Search<span v-if="!showRadius" class="max-sm:hidden"> Pantries</span></span>
       </button>
     </div>
 
@@ -169,7 +170,7 @@ defineExpose({
       <!-- Empty -->
       <div
         v-else-if="suggestions.length === 0"
-        class="px-4 py-3 text-[14px] text-gray-400"
+        class="px-4 py-3 text-[14px] text-gray-500"
       >
         No matches
       </div>
@@ -191,7 +192,7 @@ defineExpose({
         >
           <UIcon
             name="i-lucide-map-pin"
-            class="size-4 shrink-0 mt-0.5 text-forest-500"
+            class="size-4 shrink-0 mt-0.5 text-[var(--green-mid)]"
           />
           <div class="min-w-0 flex-1">
             <div class="text-[14px] truncate text-gray-900">{{ s.primary }}</div>
@@ -212,6 +213,6 @@ defineExpose({
   transition: background-color 0.2s ease;
 }
 .search-submit:hover {
-  background-color: #1a6038;
+  background-color: var(--green-darker);
 }
 </style>

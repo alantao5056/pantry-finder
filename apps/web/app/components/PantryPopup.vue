@@ -63,47 +63,6 @@ const validServiceSchedules = (service: Service) =>
 
 const uniqueFoodList = (service: Service) => [...new Set(service.food)]
 
-const dayBadgeStyle = (day: string) => {
-  const color = dayColor(day)
-  return {
-    color,
-    backgroundColor: `${color}18`,
-  }
-}
-
-const serviceTheme = (category: string) => {
-  if (category === 'Food Program') {
-    return {
-      bg: 'bg-[var(--green-light)]',
-      border: 'border-[var(--green-soft)]',
-      dot: 'bg-[var(--green-dark)]',
-      text: 'text-[var(--green-dark)]',
-    }
-  }
-  if (category === 'Healthcare Screenings/Referrals') {
-    return {
-      bg: 'bg-blue-50',
-      border: 'border-blue-200',
-      dot: 'bg-blue-500',
-      text: 'text-blue-700',
-    }
-  }
-  if (category === 'Housing Assistance') {
-    return {
-      bg: 'bg-orange-50',
-      border: 'border-orange-200',
-      dot: 'bg-orange-500',
-      text: 'text-orange-700',
-    }
-  }
-  return {
-    bg: 'bg-violet-50',
-    border: 'border-violet-200',
-    dot: 'bg-violet-500',
-    text: 'text-violet-700',
-  }
-}
-
 const onKeydown = (event: KeyboardEvent) => {
   if (event.key === 'Escape') close()
 }
@@ -139,19 +98,13 @@ onBeforeUnmount(() => {
           </button>
 
           <div class="flex items-start gap-3.5 mb-4">
-            <div class="pantry-popup-monogram">
-              {{ pantry.name.charAt(0) }}
-            </div>
             <div class="flex-1 min-w-0 pr-10">
-              <div class="flex items-center gap-2.5 flex-wrap mb-1.5">
-                <h2 class="text-[clamp(20px,3vw,26px)] font-bold text-gray-900 leading-tight">
-                  {{ pantry.name }}
-                </h2>
+              <div class="flex flex-col items-start gap-2 mb-1.5">
                 <span
                   v-if="openNow"
                   class="status-pill status-pill--open"
                 >
-                  <span class="size-1.5 rounded-full bg-green-500" />
+                  <span class="status-dot" />
                   OPEN NOW
                 </span>
                 <span
@@ -162,6 +115,9 @@ onBeforeUnmount(() => {
                   v-else-if="pantry.schedules.length > 0"
                   class="status-pill status-pill--closed"
                 >CLOSED TODAY</span>
+                <h2 class="text-[clamp(20px,3vw,26px)] font-bold text-gray-900 leading-tight">
+                  {{ pantry.name }}
+                </h2>
               </div>
 
               <div class="pantry-popup-meta">
@@ -266,7 +222,7 @@ onBeforeUnmount(() => {
                 >
                   <span
                     class="schedule-day"
-                    :style="dayBadgeStyle(schedule.weekDay)"
+                    :class="{ 'is-today': isToday(schedule.weekDay) }"
                   >{{ schedule.weekDay.slice(0, 3).toUpperCase() }}</span>
                   <span class="min-w-0">
                     <span class="block text-[13px] font-medium text-gray-800">
@@ -274,14 +230,14 @@ onBeforeUnmount(() => {
                     </span>
                     <span
                       v-if="schedule.notes"
-                      class="block text-[11px] text-gray-400 mt-0.5"
+                      class="block text-[11px] text-gray-500 mt-0.5"
                     >{{ schedule.notes }}</span>
                   </span>
                 </div>
               </div>
               <p
                 v-else
-                class="text-[13px] italic text-gray-400"
+                class="text-[13px] italic text-gray-500"
               >
                 Call for schedule: {{ pantry.phone || 'see contact info' }}
               </p>
@@ -301,12 +257,12 @@ onBeforeUnmount(() => {
                   :key="food"
                   class="food-pill bg-white"
                 >
-                  <span class="text-[13px]">{{ foodEmoji(food) }}</span>{{ food }}
+                  {{ food }}
                 </span>
               </div>
               <p
                 v-else
-                class="text-[13px] italic text-gray-400"
+                class="text-[13px] italic text-gray-500"
               >
                 Contact for availability details
               </p>
@@ -323,25 +279,18 @@ onBeforeUnmount(() => {
                 v-for="(service, index) in uniqueServices"
                 :key="serviceKey(service, index)"
                 class="service-panel"
-                :class="serviceTheme(service.category).border"
+                :class="serviceTone(service.category)"
               >
                 <button
                   type="button"
                   class="service-panel-toggle"
-                  :class="serviceTheme(service.category).bg"
                   :aria-expanded="isServiceOpen(service, index)"
                   @click="toggleService(service, index)"
                 >
-                  <span
-                    class="size-[7px] rounded-full shrink-0"
-                    :class="serviceTheme(service.category).dot"
-                  />
+                  <span class="service-dot size-[7px]" />
                   <span class="flex-1 min-w-0">
                     <span class="text-[13.5px] font-semibold text-gray-900">{{ service.name }}</span>
-                    <span
-                      class="text-[12px] ml-2"
-                      :class="serviceTheme(service.category).text"
-                    >
+                    <span class="service-program text-[12px] ml-2">
                       {{ service.program && service.program !== service.category ? service.program : service.category }}
                     </span>
                   </span>
@@ -365,7 +314,7 @@ onBeforeUnmount(() => {
                       :key="food"
                       class="food-pill bg-[var(--green-light)]"
                     >
-                      <span class="text-[13px]">{{ foodEmoji(food) }}</span>{{ food }}
+                      {{ food }}
                     </span>
                   </div>
 
@@ -379,7 +328,7 @@ onBeforeUnmount(() => {
                         <template v-if="schedule.weekDay && schedule.start">
                           <span
                             class="schedule-day"
-                            :style="dayBadgeStyle(schedule.weekDay)"
+                            :class="{ 'is-today': isToday(schedule.weekDay) }"
                           >{{ schedule.weekDay.slice(0, 3).toUpperCase() }}</span>
                           <span class="flex-1 text-[13px] font-medium text-gray-800">
                             {{ schedule.start }} - {{ schedule.end }}

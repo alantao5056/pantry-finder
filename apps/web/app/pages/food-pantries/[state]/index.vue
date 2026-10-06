@@ -87,7 +87,7 @@ useHead(() => ({
 </script>
 
 <template>
-  <div class="min-h-[calc(100dvh-4rem-1px)] bg-[#f5f7f5] font-sans">
+  <div class="min-h-[calc(100dvh-4rem-1px)] bg-[var(--cream-light)] font-sans">
     <!-- Breadcrumb bar -->
     <div class="crumb-bar">
       <nav class="crumb-row" aria-label="Breadcrumb">

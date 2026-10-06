@@ -18,7 +18,7 @@ const navLinks = [
 <template>
   <header
     class="sticky top-0 z-50 border-b"
-    style="background: rgba(253,251,247,0.88); backdrop-filter: blur(12px); border-color: var(--border-soft);"
+    style="background: color-mix(in srgb, var(--cream-light) 88%, transparent); backdrop-filter: blur(12px); border-color: var(--border-soft);"
   >
     <div class="max-w-[1120px] mx-auto h-16 flex items-center justify-between">
 
@@ -59,7 +59,7 @@ const navLinks = [
           <div
             v-else
             class="w-[34px] h-[34px] rounded-full flex items-center justify-center text-[12px] font-semibold"
-            style="background: #dcf4e6; color: var(--green-dark);"
+            style="background: var(--green-wash); color: var(--green-dark);"
             aria-label="Account"
           >{{ initials }}</div>
           <button

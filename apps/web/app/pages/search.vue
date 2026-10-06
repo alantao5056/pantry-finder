@@ -300,7 +300,7 @@ const mapActive = computed(() => viewMode.value === 'map' && resultsReady.value)
               {{ showFilters ? 'Hide' : 'Show' }} Filters
               <span
                 v-if="activeFilterCount > 0"
-                class="ml-1 bg-forest-700 text-white rounded-full text-[11px] font-semibold px-1.5"
+                class="ml-1 bg-[var(--green-dark)] text-white rounded-full text-[11px] font-semibold px-1.5"
               >{{ activeFilterCount }}</span>
             </button>
 
@@ -331,18 +331,18 @@ const mapActive = computed(() => viewMode.value === 'map' && resultsReady.value)
                 Searching for pantries…
               </template>
               <template v-else-if="authRequired && loadedPantries.length === 0">
-                <span class="text-red-700">Sign in to search.</span>
+                <span class="text-[var(--danger-text)]">Sign in to search.</span>
               </template>
               <template v-else-if="rateLimited && loadedPantries.length === 0">
-                <span class="text-red-700">Search limit reached.</span>
+                <span class="text-[var(--danger-text)]">Search limit reached.</span>
               </template>
               <template v-else-if="error && loadedPantries.length === 0">
-                <span class="text-red-700">Could not load pantries.</span>
+                <span class="text-[var(--danger-text)]">Could not load pantries.</span>
               </template>
               <template v-else>
                 <span class="font-bold text-gray-900">{{ filteredPantries.length }}</span>
                 {{ filteredPantries.length === 1 ? 'pantry' : 'pantries' }} found within
-                <span class="font-semibold text-forest-700">{{ radiusValue }} miles</span>
+                <span class="font-semibold text-[var(--green-dark)]">{{ radiusValue }} miles</span>
               </template>
             </span>
           </div>
@@ -379,7 +379,7 @@ const mapActive = computed(() => viewMode.value === 'map' && resultsReady.value)
               v-if="pending && loadedPantries.length === 0"
               class="flex items-center justify-center py-20 text-gray-500 gap-3"
             >
-              <UIcon name="i-lucide-loader-2" class="size-6 animate-spin text-forest-500" />
+              <UIcon name="i-lucide-loader-2" class="size-6 animate-spin text-[var(--green-mid)]" />
               <span class="text-[15px]">Loading pantries…</span>
             </div>
 
@@ -388,8 +388,8 @@ const mapActive = computed(() => viewMode.value === 'map' && resultsReady.value)
               v-else-if="isLocationNotFound"
               class="text-center py-16 px-6"
             >
-              <div class="w-16 h-16 bg-yellow-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                <UIcon name="i-lucide-map-pin-off" class="size-7 text-yellow-500" />
+              <div class="state-icon state-icon--warn mx-auto mb-4">
+                <UIcon name="i-lucide-map-pin-off" class="size-7" />
               </div>
               <h3 class="text-[22px] text-gray-900 mb-2">We couldn't find that address</h3>
               <p class="text-gray-500 text-[15px]">Try entering a city, ZIP code, or a more complete street address.</p>
@@ -411,8 +411,8 @@ const mapActive = computed(() => viewMode.value === 'map' && resultsReady.value)
               class="text-center px-6 h-full flex flex-col items-center"
             >
               <div style="flex: 2 1 0" />
-              <div class="w-16 h-16 bg-yellow-50 rounded-full flex items-center justify-center mb-4">
-                <UIcon name="i-lucide-clock" class="size-7 text-yellow-600" />
+              <div class="state-icon state-icon--warn mb-4">
+                <UIcon name="i-lucide-clock" class="size-7" />
               </div>
               <h3 class="text-[22px] text-gray-900 mb-2">You've hit the search limit</h3>
               <p class="text-gray-500 text-[15px] max-w-[420px]">{{ rateLimited.message }}</p>
@@ -424,13 +424,13 @@ const mapActive = computed(() => viewMode.value === 'map' && resultsReady.value)
               v-else-if="error && loadedPantries.length === 0"
               class="text-center py-16 px-6"
             >
-              <div class="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                <UIcon name="i-lucide-alert-circle" class="size-7 text-red-500" />
+              <div class="state-icon state-icon--error mx-auto mb-4">
+                <UIcon name="i-lucide-alert-circle" class="size-7" />
               </div>
               <h3 class="text-[22px] text-gray-900 mb-2">Something went wrong</h3>
               <p class="text-gray-500 text-[15px] mb-5">We hit an error fetching pantries. Please try again.</p>
               <button
-                class="bg-forest-700 hover:bg-forest-800 text-white rounded-lg px-5 py-2 text-[14px] font-medium transition-colors"
+                class="btn-primary btn--sm"
                 @click="refresh()"
               >Retry</button>
             </div>
@@ -440,8 +440,8 @@ const mapActive = computed(() => viewMode.value === 'map' && resultsReady.value)
               v-else-if="loadedPantries.length === 0"
               class="text-center py-16 px-6"
             >
-              <div class="w-16 h-16 bg-forest-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                <UIcon name="i-lucide-search" class="size-7 text-forest-400" />
+              <div class="state-icon state-icon--neutral mx-auto mb-4">
+                <UIcon name="i-lucide-search" class="size-7" />
               </div>
               <h3 class="text-[22px] text-gray-900 mb-2">No pantries found</h3>
               <p class="text-gray-500 text-[15px]">Try increasing the search radius or entering a different location.</p>
@@ -480,7 +480,7 @@ const mapActive = computed(() => viewMode.value === 'map' && resultsReady.value)
                 v-if="pending"
                 class="flex items-center justify-center py-6 text-gray-500 gap-2 text-[13px]"
               >
-                <UIcon name="i-lucide-loader-2" class="size-4 animate-spin text-forest-500" />
+                <UIcon name="i-lucide-loader-2" class="size-4 animate-spin text-[var(--green-mid)]" />
                 <span>Loading more pantries…</span>
               </div>
             </div>
@@ -507,7 +507,7 @@ const mapActive = computed(() => viewMode.value === 'map' && resultsReady.value)
 
             <template #fallback>
               <div class="flex items-center justify-center py-20 text-gray-500 gap-3">
-                <UIcon name="i-lucide-loader-2" class="size-6 animate-spin text-forest-500" />
+                <UIcon name="i-lucide-loader-2" class="size-6 animate-spin text-[var(--green-mid)]" />
                 <span class="text-[15px]">Loading pantries…</span>
               </div>
             </template>

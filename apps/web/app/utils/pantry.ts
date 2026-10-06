@@ -36,6 +36,10 @@ export function isOpenToday(schedules: Schedule[], now: Date = new Date()): bool
   return schedules.some(s => s.weekDay === today && s.start)
 }
 
+export function isToday(weekDay: string, now: Date = new Date()): boolean {
+  return WEEKDAYS[now.getDay()] === weekDay
+}
+
 export function getUniqueFoods(services: Service[]): string[] {
   const foods = new Set<string>()
   for (const s of services) {
@@ -165,42 +169,13 @@ export function buildPantryJsonLd(pantry: Pantry, url: string): Record<string, u
   return ld
 }
 
-export function dayColor(day: string): string {
-  const colors: Record<string, string> = {
-    Monday: '#2563eb',
-    Tuesday: '#7c3aed',
-    Wednesday: '#0891b2',
-    Thursday: '#059669',
-    Friday: '#ca8a04',
-    Saturday: '#dc2626',
-    Sunday: '#9333ea',
-  }
-  return colors[day] ?? '#0e7490'
-}
-
-export function serviceColorClasses(category: string): string {
-  if (category === 'Food Program') return 'bg-[var(--green-light)] text-[var(--green-dark)] border-[var(--green-soft)]'
-  if (category === 'Healthcare Screenings/Referrals') return 'bg-blue-50 text-blue-700 border-blue-200'
-  if (category === 'Housing Assistance') return 'bg-orange-50 text-orange-700 border-orange-200'
-  return 'bg-violet-50 text-violet-700 border-violet-200'
-}
-
-const FOOD_EMOJI: Record<string, string> = {
-  'Dairy': '🥛',
-  'Eggs': '🥚',
-  'Fruits & Vegetables': '🥦',
-  'Meat': '🥩',
-  'Shelf Stable/Non-Perishable Goods': '🥫',
-  'Prepared Food / Grab and Go': '🍱',
-  'Household Products': '🧹',
-  'Toiletries / Hygiene Products': '🧴',
-  'Pet Food / Supplies': '🐾',
-  'Diapers': '👶',
-  'Other': '📦',
-}
-
-export function foodEmoji(food: string): string {
-  return FOOD_EMOJI[food] ?? '🍽️'
+// Tone class for a service category. The class sets the --tone-* variables that
+// .service-chip / .service-dot / .service-program / .service-panel read (main.css).
+export function serviceTone(category: string): string {
+  if (category === 'Food Program') return 'service-tone--food'
+  if (category === 'Healthcare Screenings/Referrals') return 'service-tone--health'
+  if (category === 'Housing Assistance') return 'service-tone--housing'
+  return 'service-tone--other'
 }
 
 export const ALL_DAYS = [

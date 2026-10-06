@@ -163,7 +163,7 @@ async function onSubmit() {
                 {{ tab === 'login' ? 'Welcome back' : 'Join the community' }}
               </h2>
               <p class="text-[14px]" style="color: var(--text-soft);">
-                {{ tab === 'login' ? 'Sign in to save pantries & leave reviews' : 'Free forever — no strings attached' }}
+                {{ tab === 'login' ? 'Sign in to save pantries & leave reviews' : 'Free forever, no strings attached' }}
               </p>
             </div>
           </div>
@@ -244,8 +244,7 @@ async function onSubmit() {
 
             <p
               v-if="error"
-              class="text-sm rounded-md px-3 py-2"
-              style="color: #b91c1c; background: #fef2f2;"
+              class="alert-error text-sm rounded-md px-3 py-2"
             >{{ error }}</p>
 
             <button
@@ -276,9 +275,9 @@ input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
 input:-webkit-autofill:active {
-  -webkit-box-shadow: 0 0 0 1000px #ffffff inset;
-  -webkit-text-fill-color: #1a2e1e;
-  caret-color: #1a2e1e;
+  -webkit-box-shadow: 0 0 0 1000px white inset;
+  -webkit-text-fill-color: var(--text-dark);
+  caret-color: var(--text-dark);
   transition: background-color 9999s ease-in-out 0s;
 }
 </style>

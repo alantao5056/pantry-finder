@@ -4,57 +4,94 @@
 @theme {
   --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
 
-  /* Forest green scale (legacy — used by PantryCard / FiltersSidebar) */
-  --color-forest-50:  #E8F5EC;
-  --color-forest-100: #D8F3DC;
-  --color-forest-200: #B7E4C7;
-  --color-forest-300: #74C69D;
-  --color-forest-400: #52B788;
-  --color-forest-500: #40916C;
-  --color-forest-600: #2D6A4F;
-  --color-forest-700: #1C4532;
-  --color-forest-800: #0B3D26;
-
-  /* Warm cream palette (legacy) */
-  --color-cream:        #F6F4EE;
-  --color-cream-muted:  #EEE9E0;
-  --color-cream-dark:   #E8E4DC;
+  /* Warm neutral scale. Replaces Tailwind's cool gray so every `*-gray-*`
+     utility lands on the same neutrals as the tokens below
+     (500 = --text-soft, 600 = --text-mid, 900 = --text-dark). */
+  --color-gray-50:  #f8f7f4;
+  --color-gray-100: #f1efea;
+  --color-gray-200: #e6e3dc;
+  --color-gray-300: #d3d0c8;
+  --color-gray-400: #a3a59f;
+  --color-gray-500: #6b736d;
+  --color-gray-600: #4d5650;
+  --color-gray-700: #3a423d;
+  --color-gray-800: #2a312c;
+  --color-gray-900: #1f2622;
+  --color-gray-950: #151a17;
 }
 
-/* New v2 design tokens (used by landing, navbar, footer, auth modal, search bar) */
+/* Design tokens — the only place colors are defined. Components and templates
+   reference these (or the gray scale above) instead of hardcoding values. */
 :root {
-  --green-dark: #1e7a47;
-  --green-mid: #2d9a5f;
-  --green-soft: #82d4a7;
-  --green-light: #f8fcf9;
-  --green-wash: #f0faf4;
-  --cream-light: #fdfbf7;
-  --cream-warm: #faf5ec;
-  --soil: #c4a882;
-  --text-dark: #1a2e1e;
-  --text-mid: #4a6355;
-  --text-soft: #8aab97;
-  --border-soft: #edf3ef;
-  --border-input: #dde8e2;
+  /* Brand green: primary actions, links, selected states. */
+  --green-darker: #155634;
+  --green-dark: #1b6b40;
+  --green-mid: #26804e;
+  --green-soft: #9fd0b3;
+  --green-border: #cfe6d8;
+  --green-wash: #eaf4ee;
+  --green-light: #f4f9f6;
+
+  /* Text. */
+  --text-dark: #1f2622;
+  --text-mid: #4d5650;
+  --text-soft: #6b736d;
+
+  /* Surfaces and borders. */
+  --cream-light: #fbfaf6;
+  --cream-warm: #f5f1e8;
+  --surface-subtle: #f8f7f4;
+  --surface-muted: #f1efea;
+  --border-soft: #ebe9e3;
+  --border-input: #dcd9d1;
+  --footer-bg: #1f2622;
+  --backdrop: rgba(20, 26, 22, 0.55);
+
+  /* Warm accent (the orange in the logo): highlights and "later today" states. */
+  --accent: #dc6814;
+  --accent-text: #b4530f;
+  --accent-wash: #fff4e8;
+  --accent-border: #f6cfa5;
+
+  /* Hearts, required markers, errors. */
+  --danger: #d41a42;
+  --danger-text: #b4173a;
+  --danger-wash: #fff1f2;
+  --danger-border: #fca5a5;
+
+  /* "Open now" status. */
+  --open-text: #17803d;
+  --open-dot: #22a550;
+  --open-wash: #edf9f0;
+  --open-border: #b5e3c2;
+
+  /* Muted blue (the magnifier in the logo): healthcare service tone. */
+  --slate-text: #3d5a73;
+  --slate-dot: #5b7f9e;
+  --slate-wash: #eff4f8;
+  --slate-border: #cddbe6;
 }
 
-@keyframes slide-up {
-  from { opacity: 0; transform: translateY(20px); }
-  to   { opacity: 1; transform: translateY(0); }
+html {
+  scroll-behavior: smooth;
 }
 
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50%       { transform: translateY(-12px); }
+body {
+  background: var(--cream-light);
 }
+
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]) {
+  cursor: pointer;
+}
+
+::-webkit-scrollbar       { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-input); border-radius: 3px; }
 
 @keyframes popIn {
   from { opacity: 0; transform: scale(0.92) translateY(16px); }
   to   { opacity: 1; transform: scale(1) translateY(0); }
-}
-
-.animate-slide-up {
-  animation: slide-up 0.8s ease both;
 }
 
 .animate-pop-in {
@@ -64,40 +101,40 @@
 /* Reveal-on-scroll */
 .reveal { opacity: 0; transform: translateY(32px); transition: opacity 0.7s ease, transform 0.7s ease; }
 .reveal.visible { opacity: 1; transform: translateY(0); }
-.reveal-left { opacity: 0; transform: translateX(-32px); transition: opacity 0.7s ease, transform 0.7s ease; }
-.reveal-left.visible { opacity: 1; transform: translateX(0); }
-.reveal-right { opacity: 0; transform: translateX(32px); transition: opacity 0.7s ease, transform 0.7s ease; }
-.reveal-right.visible { opacity: 1; transform: translateX(0); }
 
-.delay-1 { transition-delay: 0.1s; }
-.delay-2 { transition-delay: 0.2s; }
-.delay-3 { transition-delay: 0.3s; }
-.delay-4 { transition-delay: 0.4s; }
-.delay-5 { transition-delay: 0.5s; }
-
-/* Nav link underline */
-.nav-link { position: relative; }
-.nav-link::after {
-  content: ''; position: absolute; bottom: -2px; left: 0; width: 0; height: 1.5px;
-  background: var(--green-dark); transition: width 0.25s ease;
+/* Quick-tags row enter — staggered fade + slight rise. Per-pill delay is
+   supplied via inline `--enter-delay` and is scoped to the enter phase only,
+   so it does not interfere with the pill's own hover transition. */
+.quick-tag-enter-active {
+  transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+  transition-delay: var(--enter-delay, 0ms);
 }
-.nav-link:hover::after { width: 100%; }
+.quick-tag-enter-from {
+  opacity: 0;
+  transform: translateY(4px);
+}
 
-/* ──────────────────────────────────────────────────────────
-   Buttons & link-buttons
-
-   Composition: family class (.btn-primary / .btn-secondary /
-   .btn-on-dark / .btn-on-dark-outline / .btn-ghost / .btn-pill /
-   .btn-icon / .btn-link-accent / .footer-link) provides role
-   (color, hover) + a default size. Size modifiers (.btn--sm,
-   .btn--lg) compose with any family class.
-
-   Wrapped in @layer components so Tailwind utility classes
-   (e.g. rounded-none, w-full) declared in @layer utilities
-   reliably override per-property defaults at call sites.
-   ────────────────────────────────────────────────────────── */
-
+/* Everything below sits in @layer components so Tailwind utility classes
+   (e.g. rounded-none, w-full) declared in @layer utilities reliably override
+   per-property defaults at call sites. */
 @layer components {
+  /* Nav link underline */
+  .nav-link { position: relative; }
+  .nav-link::after {
+    content: ''; position: absolute; bottom: -2px; left: 0; width: 0; height: 1.5px;
+    background: var(--green-dark); transition: width 0.25s ease;
+  }
+  .nav-link:hover::after { width: 100%; }
+
+  /* ──────────────────────────────────────────────────────────
+     Buttons & link-buttons
+
+     Composition: family class (.btn-primary / .btn-secondary /
+     .btn-on-dark / .btn-on-dark-outline / .btn-ghost / .btn-pill /
+     .btn-icon / .btn-link-accent / .footer-link) provides role
+     (color, hover) + a default size. Size modifiers (.btn--sm,
+     .btn--lg) compose with any family class.
+     ────────────────────────────────────────────────────────── */
   .btn-primary,
   .btn-secondary,
   .btn-on-dark,
@@ -117,7 +154,7 @@
   }
 
   .btn-primary { background: var(--green-dark); color: white; border: none; }
-  .btn-primary:hover { background: #1a6038; }
+  .btn-primary:hover { background: var(--green-darker); }
 
   .btn-secondary {
     background: transparent;
@@ -141,8 +178,8 @@
     justify-content: center;
     padding: 8px 14px;
     background: transparent;
-    /* Transparent border in the base prevents layout shift when the unified
-       green-wash hover adds a 1.5px green border. */
+    /* Transparent border in the base prevents layout shift when the shared
+       green hover state adds a 1.5px green border. */
     border: 1.5px solid transparent;
     color: var(--text-mid);
     font-family: inherit;
@@ -186,7 +223,7 @@
     cursor: pointer;
     transition: color 0.2s ease;
   }
-  .btn-link-accent:hover { color: #1a6038; }
+  .btn-link-accent:hover { color: var(--green-darker); }
 
   .footer-link {
     font-size: 14px;
@@ -197,7 +234,7 @@
   .footer-link:hover { color: white; }
 
   /* Dark footer surface + its copyright/tagline text (Footer, FooterSimple, FooterBar). */
-  .footer-shell { background: #1a2e1e; }
+  .footer-shell { background: var(--footer-bg); }
   .footer-fineprint {
     font-size: 13px;
     color: rgba(255, 255, 255, 0.3);
@@ -216,9 +253,8 @@
   }
 
   /* Filter pill button — used in FiltersSidebar (day / food-type lists).
-     Default → white pill with muted text.
-     :hover  → pale-green wash with forest text (matches v2 design).
-     .is-active → solid forest border, light-green wash, semibold. */
+     Hover and .is-active colors come from the shared states at the end of
+     this layer. */
   .filter-btn {
     width: 100%;
     display: flex;
@@ -232,57 +268,54 @@
     text-align: left;
     background: white;
     color: var(--text-mid);
-    border: 1.5px solid #e5e7eb;
+    border: 1.5px solid var(--border-input);
     border-radius: 10px;
     cursor: pointer;
     transition: border-color 0.18s ease, background-color 0.18s ease, color 0.18s ease;
   }
+  .filter-btn.is-active { font-weight: 600; }
 
-  /* Form input — used in AuthModal. Default border is muted; focus shifts to forest green. */
-  .form-input {
-    @apply w-full bg-white rounded-[12px] px-4 py-[11px] text-sm border-[1.5px] outline-none transition-colors;
-    border-color: var(--border-input);
-    color: var(--text-dark);
-  }
-  .form-input:focus {
-    border-color: var(--green-dark);
-  }
-  /* Error state for any .form-input / .form-select / .form-textarea — pink
-     border + wash, shown when client-side validation fails. */
-  .form-input.has-error,
-  .form-select.has-error,
-  .form-textarea.has-error {
-    border-color: #fca5a5;
-    background-color: #fff5f5;
-  }
+  /* ──────────────────────────────────────────────────────────
+     Form controls
+     ────────────────────────────────────────────────────────── */
 
-  /* Multiline + select siblings of .form-input, sharing its border/padding so
-     the "Add a Pantry" form reads as one input family. */
-  .form-textarea {
-    @apply w-full bg-white rounded-[12px] px-4 py-[11px] text-sm border-[1.5px] outline-none transition-colors;
-    border-color: var(--border-input);
-    color: var(--text-dark);
-    resize: vertical;
-    line-height: 1.6;
-  }
-  .form-textarea:focus { border-color: var(--green-dark); }
-
+  /* Text input, textarea and select share one border/padding so forms read
+     as a single input family. Focus shifts the border to brand green. */
+  .form-input,
+  .form-textarea,
   .form-select {
     @apply w-full bg-white rounded-[12px] px-4 py-[11px] text-sm border-[1.5px] outline-none transition-colors;
     border-color: var(--border-input);
     color: var(--text-dark);
-    cursor: pointer;
   }
-  .form-select:focus { border-color: var(--green-dark); }
+  .form-input:focus,
+  .form-textarea:focus,
+  .form-select:focus {
+    border-color: var(--green-dark);
+  }
+  .form-textarea {
+    resize: vertical;
+    line-height: 1.6;
+  }
+  .form-select { cursor: pointer; }
 
-  /* Custom dropdown chevron — matches the radius selector in SearchBar. Shared
-     between the bordered .form-select boxes and the borderless inline selects
-     that opt in via .select-chevron, so the arrow SVG only lives in one place. */
+  /* Error state — shown when client-side validation fails. */
+  .form-input.has-error,
+  .form-select.has-error,
+  .form-textarea.has-error {
+    border-color: var(--danger-border);
+    background-color: var(--danger-wash);
+  }
+
+  /* Custom dropdown chevron. Shared between the bordered .form-select boxes
+     and the borderless inline selects that opt in via .select-chevron, so the
+     arrow SVG only lives in one place. Its stroke is --text-soft, inlined
+     because a data URI cannot read CSS variables. */
   .form-select,
   .select-chevron {
     appearance: none;
     -webkit-appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='16'%20height='16'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%238aab97'%20stroke-width='2.5'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpolyline%20points='6%209%2012%2015%2018%209'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='16'%20height='16'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='%236b736d'%20stroke-width='2.5'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpolyline%20points='6%209%2012%2015%2018%209'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 0.625rem center;
     background-size: 16px 16px;
@@ -300,23 +333,31 @@
   }
   .field-label-required::after {
     content: ' *';
-    color: #e11d48;
+    color: var(--danger);
   }
 
   /* Inline validation message under a field. */
   .field-error {
     margin-top: 5px;
     font-size: 12px;
-    color: #e11d48;
+    color: var(--danger);
   }
 
+  /* Error message block (AuthModal, Add-a-Pantry). Padding and radius stay
+     at the call site; .alert-error--outlined adds the border for banners. */
+  .alert-error {
+    background: var(--danger-wash);
+    color: var(--danger-text);
+  }
+  .alert-error--outlined { border: 1.5px solid var(--danger-border); }
+
   /* Card wrapping one section of the Add-a-Pantry form. Mirrors .detail-card
-     with a header row (icon chip + serif title + subtitle). */
+     with a header row (title + subtitle). */
   .form-section-card {
     border: 1.5px solid var(--border-soft);
-    border-radius: 20px;
+    border-radius: 12px;
     background: white;
-    box-shadow: 0 2px 12px rgba(30, 122, 71, 0.04);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
     padding: 28px 32px;
     margin-bottom: 20px;
   }
@@ -326,22 +367,11 @@
     gap: 14px;
     margin-bottom: 20px;
     padding-bottom: 18px;
-    border-bottom: 1px solid #f0f4f1;
-  }
-  .form-section-icon {
-    display: flex;
-    width: 40px;
-    height: 40px;
-    flex-shrink: 0;
-    align-items: center;
-    justify-content: center;
-    border-radius: 12px;
-    background: var(--green-wash);
-    font-size: 20px;
+    border-bottom: 1px solid var(--border-soft);
   }
 
   /* Toggleable pill for the Food / Services checkbox groups. `.is-checked`
-     flips to the green-wash selected state. */
+     flips to the shared selected state. */
   .check-pill {
     display: inline-flex;
     align-items: center;
@@ -358,11 +388,6 @@
     transition: border-color 0.18s ease, background-color 0.18s ease, color 0.18s ease;
   }
   .check-pill:hover { border-color: var(--green-soft); }
-  .check-pill.is-checked {
-    border-color: var(--green-dark);
-    background: var(--green-wash);
-    color: var(--green-dark);
-  }
 
   /* Social sign-in button (AuthModal "Continue with Microsoft"). Matches the
      GIS-rendered Google button's pill shape and height so the two stack evenly.
@@ -386,7 +411,7 @@
     transition: background-color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
   }
   .btn-social:hover {
-    background: #f8fafb;
+    background: var(--surface-subtle);
     border-color: var(--green-dark);
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
   }
@@ -412,68 +437,25 @@
     content: '';
     flex: 1;
     height: 1px;
-    background: #e5ede8;
+    background: var(--border-soft);
   }
 
-  /* Search wrap — focus state is unified with the green-wash hover group below. */
+  /* Search wrap — its focus state is the shared green hover state. */
   .search-wrap {
     border-color: var(--border-input);
     background-color: white;
     transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
   }
 
-  /* Category pill — lift + shadow on hover are layered on top of the
-     unified green-wash colors (see grouped rule below). */
-  .cat-pill {
-    display: flex; align-items: center; gap: 10px;
-    padding: 12px 20px; border-radius: 100px;
-    background: white; border: 1.5px solid #e5ede8;
-    transition: all 0.25s ease; cursor: default;
-    font-size: 14px; font-weight: 500; color: var(--text-mid);
-  }
-
-  /* Unified green-wash state — every light-bg interactive element that
-     should resolve to "dark green text on a light green wash with a
-     visible green border" runs through this rule. Per-component rules
-     (e.g. .cat-pill, .filter-btn.is-active) can layer on extras or
-     override below; declared after this rule so they win on tie. */
-  .filter-btn:hover,
-  .btn-pill:hover,
-  .cat-pill:hover,
-  .btn-secondary:hover,
-  .btn-ghost:hover,
-  .search-wrap:focus-within {
-    border-color: var(--green-soft);
-    background-color: var(--green-light);
-    color: var(--green-dark);
-  }
-
-  /* .cat-pill extras (lift + shadow). Color tokens come from the grouped
-     rule above; these only add motion + elevation. */
-  .cat-pill:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 16px rgba(45, 154, 95, 0.12);
-  }
-
-  /* Filter-btn active state — declared after the grouped :hover rule so
-     it wins on tie (same specificity). An active filter that is also
-     hovered keeps the bolder dark-green border / semibold weight. */
-  .filter-btn.is-active {
-    border-color: var(--green-dark);
-    background-color: var(--green-light);
-    color: var(--green-dark);
-    font-weight: 600;
-  }
-
   /* Toggle row — labeled on/off control used in FiltersSidebar (e.g.
      "Open Right Now"). Pairs a .toggle-label with a .toggle-track +
-     .toggle-knob switch on a green-wash card. */
+     .toggle-knob switch on a tinted card. */
   .toggle-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 14px 16px;
-    background-color: var(--green-light);
+    background-color: var(--surface-subtle);
     border: 1px solid var(--border-soft);
     border-radius: 12px;
   }
@@ -515,6 +497,172 @@
     left: 18px;
   }
 
+  /* ──────────────────────────────────────────────────────────
+     Pills, badges and tones shared across cards, popup and detail page
+     ────────────────────────────────────────────────────────── */
+
+  /* Tag pill (section eyebrows on the landing page). */
+  .tag-pill {
+    display: inline-block; padding: 4px 14px; border-radius: 100px;
+    font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  .tag-pill--green { background: var(--green-wash); color: var(--green-dark); }
+  .tag-pill--white { background: white; color: var(--green-dark); }
+  .tag-pill--warm { background: var(--accent-wash); color: var(--accent-text); }
+
+  /* Category pill (landing page) — lift + shadow on hover are layered on top
+     of the shared green hover state. */
+  .cat-pill {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 20px; border-radius: 100px;
+    background: white; border: 1.5px solid var(--border-soft);
+    transition: all 0.25s ease; cursor: default;
+    font-size: 14px; font-weight: 500; color: var(--text-mid);
+  }
+  .cat-pill:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  }
+
+  /* Open / later-today / closed status badge. */
+  .status-pill {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 5px;
+    border-radius: 999px;
+    padding: 3px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+  }
+  .status-pill--open {
+    border: 1px solid var(--open-border);
+    background: var(--open-wash);
+    color: var(--open-text);
+  }
+  .status-pill--today {
+    border: 1px solid var(--accent-border);
+    background: var(--accent-wash);
+    color: var(--accent-text);
+  }
+  .status-pill--closed {
+    border: 1px solid var(--border-input);
+    background: var(--surface-subtle);
+    color: var(--text-soft);
+    font-weight: 600;
+  }
+  /* Live dot inside .status-pill--open. */
+  .status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--open-dot);
+  }
+
+  .food-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border: 1px solid var(--green-border);
+    border-radius: 999px;
+    padding: 4px 10px;
+    color: var(--green-dark);
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  /* Weekday badge beside a schedule slot. Neutral by default; .is-today
+     highlights the current weekday. */
+  .schedule-day {
+    flex-shrink: 0;
+    border-radius: 6px;
+    padding: 2px 7px;
+    background: var(--surface-muted);
+    color: var(--text-mid);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+  }
+  .schedule-day.is-today {
+    background: var(--green-wash);
+    color: var(--green-dark);
+  }
+
+  /* Pills that sit beside a slot's time: a free-text note, and an
+     "Every other week" tag in the same accent as .status-pill--today. */
+  .schedule-note {
+    max-width: 200px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--surface-muted);
+    padding: 2px 10px;
+    color: var(--text-mid);
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .schedule-biweekly {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border: 1px solid var(--accent-border);
+    border-radius: 999px;
+    background: var(--accent-wash);
+    padding: 1px 9px;
+    color: var(--accent-text);
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  /* Service category tone. serviceTone() in utils/pantry.ts picks one of these
+     for a service; the element (or an ancestor) carrying it sets the --tone-*
+     variables that .service-chip / .service-dot / .service-program and the
+     popup's .service-panel read. */
+  .service-tone--food {
+    --tone-text: var(--green-dark);
+    --tone-dot: var(--green-mid);
+    --tone-wash: var(--green-light);
+    --tone-border: var(--green-border);
+  }
+  .service-tone--health {
+    --tone-text: var(--slate-text);
+    --tone-dot: var(--slate-dot);
+    --tone-wash: var(--slate-wash);
+    --tone-border: var(--slate-border);
+  }
+  .service-tone--housing {
+    --tone-text: var(--accent-text);
+    --tone-dot: var(--accent);
+    --tone-wash: var(--accent-wash);
+    --tone-border: var(--accent-border);
+  }
+  .service-tone--other {
+    --tone-text: var(--text-mid);
+    --tone-dot: var(--text-soft);
+    --tone-wash: var(--surface-subtle);
+    --tone-border: var(--border-input);
+  }
+
+  .service-chip {
+    border: 1px solid var(--tone-border);
+    border-radius: 999px;
+    background: var(--tone-wash);
+    padding: 3px 9px;
+    color: var(--tone-text);
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .service-dot {
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: var(--tone-dot);
+  }
+  .service-program { color: var(--tone-text); }
+
+  /* ──────────────────────────────────────────────────────────
+     Pantry popup (PantryPopup.vue)
+     ────────────────────────────────────────────────────────── */
   .pantry-popup-backdrop {
     position: fixed;
     inset: 0;
@@ -524,14 +672,14 @@
     justify-content: center;
     overflow-y: auto;
     padding: 72px 16px 24px;
-    background: rgba(10, 20, 14, 0.5);
+    background: var(--backdrop);
     backdrop-filter: blur(6px);
   }
 
   .pantry-popup-card {
     width: min(100%, 820px);
     overflow: hidden;
-    border-radius: 24px;
+    border-radius: 16px;
     background: white;
     box-shadow: 0 24px 80px rgba(0, 0, 0, 0.2);
   }
@@ -553,28 +701,9 @@
     justify-content: center;
     border: none;
     border-radius: 999px;
-    background: #f3f4f6;
-    color: #6b7280;
+    background: var(--surface-muted);
+    color: var(--text-soft);
     transition: background-color 0.2s ease, color 0.2s ease;
-  }
-  .pantry-popup-close:hover {
-    background: var(--green-light);
-    color: var(--green-dark);
-  }
-
-  .pantry-popup-monogram {
-    display: flex;
-    width: 52px;
-    height: 52px;
-    flex-shrink: 0;
-    align-items: center;
-    justify-content: center;
-    border: 1.5px solid #c8e8d4;
-    border-radius: 14px;
-    background: linear-gradient(135deg, #dcf4e6, #b8e8cc);
-    color: var(--green-dark);
-    font-size: 22px;
-    font-weight: 700;
   }
 
   .pantry-popup-meta {
@@ -582,7 +711,7 @@
     flex-wrap: wrap;
     align-items: flex-start;
     gap: 5px;
-    color: #6b7280;
+    color: var(--text-soft);
     font-size: 13px;
     line-height: 1.4;
     text-decoration: none;
@@ -602,80 +731,33 @@
     color: var(--green-mid);
   }
 
-  .status-pill {
-    display: inline-flex;
-    flex-shrink: 0;
-    align-items: center;
-    gap: 5px;
-    border-radius: 999px;
-    padding: 3px 10px;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.03em;
-  }
-  .status-pill--open {
-    border: 1px solid #86efac;
-    background: #f0fdf4;
-    color: #16a34a;
-  }
-  .status-pill--today {
-    border: 1px solid #fcd34d;
-    background: #fffbeb;
-    color: #b45309;
-  }
-  .status-pill--closed {
-    border: 1px solid #e5e7eb;
-    background: #f9fafb;
-    color: #6b7280;
-    font-weight: 600;
-  }
-
   .pantry-popup-actions {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
     padding-bottom: 20px;
-    border-bottom: 1px solid #f0f4f1;
+    border-bottom: 1px solid var(--border-soft);
   }
 
   .popup-action {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    border: 1.5px solid #e5e7eb;
+    border: 1.5px solid var(--border-input);
     border-radius: 9px;
-    background: #fafafa;
+    background: var(--surface-subtle);
     padding: 8px 16px;
-    color: #4b5563;
+    color: var(--text-mid);
     font-size: 13px;
     font-weight: 500;
     text-decoration: none;
     transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
   }
-  .popup-action:hover {
-    border-color: var(--green-soft);
-    background: var(--green-light);
-    color: var(--green-dark);
-  }
-  .popup-action--hearted,
-  .popup-action--hearted:hover {
-    border-color: #fca5a5;
-    background: #fff1f2;
-    color: #e11d48;
-  }
-
-  /* Primary "View Details" action — solid green, pushed to the end of the
-     action strip. Reuses .popup-action sizing; only color + emphasis differ. */
-  .popup-action--primary,
-  .popup-action--primary:hover {
+  /* Primary "View Details" action — pushed to the end of the action strip.
+     Colors come from the shared green state at the end of this layer. */
+  .popup-action--primary {
     margin-left: auto;
-    border-color: var(--green-soft);
-    background: var(--green-light);
-    color: var(--green-dark);
     font-weight: 600;
-  }
-  .popup-action--primary:hover {
-    border-color: var(--green-dark);
   }
 
   .pantry-popup-body {
@@ -686,9 +768,9 @@
   }
 
   .popup-section {
-    border: 1px solid #e8f0eb;
+    border: 1px solid var(--border-soft);
     border-radius: 12px;
-    background: #f8faf9;
+    background: var(--surface-subtle);
     padding: 16px 18px;
   }
 
@@ -697,69 +779,26 @@
     align-items: center;
     gap: 7px;
     margin-bottom: 14px;
-    color: #374151;
+    color: var(--text-mid);
     font-size: 13px;
     font-weight: 600;
-  }
-
-  .food-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    border: 1px solid #c8e8d4;
-    border-radius: 999px;
-    padding: 4px 10px;
-    color: #2a5c3f;
-    font-size: 12px;
-    font-weight: 500;
   }
 
   .schedule-row {
     display: flex;
     align-items: flex-start;
     gap: 10px;
-    border-bottom: 1px solid #eef2ef;
+    border-bottom: 1px solid var(--border-soft);
     padding: 8px 0;
   }
   .schedule-row:last-child {
     border-bottom: none;
   }
 
-  .schedule-day {
-    flex-shrink: 0;
-    border-radius: 6px;
-    padding: 2px 7px;
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.03em;
-  }
-
-  /* Pills that sit beside a slot's time on the detail page: a free-text note,
-     and an "Every other week" tag in the same amber as .status-pill--today. */
-  .schedule-note {
-    border-radius: 999px;
-    background: #f3f4f6;
-    padding: 2px 10px;
-    color: #4b5563;
-    font-size: 12px;
-  }
-  .schedule-biweekly {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    border: 1px solid #fcd34d;
-    border-radius: 999px;
-    background: #fffbeb;
-    padding: 1px 9px;
-    color: #b45309;
-    font-size: 12px;
-    font-weight: 600;
-  }
-
+  /* Collapsible service block, tinted by its .service-tone--* class. */
   .service-panel {
     overflow: hidden;
-    border-width: 1px;
-    border-style: solid;
+    border: 1px solid var(--tone-border);
     border-radius: 12px;
   }
 
@@ -769,6 +808,7 @@
     align-items: center;
     gap: 10px;
     border: none;
+    background: var(--tone-wash);
     padding: 10px 14px;
     text-align: left;
   }
@@ -785,23 +825,11 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    border-bottom: 1px solid #f0f4f1;
+    border-bottom: 1px solid var(--border-soft);
     padding: 7px 0;
   }
   .service-schedule-row:last-child {
     border-bottom: none;
-  }
-
-  .schedule-note {
-    max-width: 200px;
-    overflow: hidden;
-    border-radius: 999px;
-    background: #eef2ef;
-    padding: 2px 10px;
-    color: #374151;
-    font-size: 12px;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
 
   /* ──────────────────────────────────────────────────────────
@@ -811,37 +839,45 @@
   /* White surface used for every content + sidebar card. */
   .detail-card {
     border: 1px solid var(--border-soft);
-    border-radius: 16px;
+    border-radius: 12px;
     background: white;
     box-shadow: 0 1px 6px rgba(0, 0, 0, 0.04);
   }
 
-  /* Section heading (icon chip + serif title) inside left-column cards. */
   /* Paragraph body of a detail-page section (About, Good to Know). */
   .detail-body {
-    color: #4b5563;
+    color: var(--text-mid);
     font-size: 15px;
     line-height: 1.75;
     white-space: pre-line;
   }
 
+  /* Section heading inside left-column cards. */
   .detail-section-title {
-    display: flex;
-    align-items: center;
-    gap: 9px;
     margin-bottom: 18px;
+    color: var(--text-dark);
+    font-size: 17px;
+    font-weight: 700;
   }
-  .detail-section-icon {
+
+  /* Warm notice above the hours (Good to Know) — practical notes that affect
+     a visit, set apart from the white section cards. */
+  .detail-callout {
+    padding: 16px 20px;
+    border: 1px solid var(--accent-border);
+    border-radius: 12px;
+    background: var(--accent-wash);
+  }
+  .detail-callout-title {
     display: flex;
-    width: 32px;
-    height: 32px;
-    flex-shrink: 0;
     align-items: center;
-    justify-content: center;
-    border: 1px solid #c8e8d4;
-    border-radius: 9px;
-    background: var(--green-light);
-    color: var(--green-mid);
+    gap: 7px;
+    margin-bottom: 6px;
+    color: var(--accent-text);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
   }
 
   /* Uppercase eyebrow label used by the sidebar cards. */
@@ -859,63 +895,31 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    color: #4b5563;
+    color: var(--text-mid);
     font-size: 14px;
   }
   .detail-meta-icon {
     width: 14px;
     height: 14px;
-    color: #9ca3af;
+    color: var(--green-mid);
   }
 
-  /* Hero action buttons (Love / Call / Directions / Report). The base is a
-     white outlined pill; modifiers recolor it. Hover runs the unified
-     green-wash group below unless a modifier opts out. */
+  /* Hero action buttons (Love / Follow / Call / Directions / Report). The
+     base is a white outlined pill; hover and the Follow toggle's active state
+     use the shared green state at the end of this layer. */
   .detail-action {
     display: inline-flex;
     align-items: center;
     gap: 7px;
-    border: 1.5px solid #e5e7eb;
+    border: 1.5px solid var(--border-input);
     border-radius: 10px;
     background: white;
     padding: 9px 20px;
-    color: #374151;
+    color: var(--text-mid);
     font-size: 14px;
     font-weight: 500;
     text-decoration: none;
     transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
-  }
-  .detail-action:hover {
-    border-color: var(--green-soft);
-    background: var(--green-light);
-    color: var(--green-dark);
-  }
-
-  .detail-action--primary,
-  .detail-action--primary:hover {
-    border-color: var(--green-dark);
-    background: var(--green-dark);
-    color: white;
-    font-weight: 600;
-  }
-  .detail-action--primary:hover {
-    background: #1a6038;
-  }
-
-  .detail-action--love.is-active,
-  .detail-action--love.is-active:hover {
-    border-color: #fca5a5;
-    background: #fff1f2;
-    color: #e11d48;
-  }
-
-  /* Follow is UI-only for now (no backend). The active state mirrors the
-     unified green-wash so a "Following" toggle reads as selected. */
-  .detail-action--follow.is-active,
-  .detail-action--follow.is-active:hover {
-    border-color: var(--green-soft);
-    background: var(--green-light);
-    color: var(--green-dark);
   }
 
   /* Sidebar contact rows (phone / directions) — icon tile + label stack. */
@@ -932,7 +936,7 @@
     flex-shrink: 0;
     align-items: center;
     justify-content: center;
-    border: 1px solid #c8e8d4;
+    border: 1px solid var(--green-border);
     border-radius: 9px;
     background: var(--green-light);
     color: var(--green-dark);
@@ -943,13 +947,13 @@
   }
   .detail-contact-title {
     display: block;
-    color: #1f2937;
+    color: var(--text-dark);
     font-size: 13px;
     font-weight: 600;
   }
   .detail-contact-sub {
     display: block;
-    color: #9ca3af;
+    color: var(--text-soft);
     font-size: 11px;
   }
 
@@ -976,16 +980,12 @@
     border: none;
     border-radius: 8px;
     background: none;
-    color: #374151;
+    color: var(--text-mid);
     font-size: 14px;
     font-weight: 500;
     text-decoration: none;
     cursor: pointer;
     transition: background-color 0.2s ease, color 0.2s ease;
-  }
-  .share-menu-item:hover {
-    background: var(--green-light);
-    color: var(--green-dark);
   }
 
   /* ──────────────────────────────────────────────────────────
@@ -1005,17 +1005,17 @@
     align-items: center;
     gap: 8px;
     font-size: 13px;
-    color: #9ca3af;
+    color: var(--text-soft);
   }
   .crumb-link {
-    color: #9ca3af;
+    color: var(--text-soft);
     text-decoration: none;
     transition: color 0.2s ease;
   }
   .crumb-link:hover { color: var(--green-dark); }
-  .crumb-sep { color: #d1d5db; }
+  .crumb-sep { color: var(--border-input); }
   .crumb-current {
-    color: #374151;
+    color: var(--text-dark);
     font-weight: 500;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1042,13 +1042,9 @@
     font-size: 14px;
     font-weight: 500;
     text-decoration: none;
-    transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+    transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
   }
-  .loc-tile:hover {
-    border-color: var(--green-soft);
-    background: var(--green-light);
-    box-shadow: 0 4px 16px rgba(45, 154, 95, 0.1);
-  }
+  .loc-tile:hover { box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06); }
   .loc-tile-count {
     flex-shrink: 0;
     color: var(--text-soft);
@@ -1074,19 +1070,12 @@
     text-decoration: none;
     transition: border-color 0.18s ease, background-color 0.18s ease, color 0.18s ease;
   }
-  .page-link:hover {
-    border-color: var(--green-soft);
-    background: var(--green-light);
-    color: var(--green-dark);
-  }
-  .page-link.is-active {
-    border-color: var(--green-dark);
-    background: var(--green-light);
-    color: var(--green-dark);
-  }
 
-  /* List ⇄ Map view toggle (search results header). Default → white pill;
-     .is-active → light-green wash with forest border + text. */
+  /* ──────────────────────────────────────────────────────────
+     Search results (pages/search.vue)
+     ────────────────────────────────────────────────────────── */
+
+  /* List ⇄ Map view toggle (results header). */
   .view-toggle-btn {
     display: inline-flex;
     align-items: center;
@@ -1102,16 +1091,6 @@
     cursor: pointer;
     transition: border-color 0.18s ease, background-color 0.18s ease, color 0.18s ease;
   }
-  .view-toggle-btn:hover {
-    border-color: var(--green-soft);
-    background: var(--green-light);
-    color: var(--green-dark);
-  }
-  .view-toggle-btn.is-active {
-    border-color: var(--green-dark);
-    background: var(--green-light);
-    color: var(--green-dark);
-  }
 
   /* Centered LogoMessage state in the search results area (no filter
      matches, sign-in required), and the action button under its text. */
@@ -1122,8 +1101,22 @@
     @apply mt-6;
   }
 
+  /* Round icon badge above an empty / error message in the results area.
+     Modifiers pick the tone. */
+  .state-icon {
+    display: flex;
+    width: 64px;
+    height: 64px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+  }
+  .state-icon--neutral { background: var(--green-wash); color: var(--green-mid); }
+  .state-icon--warn { background: var(--accent-wash); color: var(--accent); }
+  .state-icon--error { background: var(--danger-wash); color: var(--danger); }
+
   /* Compact location card in the map-view side list (PantryMapList).
-     .is-selected → orange ring matching the highlighted map pin. */
+     .is-selected → accent ring matching the highlighted map pin. */
   .map-list-card {
     display: block;
     width: 100%;
@@ -1137,101 +1130,118 @@
   }
   .map-list-card:hover {
     border-color: var(--green-dark);
-    box-shadow: 0 4px 16px rgba(30, 122, 71, 0.08);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
   }
   .map-list-card.is-selected {
-    border-color: #f97316;
-    box-shadow: 0 4px 16px rgba(249, 115, 22, 0.12);
+    border-color: var(--accent);
+    box-shadow: 0 4px 16px color-mix(in srgb, var(--accent) 14%, transparent);
+  }
+
+  /* ──────────────────────────────────────────────────────────
+     Modal — backdrop, card, and corner close button.
+     Compose: .modal-backdrop wraps a .modal-card; .modal-close
+     pairs with .btn-icon (e.g. class="btn-icon modal-close").
+     Per-modal sizing (max-w-[...]) and inner padding stay at the
+     call site so different modals can vary.
+     ────────────────────────────────────────────────────────── */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 3000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background: var(--backdrop);
+    backdrop-filter: blur(4px);
+  }
+
+  .modal-card {
+    position: relative;
+    width: 100%;
+    border-radius: 16px;
+    background: var(--cream-light);
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.18);
+  }
+
+  .modal-close {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.75rem;
+    width: 1.5rem;
+    height: 1.5rem;
+    font-size: 30px;
+    line-height: 1;
+  }
+  .modal-close:hover { color: var(--green-dark); }
+
+  /* CTA band background flourishes */
+  .cta-band {
+    background: var(--green-dark);
+    position: relative; overflow: hidden;
+  }
+  .cta-band::before {
+    content: '';
+    position: absolute; top: -60%; right: -10%;
+    width: 500px; height: 500px; border-radius: 50%;
+    background: rgba(255,255,255,0.04); pointer-events: none;
+  }
+  .cta-band::after {
+    content: '';
+    position: absolute; bottom: -40%; left: -5%;
+    width: 320px; height: 320px; border-radius: 50%;
+    background: rgba(255,255,255,0.03); pointer-events: none;
+  }
+
+  /* ──────────────────────────────────────────────────────────
+     Shared interactive states
+
+     Declared last in the layer so they win over each component's base
+     rule and over one another in this order: hover → selected → opt-outs.
+     ────────────────────────────────────────────────────────── */
+
+  /* Green hover — every light-background control resolves to dark green text
+     on a pale green wash with a visible green border. Controls that keep
+     this look permanently (.popup-action--primary, an active Follow toggle)
+     are listed here too. */
+  .filter-btn:hover,
+  .btn-pill:hover,
+  .cat-pill:hover,
+  .btn-secondary:hover,
+  .btn-ghost:hover,
+  .search-wrap:focus-within,
+  .popup-action:hover,
+  .popup-action--primary,
+  .pantry-popup-close:hover,
+  .detail-action:hover,
+  .detail-action--follow.is-active,
+  .share-menu-item:hover,
+  .loc-tile:hover,
+  .page-link:hover,
+  .view-toggle-btn:hover {
+    border-color: var(--green-soft);
+    background-color: var(--green-light);
+    color: var(--green-dark);
+  }
+  .popup-action--primary:hover { border-color: var(--green-dark); }
+
+  /* Selected — solid green border on a slightly deeper wash. */
+  .filter-btn.is-active,
+  .check-pill.is-checked,
+  .page-link.is-active,
+  .view-toggle-btn.is-active {
+    border-color: var(--green-dark);
+    background-color: var(--green-wash);
+    color: var(--green-dark);
+  }
+
+  /* Loved — heart buttons opt out of the green hover while active. */
+  .popup-action--hearted,
+  .popup-action--hearted:hover,
+  .detail-action--love.is-active,
+  .detail-action--love.is-active:hover {
+    border-color: var(--danger-border);
+    background: var(--danger-wash);
+    color: var(--danger);
   }
 }
-
-/* Quick-tags row enter — staggered fade + slight rise. Per-pill delay is
-   supplied via inline `--enter-delay` and is scoped to the enter phase only,
-   so it does not interfere with the pill's own hover transition. */
-.quick-tag-enter-active {
-  transition: opacity 0.5s ease-out, transform 0.5s ease-out;
-  transition-delay: var(--enter-delay, 0ms);
-}
-.quick-tag-enter-from {
-  opacity: 0;
-  transform: translateY(4px);
-}
-
-/* Tag pill (section eyebrows) */
-.tag-pill {
-  display: inline-block; padding: 4px 14px; border-radius: 100px;
-  font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
-}
-
-/* ──────────────────────────────────────────────────────────
-   Modal — backdrop, card, and corner close button.
-   Compose: .modal-backdrop wraps a .modal-card; .modal-close
-   pairs with .btn-icon (e.g. class="btn-icon modal-close").
-   Per-modal sizing (max-w-[...]) and inner padding stay at the
-   call site so different modals can vary.
-   ────────────────────────────────────────────────────────── */
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 3000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-  background: rgba(15, 30, 20, 0.55);
-  backdrop-filter: blur(4px);
-}
-
-.modal-card {
-  position: relative;
-  width: 100%;
-  border-radius: 20px;
-  background: var(--cream-light);
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.18);
-}
-
-.modal-close {
-  position: absolute;
-  top: 0.5rem;
-  right: 0.75rem;
-  width: 1.5rem;
-  height: 1.5rem;
-  font-size: 30px;
-  line-height: 1;
-}
-.modal-close:hover { color: var(--green-dark); }
-
-/* CTA band background flourishes */
-.cta-band {
-  background: var(--green-dark);
-  position: relative; overflow: hidden;
-}
-.cta-band::before {
-  content: '';
-  position: absolute; top: -60%; right: -10%;
-  width: 500px; height: 500px; border-radius: 50%;
-  background: rgba(255,255,255,0.04); pointer-events: none;
-}
-.cta-band::after {
-  content: '';
-  position: absolute; bottom: -40%; left: -5%;
-  width: 320px; height: 320px; border-radius: 50%;
-  background: rgba(255,255,255,0.03); pointer-events: none;
-}
-
-html {
-  scroll-behavior: smooth;
-}
-
-body {
-  background: #F6F4EE;
-}
-
-button:not(:disabled),
-[role="button"]:not([aria-disabled="true"]) {
-  cursor: pointer;
-}
-
-::-webkit-scrollbar       { width: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #D1D5DB; border-radius: 3px; }

@@ -44,7 +44,7 @@ const removeRow = (i: number) => rows.value.splice(i, 1)
       v-for="(row, i) in rows"
       :key="i"
       class="rounded-[12px] border p-3"
-      style="border-color: var(--border-soft); background: #fbfdfc;"
+      style="border-color: var(--border-soft); background: var(--surface-subtle);"
     >
       <div class="grid grid-cols-2 sm:grid-cols-[1fr_1fr_1fr_auto] gap-2.5">
         <select v-model="row.weekDay" class="form-select" :class="{ 'has-error': showErrors && !row.weekDay }" aria-label="Day">
@@ -63,7 +63,7 @@ const removeRow = (i: number) => rows.value.splice(i, 1)
           type="button"
           aria-label="Remove time slot"
           class="btn-icon w-9 h-9 rounded-[10px] shrink-0 justify-self-end"
-          style="border: 1.5px solid #fca5a5; background: #fff5f5; color: #e11d48;"
+          style="border: 1.5px solid var(--danger-border); background: var(--danger-wash); color: var(--danger);"
           @click="removeRow(i)"
         >
           <UIcon name="i-lucide-x" class="size-3.5" />
