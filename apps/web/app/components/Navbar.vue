@@ -64,9 +64,13 @@ const navLinks = [
           >{{ initials }}</div>
           <button
             type="button"
-            class="btn-ghost btn--sm"
+            class="btn-icon p-2 hover:text-[var(--green-dark)]"
+            aria-label="Sign out"
+            title="Sign out"
             @click="onLogout"
-          >Sign out</button>
+          >
+            <UIcon name="i-lucide-log-out" class="size-[18px]" />
+          </button>
         </template>
 
         <template v-else>

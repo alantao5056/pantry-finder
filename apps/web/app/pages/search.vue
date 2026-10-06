@@ -199,8 +199,7 @@ const runSearch = async () => {
 }
 
 onMounted(() => {
-  // Collapse the filters sidebar by default on mobile (drawer would otherwise
-  // cover the content on initial load).
+  // On mobile the open drawer would cover the content, so start closed.
   if (window.matchMedia('(max-width: 767px)').matches) {
     showFilters.value = false
   }
@@ -253,7 +252,7 @@ const mapActive = computed(() => viewMode.value === 'map' && resultsReady.value)
 <template>
   <div class="h-[calc(100dvh-4rem-1px)] flex flex-col bg-[var(--cream-light)] font-sans overflow-hidden">
     <!-- Top search bar -->
-    <div class="bg-white border-b border-[var(--border-soft)] px-6 py-3 flex-shrink-0">
+    <div class="px-6 pt-4 pb-3 flex-shrink-0">
       <div class="max-w-[1120px] mx-auto">
         <SearchBar
           :initial-address="initialLocation"
@@ -279,7 +278,7 @@ const mapActive = computed(() => viewMode.value === 'map' && resultsReady.value)
           :open="showFilters"
           :food-types="allFoodTypes"
           @update:model-value="onUpdateFilters"
-          @close="showFilters = false"
+          @toggle="showFilters = !showFilters"
         />
       </ClientOnly>
 
@@ -289,27 +288,26 @@ const mapActive = computed(() => viewMode.value === 'map' && resultsReady.value)
         <ClientOnly>
           <div
             v-if="route.query.location"
-            class="bg-white border-b border-[var(--border-soft)] px-6 py-3.5 flex items-center gap-3 flex-wrap flex-shrink-0"
+            class="px-6 pt-1 pb-4 flex items-center gap-3 flex-wrap flex-shrink-0"
           >
+            <!-- Mobile-only: opens the filters drawer -->
             <button
               type="button"
-              class="btn-secondary btn--sm gap-1.5"
-              @click="showFilters = !showFilters"
+              class="btn-secondary btn--sm gap-1.5 md:hidden"
+              @click="showFilters = true"
             >
-              <UIcon name="i-lucide-sliders-horizontal" class="size-[14px]" />
-              {{ showFilters ? 'Hide' : 'Show' }} Filters
-              <span
-                v-if="activeFilterCount > 0"
-                class="ml-1 bg-[var(--green-dark)] text-white rounded-full text-[11px] font-semibold px-1.5"
-              >{{ activeFilterCount }}</span>
+              <UIcon name="i-lucide-chevrons-right" class="size-[14px]" />
+              Filters
+              <span v-if="activeFilterCount > 0" class="count-badge">{{ activeFilterCount }}</span>
             </button>
 
             <!-- List / Map view toggle -->
-            <div class="flex items-center gap-1.5">
+            <div class="view-toggle">
               <button
                 type="button"
                 class="view-toggle-btn"
                 :class="{ 'is-active': viewMode === 'list' }"
+                :aria-pressed="viewMode === 'list'"
                 @click="viewMode = 'list'"
               >
                 <UIcon name="i-lucide-list" class="size-[14px]" />
@@ -319,6 +317,7 @@ const mapActive = computed(() => viewMode.value === 'map' && resultsReady.value)
                 type="button"
                 class="view-toggle-btn"
                 :class="{ 'is-active': viewMode === 'map' }"
+                :aria-pressed="viewMode === 'map'"
                 @click="viewMode = 'map'"
               >
                 <UIcon name="i-lucide-map" class="size-[14px]" />
@@ -349,7 +348,7 @@ const mapActive = computed(() => viewMode.value === 'map' && resultsReady.value)
           <template #fallback>
             <div
               v-if="route.query.location"
-              class="bg-white border-b border-[var(--border-soft)] px-6 py-3.5 text-[14px] text-gray-500 flex-shrink-0"
+              class="px-6 pt-1 pb-4 text-[14px] text-gray-500 flex-shrink-0"
             >
               Searching for pantries…
             </div>
@@ -463,7 +462,7 @@ const mapActive = computed(() => viewMode.value === 'map' && resultsReady.value)
             <!-- Results: list grid -->
             <div
               v-else-if="viewMode === 'list'"
-              class="px-6 py-5"
+              class="px-6 pb-5"
             >
               <div
                 class="grid gap-[18px]"
@@ -493,7 +492,7 @@ const mapActive = computed(() => viewMode.value === 'map' && resultsReady.value)
               <PantryMap
                 :pantries="filteredPantries"
                 :selected-id="mapSelectedId"
-                class="flex-1 min-w-0"
+                class="flex-1 min-w-0 ml-6"
                 @select="selectedPantry = $event"
               />
               <div class="hidden md:block w-[300px] shrink-0 overflow-y-auto border-l border-[var(--border-soft)] bg-[var(--cream-light)]">

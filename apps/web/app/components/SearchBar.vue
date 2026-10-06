@@ -48,9 +48,15 @@ const onSubmit = () => {
   emit('submit', a, radius.value)
 }
 
+const onSelect = (s: Parameters<typeof select>[0]) => {
+  select(s)
+  onSubmit()
+}
+
 const onInputKeydown = (e: KeyboardEvent) => {
+  // onKeydown fills the input with the highlighted suggestion on Enter, if any.
   onKeydown(e)
-  if (e.key === 'Enter' && !e.defaultPrevented) {
+  if (e.key === 'Enter') {
     e.preventDefault()
     onSubmit()
   }
@@ -187,7 +193,7 @@ defineExpose({
             'flex items-start gap-2.5 px-4 py-2.5 cursor-pointer transition-colors',
             i === activeIndex ? 'bg-[var(--green-wash)]' : '',
           ]"
-          @mousedown.prevent="select(s)"
+          @mousedown.prevent="onSelect(s)"
           @mouseenter="activeIndex = i"
         >
           <UIcon

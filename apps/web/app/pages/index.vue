@@ -49,6 +49,7 @@ const onSearch = (location: string) => {
 
 const onTagClick = (tag: string) => {
   searchBar.value?.setAddress(tag)
+  onSearch(tag)
 }
 
 let revealObserver: IntersectionObserver | null = null

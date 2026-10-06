@@ -14,7 +14,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:modelValue': [value: PantryFilters]
-  close: []
+  toggle: []
 }>()
 
 const activeCount = computed(() => countActiveFilters(props.modelValue))
@@ -40,26 +40,44 @@ const clearAll = () => emit('update:modelValue', { ...EMPTY_FILTERS })
 <template>
   <aside
     :class="[
-      'bg-white border-r border-[var(--border-soft)] overflow-hidden',
+      'bg-[var(--cream-light)] border-r md:border-r-0 border-[var(--border-soft)] overflow-hidden',
       // Mobile: absolute drawer within the parent (main row)
       'absolute inset-y-0 left-0 w-[272px] z-40 transition-transform duration-300 ease-in-out',
       open ? 'translate-x-0' : '-translate-x-full',
-      // Desktop: inline; width transitions between 272 and 0
+      // Desktop: inline; width transitions between 272 and the 48px rail
       'md:static md:translate-x-0 md:transition-[width] md:flex-shrink-0',
-      open ? 'md:w-[272px]' : 'md:w-0',
+      open ? 'md:w-[272px]' : 'md:w-12',
     ]"
-    :aria-hidden="!open"
   >
-    <div class="w-[272px] p-5 h-full overflow-y-auto">
+    <!-- Collapsed rail (desktop only): expand button + active filter count -->
+    <div
+      v-if="!open"
+      class="hidden md:flex flex-col items-center gap-2 pt-1.5"
+    >
+      <button
+        type="button"
+        class="panel-toggle"
+        aria-label="Show filters"
+        title="Show filters"
+        @click="emit('toggle')"
+      >
+        <UIcon name="i-lucide-chevrons-right" class="size-[18px]" />
+      </button>
+      <span v-if="activeCount > 0" class="count-badge">{{ activeCount }}</span>
+    </div>
+
+    <div
+      class="w-[272px] p-5 md:pt-1.5 h-full overflow-y-auto"
+      :class="{ 'md:hidden': !open }"
+      :aria-hidden="!open"
+      :inert="!open"
+    >
       <!-- Header -->
       <div class="flex justify-between items-center mb-5">
         <div class="flex items-center gap-2">
           <UIcon name="i-lucide-sliders-horizontal" class="size-[15px] text-[var(--green-dark)]" />
           <span class="font-bold text-[14px] text-[var(--green-dark)]">Filters</span>
-          <span
-            v-if="activeCount > 0"
-            class="bg-[var(--green-dark)] text-white rounded-full text-[11px] font-semibold px-2 py-[1px]"
-          >{{ activeCount }}</span>
+          <span v-if="activeCount > 0" class="count-badge">{{ activeCount }}</span>
         </div>
         <div class="flex items-center gap-1">
           <button
@@ -70,11 +88,12 @@ const clearAll = () => emit('update:modelValue', { ...EMPTY_FILTERS })
           >Clear all</button>
           <button
             type="button"
-            class="md:hidden p-1 -mr-1 text-gray-500 hover:text-gray-700 rounded"
-            aria-label="Close filters"
-            @click="emit('close')"
+            class="panel-toggle -mr-1.5"
+            aria-label="Hide filters"
+            title="Hide filters"
+            @click="emit('toggle')"
           >
-            <UIcon name="i-lucide-x" class="size-[18px]" />
+            <UIcon name="i-lucide-chevrons-left" class="size-[18px]" />
           </button>
         </div>
       </div>

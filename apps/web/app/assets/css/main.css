@@ -275,6 +275,36 @@ button:not(:disabled),
   }
   .filter-btn.is-active { font-weight: 600; }
 
+  /* Active-filter count pill. */
+  .count-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    padding: 1px 6px;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 16px;
+    color: white;
+    background: var(--green-dark);
+    border-radius: 100px;
+  }
+
+  /* Filters sidebar collapse / expand icon button. */
+  .panel-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    color: var(--text-soft);
+    background: transparent;
+    border: 1.5px solid transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: border-color 0.18s ease, background-color 0.18s ease, color 0.18s ease;
+  }
+
   /* ──────────────────────────────────────────────────────────
      Form controls
      ────────────────────────────────────────────────────────── */
@@ -449,13 +479,13 @@ button:not(:disabled),
 
   /* Toggle row — labeled on/off control used in FiltersSidebar (e.g.
      "Open Right Now"). Pairs a .toggle-label with a .toggle-track +
-     .toggle-knob switch on a tinted card. */
+     .toggle-knob switch on a white card. */
   .toggle-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 14px 16px;
-    background-color: var(--surface-subtle);
+    background-color: white;
     border: 1px solid var(--border-soft);
     border-radius: 12px;
   }
@@ -699,11 +729,11 @@ button:not(:disabled),
     height: 34px;
     align-items: center;
     justify-content: center;
-    border: none;
+    border: 1.5px solid var(--border-input);
     border-radius: 999px;
-    background: var(--surface-muted);
-    color: var(--text-soft);
-    transition: background-color 0.2s ease, color 0.2s ease;
+    background: var(--surface-subtle);
+    color: var(--text-mid);
+    transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
   }
 
   .pantry-popup-meta {
@@ -1076,20 +1106,37 @@ button:not(:disabled),
      ────────────────────────────────────────────────────────── */
 
   /* List ⇄ Map view toggle (results header). */
+  .view-toggle {
+    display: inline-flex;
+    background: white;
+    border: 1.5px solid var(--border-input);
+    border-radius: 9px;
+    overflow: hidden;
+  }
   .view-toggle-btn {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 6px;
-    padding: 7px 14px;
+    min-width: 88px;
+    padding: 7px 18px;
     font-family: inherit;
     font-size: 13px;
     font-weight: 500;
     color: var(--text-mid);
-    background: white;
-    border: 1.5px solid var(--border-soft);
-    border-radius: 9px;
+    background: transparent;
+    border: none;
+    border-radius: 0;
     cursor: pointer;
-    transition: border-color 0.18s ease, background-color 0.18s ease, color 0.18s ease;
+    transition: background-color 0.18s ease, color 0.18s ease;
+  }
+  .view-toggle-btn:not(.is-active):hover {
+    background-color: var(--green-light);
+    color: var(--green-dark);
+  }
+  .view-toggle-btn.is-active {
+    background: var(--green-dark);
+    color: white;
   }
 
   /* Centered LogoMessage state in the search results area (no filter
@@ -1209,6 +1256,7 @@ button:not(:disabled),
   .cat-pill:hover,
   .btn-secondary:hover,
   .btn-ghost:hover,
+  .panel-toggle:hover,
   .search-wrap:focus-within,
   .popup-action:hover,
   .popup-action--primary,
@@ -1217,8 +1265,7 @@ button:not(:disabled),
   .detail-action--follow.is-active,
   .share-menu-item:hover,
   .loc-tile:hover,
-  .page-link:hover,
-  .view-toggle-btn:hover {
+  .page-link:hover {
     border-color: var(--green-soft);
     background-color: var(--green-light);
     color: var(--green-dark);
@@ -1228,8 +1275,7 @@ button:not(:disabled),
   /* Selected — solid green border on a slightly deeper wash. */
   .filter-btn.is-active,
   .check-pill.is-checked,
-  .page-link.is-active,
-  .view-toggle-btn.is-active {
+  .page-link.is-active {
     border-color: var(--green-dark);
     background-color: var(--green-wash);
     color: var(--green-dark);
