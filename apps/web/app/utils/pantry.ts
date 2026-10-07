@@ -36,10 +36,6 @@ export function isOpenToday(schedules: Schedule[], now: Date = new Date()): bool
   return schedules.some(s => s.weekDay === today && s.start)
 }
 
-export function isToday(weekDay: string, now: Date = new Date()): boolean {
-  return WEEKDAYS[now.getDay()] === weekDay
-}
-
 export function getUniqueFoods(services: Service[]): string[] {
   const foods = new Set<string>()
   for (const s of services) {

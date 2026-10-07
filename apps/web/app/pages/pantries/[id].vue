@@ -275,22 +275,19 @@ const serviceProgram = (service: Service) =>
                 class="grid grid-cols-[110px_1fr] gap-4 py-3.5 items-start"
                 :class="gi < schedulesByDay.length - 1 ? 'border-b border-gray-100' : ''"
               >
-                <span
-                  class="schedule-day w-fit text-[12px]"
-                  :class="{ 'is-today': isToday(group.day) }"
-                >{{ group.day.slice(0, 3).toUpperCase() }}</span>
+                <span class="schedule-day-name">{{ group.day }}</span>
                 <div class="flex flex-col gap-1.5">
                   <div
                     v-for="(s, si) in group.slots"
                     :key="si"
-                    class="flex items-center gap-2.5 flex-wrap"
+                    class="schedule-slot"
                   >
-                    <span class="text-[14px] font-medium text-gray-800">{{ s.start }} – {{ s.end }}</span>
+                    <span class="schedule-time">{{ s.start }} – {{ s.end }}</span>
+                    <span v-if="s.notes" class="schedule-note">{{ s.notes }}</span>
                     <span v-if="s.isEveryOtherWeek === 'true'" class="schedule-biweekly">
                       <UIcon name="i-lucide-repeat" class="size-3" />
                       Every other week
                     </span>
-                    <span v-if="s.notes" class="schedule-note">{{ s.notes }}</span>
                   </div>
                 </div>
               </div>
@@ -332,24 +329,21 @@ const serviceProgram = (service: Service) =>
               <div
                 v-for="group in serviceSchedulesByDay(service)"
                 :key="group.day"
-                class="grid grid-cols-[88px_1fr] gap-3 py-1.5 pl-4 items-start"
+                class="grid grid-cols-[96px_1fr] gap-3 py-1.5 pl-4 items-start"
               >
-                <span
-                  class="schedule-day w-fit"
-                  :class="{ 'is-today': isToday(group.day) }"
-                >{{ group.day.slice(0, 3).toUpperCase() }}</span>
+                <span class="schedule-day-name text-[13.5px]">{{ group.day }}</span>
                 <div class="flex flex-col gap-1">
                   <div
                     v-for="(s, si) in group.slots"
                     :key="si"
-                    class="flex items-center gap-2 flex-wrap"
+                    class="schedule-slot"
                   >
-                    <span class="text-[13.5px] font-medium text-gray-800">{{ s.start }} – {{ s.end }}</span>
+                    <span class="schedule-time text-[13.5px]">{{ s.start }} – {{ s.end }}</span>
+                    <span v-if="s.notes" class="schedule-note">{{ s.notes }}</span>
                     <span v-if="s.isEveryOtherWeek === 'true'" class="schedule-biweekly">
                       <UIcon name="i-lucide-repeat" class="size-3" />
                       Every other week
                     </span>
-                    <span v-if="s.notes" class="schedule-note">{{ s.notes }}</span>
                   </div>
                 </div>
               </div>

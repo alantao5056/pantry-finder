@@ -220,17 +220,14 @@ onBeforeUnmount(() => {
                   :key="`${schedule.weekDay}-${schedule.start}-${index}`"
                   class="schedule-row"
                 >
-                  <span
-                    class="schedule-day"
-                    :class="{ 'is-today': isToday(schedule.weekDay) }"
-                  >{{ schedule.weekDay.slice(0, 3).toUpperCase() }}</span>
-                  <span class="min-w-0">
-                    <span class="block text-[13px] font-medium text-gray-800">
+                  <span class="schedule-day-name schedule-day-name--compact">{{ schedule.weekDay }}</span>
+                  <span class="schedule-slot">
+                    <span class="schedule-time text-[13px]">
                       {{ schedule.start }} - {{ schedule.end }}
                     </span>
                     <span
                       v-if="schedule.notes"
-                      class="block text-[11px] text-gray-500 mt-0.5"
+                      class="schedule-note"
                     >{{ schedule.notes }}</span>
                   </span>
                 </div>
@@ -326,17 +323,16 @@ onBeforeUnmount(() => {
                         class="service-schedule-row"
                       >
                         <template v-if="schedule.weekDay && schedule.start">
-                          <span
-                            class="schedule-day"
-                            :class="{ 'is-today': isToday(schedule.weekDay) }"
-                          >{{ schedule.weekDay.slice(0, 3).toUpperCase() }}</span>
-                          <span class="flex-1 text-[13px] font-medium text-gray-800">
-                            {{ schedule.start }} - {{ schedule.end }}
+                          <span class="schedule-day-name schedule-day-name--compact">{{ schedule.weekDay }}</span>
+                          <span class="schedule-slot">
+                            <span class="schedule-time text-[13px]">
+                              {{ schedule.start }} - {{ schedule.end }}
+                            </span>
+                            <span
+                              v-if="schedule.notes"
+                              class="schedule-note"
+                            >{{ schedule.notes }}</span>
                           </span>
-                          <span
-                            v-if="schedule.notes"
-                            class="schedule-note"
-                          >{{ schedule.notes }}</span>
                         </template>
                         <span
                           v-else
