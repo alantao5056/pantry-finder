@@ -30,6 +30,8 @@ router.post('/changes/:id/revert', adminController.revertChange.bind(adminContro
 router.post('/pantries/:id/evict-cache', adminController.evictPantryCache.bind(adminController));
 router.get('/redis', adminController.getRedisStatus.bind(adminController));
 router.get('/redis/keys', adminController.getRedisKeyStats.bind(adminController));
+router.get('/redis/entry', adminController.getRedisEntry.bind(adminController));
+router.delete('/redis/entry', adminController.deleteRedisEntry.bind(adminController));
 router.get('/app-config', adminController.getAppConfig.bind(adminController));
 router.put('/app-config', adminController.updateAppConfig.bind(adminController));
 router.get('/llm-evals',adminController.listLlmEvals.bind(adminController));

@@ -304,6 +304,7 @@ export interface RedisServerStatus {
   /** Last RDB snapshot; absent when Redis has never saved. */
   lastSaveAt?: string;
   lastSaveOk: boolean;
+  keyGroups: { label: string; prefix: string }[];
 }
 
 export type RedisStatusResponse =
@@ -328,6 +329,26 @@ export interface RedisKeyStatsResponse {
   scanned: number;
   /** The scan stopped at its key cap; counts are a lower bound. */
   truncated: boolean;
+}
+
+export interface RedisEntryResponse {
+  /** Full key. */
+  key: string;
+  exists: boolean;
+  /** Redis TYPE ("string", "zset", …). */
+  type?: string;
+  /** Null when the key has no expiry. */
+  ttlMs?: number | null;
+  /** Strings only. */
+  value?: string;
+  valueTruncated?: boolean;
+  /** String length, or zset member count. */
+  size?: number;
+}
+
+export interface RedisEntryDeleteResponse {
+  key: string;
+  deleted: boolean;
 }
 
 // ---- App config (admin `/settings`) ----

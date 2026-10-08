@@ -1,5 +1,7 @@
 import type {
   CacheTtlMinutes,
+  RedisEntryDeleteResponse,
+  RedisEntryResponse,
   RedisKeyGroup,
   RedisKeyStatsResponse,
   RedisStatusResponse,
@@ -19,7 +21,7 @@ const cityState: TtlPick = (ttl) => ttl.cityState;
 const user: TtlPick = (ttl) => ttl.user;
 
 const KEY_GROUPS: { label: string; prefix: string; ttlMinutes: TtlPick | null }[] = [
-  { label: 'Geocode: address', prefix: 'pf:geo:addr:', ttlMinutes: geocode },
+  { label: 'Geocode: address', prefix: 'pf:geo:addr:v2:', ttlMinutes: geocode },
   { label: 'Geocode: ZIP', prefix: 'pf:geo:zip:', ttlMinutes: geocode },
   { label: 'Geocode: location', prefix: 'pf:geo:loc:', ttlMinutes: geocode },
   { label: 'Pantry detail', prefix: CACHE_PREFIX.pantryById, ttlMinutes: pantry },
@@ -36,6 +38,9 @@ const SCAN_COUNT = 1000;
 const MAX_SCAN_BATCHES = 200;
 // Keys per group measured with MEMORY USAGE to estimate the group's size.
 const MEMORY_SAMPLE_SIZE = 20;
+const MAX_KEY_SUFFIX_LENGTH = 512;
+// Cap on the value returned for a single entry.
+const MAX_VALUE_CHARS = 200_000;
 
 /** Parses INFO's `key:value` lines; section headers (`# Memory`) are skipped. */
 function parseInfo(raw: string): Record<string, string> {
@@ -50,8 +55,54 @@ function parseInfo(raw: string): Record<string, string> {
 
 const num = (value: string | undefined): number => Number(value) || 0;
 
-/** Read-only Redis diagnostics for the admin. Uses the API's shared connection. */
+function requireRedis() {
+  const redis = getRedisClient();
+  if (!redis) throw new Error('Redis is not in use.');
+  return redis;
+}
+
+/** Redis diagnostics and single-entry read/delete for the admin. Uses the API's shared connection. */
 export class RedisStatusService {
+  public isEnabled(): boolean {
+    return getRedisClient() !== null;
+  }
+
+  /** Full key, or null unless the prefix is one of KEY_GROUPS. */
+  public resolveKey(prefix: unknown, suffix: unknown): string | null {
+    if (typeof prefix !== 'string' || typeof suffix !== 'string') return null;
+    if (!KEY_GROUPS.some((g) => g.prefix === prefix)) return null;
+    if (suffix.length === 0 || suffix.length > MAX_KEY_SUFFIX_LENGTH) return null;
+    return prefix + suffix;
+  }
+
+  /** Throws when Redis is unreachable. */
+  public async readEntry(key: string): Promise<RedisEntryResponse> {
+    const redis = requireRedis();
+    const [type, pttl] = await Promise.all([redis.type(key), redis.pttl(key)]);
+    if (type === 'none') {
+      return { key, exists: false };
+    }
+
+    // PTTL is negative when the key has no expiry.
+    const entry: RedisEntryResponse = { key, exists: true, type, ttlMs: pttl < 0 ? null : pttl };
+    if (type === 'string') {
+      const value = await redis.get(key);
+      if (value === null) return { key, exists: false };
+      entry.size = value.length;
+      entry.value = value.slice(0, MAX_VALUE_CHARS);
+      entry.valueTruncated = value.length > MAX_VALUE_CHARS;
+    } else if (type === 'zset') {
+      entry.size = await redis.zcard(key);
+    }
+    return entry;
+  }
+
+  /** Throws when Redis is unreachable. */
+  public async deleteEntry(key: string): Promise<RedisEntryDeleteResponse> {
+    const deleted = await requireRedis().del(key);
+    return { key, deleted: deleted > 0 };
+  }
+
   /** Never throws: an unreachable Redis is reported as `connected: false`. */
   public async getStatus(): Promise<RedisStatusResponse> {
     const redis = getRedisClient();
@@ -87,6 +138,7 @@ export class RedisStatusService {
         totalKeys: num(/keys=(\d+)/.exec(info.db0 ?? '')?.[1]),
         lastSaveAt: lastSave ? new Date(lastSave * 1000).toISOString() : undefined,
         lastSaveOk: info.rdb_last_bgsave_status === 'ok',
+        keyGroups: KEY_GROUPS.map(({ label, prefix }) => ({ label, prefix })),
       };
     } catch (err) {
       return {

@@ -461,6 +461,29 @@ export class AdminController {
     res.json(await this.redisStatusService.getKeyStats());
   }
 
+  public async getRedisEntry(req: AuthedRequest, res: Response): Promise<void> {
+    const key = this.redisEntryKey(req, res);
+    if (key) res.json(await this.redisStatusService.readEntry(key));
+  }
+
+  public async deleteRedisEntry(req: AuthedRequest, res: Response): Promise<void> {
+    const key = this.redisEntryKey(req, res);
+    if (key) res.json(await this.redisStatusService.deleteEntry(key));
+  }
+
+  /** Key from `?prefix=&key=`; responds with the error and returns null when invalid. */
+  private redisEntryKey(req: AuthedRequest, res: Response): string | null {
+    if (!this.redisStatusService.isEnabled()) {
+      res.status(409).json({ error: 'Redis is not in use.' });
+      return null;
+    }
+    const key = this.redisStatusService.resolveKey(req.query.prefix, req.query.key);
+    if (!key) {
+      res.status(400).json({ error: 'Unknown prefix or empty key.' });
+    }
+    return key;
+  }
+
   public async getAppConfig(_req: AuthedRequest, res: Response): Promise<void> {
     res.json(await readAppConfig());
   }

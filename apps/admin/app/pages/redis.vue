@@ -1,9 +1,15 @@
 <script setup lang="ts">
-import type { RedisKeyGroup, RedisKeyStatsResponse, RedisStatusResponse } from '@pantry-finder/shared'
+import type {
+  RedisEntryDeleteResponse,
+  RedisEntryResponse,
+  RedisKeyGroup,
+  RedisKeyStatsResponse,
+  RedisStatusResponse,
+} from '@pantry-finder/shared'
 import type { TableColumn } from '@nuxt/ui'
 
-// Read-only view of the API's Redis (caches + rate limiter): server health from
-// PING/INFO, and per-cache key counts from a SCAN that only runs on request.
+// The API's Redis (caches + rate limiter): server health, per-cache key
+// counts (SCAN on request), and read/delete of a single entry.
 const api = useApi()
 const toast = useToast()
 
@@ -94,6 +100,67 @@ const scan = async () => {
     toast.add({ title: 'Could not scan the keys', description: apiErrorMessage(err), color: 'error' })
   } finally {
     scanning.value = false
+  }
+}
+
+// ---- single entry ----
+
+const prefixItems = computed(() =>
+  (server.value?.keyGroups ?? []).map((g) => ({ label: `${g.label} — ${g.prefix}`, value: g.prefix })),
+)
+const entryPrefix = ref('')
+const entrySuffix = ref('')
+const entry = ref<RedisEntryResponse | null>(null)
+const reading = ref(false)
+const deleting = ref(false)
+
+watchEffect(() => {
+  if (!entryPrefix.value && prefixItems.value[0]) entryPrefix.value = prefixItems.value[0].value
+})
+
+const entryQuery = computed(() => ({ prefix: entryPrefix.value, key: entrySuffix.value.trim() }))
+const entryReady = computed(() => entryQuery.value.prefix !== '' && entryQuery.value.key !== '')
+
+const entryValue = computed(() => {
+  const raw = entry.value?.value
+  if (raw === undefined) return null
+  try {
+    return JSON.stringify(JSON.parse(raw), null, 2)
+  } catch {
+    return raw
+  }
+})
+
+const readEntry = async () => {
+  if (!entryReady.value) return
+  reading.value = true
+  try {
+    entry.value = await api<RedisEntryResponse>('/admin/redis/entry', { query: entryQuery.value })
+  } catch (err) {
+    toast.add({ title: 'Could not read the key', description: apiErrorMessage(err), color: 'error' })
+  } finally {
+    reading.value = false
+  }
+}
+
+const deleteEntry = async () => {
+  if (!entryReady.value) return
+  deleting.value = true
+  try {
+    const result = await api<RedisEntryDeleteResponse>('/admin/redis/entry', {
+      method: 'DELETE',
+      query: entryQuery.value,
+    })
+    entry.value = null
+    toast.add(
+      result.deleted
+        ? { title: 'Deleted', description: result.key, color: 'success' }
+        : { title: 'No such key', description: result.key, color: 'neutral' },
+    )
+  } catch (err) {
+    toast.add({ title: 'Could not delete the key', description: apiErrorMessage(err), color: 'error' })
+  } finally {
+    deleting.value = false
   }
 }
 </script>
@@ -193,6 +260,63 @@ const scan = async () => {
             </template>
           </UTable>
         </template>
+      </UCard>
+
+      <UCard>
+        <template #header>
+          <h2 class="font-medium">Cache entry</h2>
+        </template>
+        <div class="flex flex-wrap items-center gap-2">
+          <USelect v-model="entryPrefix" :items="prefixItems" class="w-72" />
+          <UInput
+            v-model="entrySuffix"
+            placeholder="Rest of the key"
+            class="min-w-48 flex-1 font-mono"
+            @keydown.enter="readEntry"
+          />
+          <UButton
+            label="Read"
+            icon="i-lucide-search"
+            color="neutral"
+            variant="outline"
+            :disabled="!entryReady"
+            :loading="reading"
+            @click="readEntry"
+          />
+          <UButton
+            label="Delete"
+            icon="i-lucide-trash-2"
+            color="error"
+            variant="outline"
+            :disabled="!entryReady"
+            :loading="deleting"
+            @click="deleteEntry"
+          />
+        </div>
+
+        <div v-if="entry" class="mt-4 flex flex-col gap-2 text-sm">
+          <code class="text-xs break-all">{{ entry.key }}</code>
+          <p v-if="!entry.exists" class="text-(--ui-text-muted)">No such key (expired or never cached).</p>
+          <template v-else>
+            <p class="text-(--ui-text-muted)">
+              {{ entry.ttlMs == null ? 'No expiry' : `Expires in ${formatDuration(entry.ttlMs / 1000)}` }}
+              <template v-if="entry.type === 'string' && entry.size !== undefined">
+                · {{ formatBytes(entry.size) }}
+              </template>
+              <template v-else-if="entry.type === 'zset'">
+                · {{ entry.size }} hits in the window
+              </template>
+              <template v-else>· type {{ entry.type }}</template>
+            </p>
+            <UAlert
+              v-if="entry.valueTruncated"
+              color="warning"
+              variant="subtle"
+              title="The value is too long to show in full; this is its beginning."
+            />
+            <pre v-if="entryValue !== null" class="max-h-96 overflow-auto rounded bg-(--ui-bg-elevated) p-3 text-xs">{{ entryValue }}</pre>
+          </template>
+        </div>
       </UCard>
     </template>
   </div>
