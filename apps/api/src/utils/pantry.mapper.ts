@@ -28,6 +28,8 @@ export function mapPantryDocumentToDto(
     distance: distanceKm !== undefined ? Math.round(kilometersToMiles(distanceKm) * 100) / 100 : undefined,
     phone: doc.phone || undefined,
     email: doc.email || undefined,
+    contactName: doc.contactName || undefined,
+    website: doc.website || undefined,
     about: doc.aboutUs || undefined,
     notes: doc.notes || undefined,
     heartCount: doc.heartCount || 0,

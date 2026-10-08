@@ -95,6 +95,20 @@ const mapsUrl = computed(() =>
     ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(pantry.value.address)}`
     : '#',
 )
+
+const websiteUrl = computed(() => {
+  const raw = pantry.value?.website?.trim()
+  if (!raw) return null
+  try {
+    const url = new URL(/^[a-z][a-z0-9+.-]*:/i.test(raw) ? raw : `https://${raw}`)
+    return url.protocol === 'http:' || url.protocol === 'https:' ? url.href : null
+  } catch {
+    return null
+  }
+})
+const websiteLabel = computed(() =>
+  (pantry.value?.website ?? '').trim().replace(/^https?:\/\//i, '').replace(/^www\./i, '').replace(/\/+$/, ''),
+)
 const shareUrl = computed(() =>
   pantry.value ? `${origin}${pantryPath(pantry.value)}` : '',
 )
@@ -414,9 +428,18 @@ const serviceProgram = (service: Service) =>
           </div>
 
           <!-- Contact card -->
-          <div v-if="pantry.phone || pantry.email" class="detail-card p-5">
+          <div v-if="pantry.phone || pantry.email || pantry.contactName || websiteUrl" class="detail-card p-5">
             <div class="detail-eyebrow">Contact</div>
             <div class="flex flex-col gap-3">
+              <div v-if="pantry.contactName" class="detail-contact-row">
+                <span class="detail-contact-icon">
+                  <UIcon name="i-lucide-user" />
+                </span>
+                <span class="min-w-0">
+                  <span class="detail-contact-title">{{ pantry.contactName }}</span>
+                  <span class="detail-contact-sub">Contact person</span>
+                </span>
+              </div>
               <a v-if="pantry.phone" :href="`tel:${pantry.phone}`" class="detail-contact-row">
                 <span class="detail-contact-icon">
                   <UIcon name="i-lucide-phone" />
@@ -433,6 +456,15 @@ const serviceProgram = (service: Service) =>
                 <span class="min-w-0">
                   <span class="detail-contact-title break-all">{{ pantry.email }}</span>
                   <span class="detail-contact-sub">Tap to email</span>
+                </span>
+              </a>
+              <a v-if="websiteUrl" :href="websiteUrl" target="_blank" rel="noreferrer" class="detail-contact-row">
+                <span class="detail-contact-icon">
+                  <UIcon name="i-lucide-globe" />
+                </span>
+                <span class="min-w-0">
+                  <span class="detail-contact-title break-all">{{ websiteLabel }}</span>
+                  <span class="detail-contact-sub">Visit website</span>
                 </span>
               </a>
               <a :href="mapsUrl" target="_blank" rel="noreferrer" class="detail-contact-row">

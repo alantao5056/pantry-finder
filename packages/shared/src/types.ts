@@ -28,6 +28,8 @@ export interface Pantry {
   distance?: number;
   phone?: string;
   email?: string;
+  contactName?: string;
+  website?: string;
   about?: string;
   notes?: string;
   heartCount?: number;

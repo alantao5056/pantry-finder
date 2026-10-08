@@ -961,7 +961,7 @@ button:not(:disabled),
     transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
   }
 
-  /* Sidebar contact rows (phone / directions) — icon tile + label stack. */
+  /* Sidebar contact rows */
   .detail-contact-row {
     display: flex;
     align-items: center;
