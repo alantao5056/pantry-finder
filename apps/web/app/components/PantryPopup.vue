@@ -212,7 +212,7 @@ onBeforeUnmount(() => {
             <section class="popup-section">
               <h3 class="popup-section-title">
                 <UIcon name="i-lucide-calendar" class="size-3.5 text-gray-500" />
-                Hours & Schedule
+                Office Hours
               </h3>
               <div v-if="pantry.schedules.length > 0">
                 <div

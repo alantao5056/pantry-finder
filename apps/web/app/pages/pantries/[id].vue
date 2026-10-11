@@ -278,9 +278,9 @@ const serviceProgram = (service: Service) =>
             <p class="detail-body">{{ pantry.notes }}</p>
           </section>
 
-          <!-- Hours & Schedule -->
+          <!-- Office Hours -->
           <section class="detail-card px-7 py-6">
-            <h2 class="detail-section-title">Hours &amp; Schedule</h2>
+            <h2 class="detail-section-title">Office Hours</h2>
 
             <div v-if="schedulesByDay.length > 0">
               <div
