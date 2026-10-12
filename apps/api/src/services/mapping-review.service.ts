@@ -10,11 +10,11 @@ import type {
 import { normalizeTargetValue, parseTarget, sameTargetValue } from '@pantry-finder/shared';
 import {
   COLLECTIONS,
+  confirmedMappingDocs,
   getTargetValue,
   locationOf,
   mappingId,
   planFieldUpdates,
-  rawHash,
   sameLocation,
   sourceId,
   writeAddressUpdate,
@@ -150,27 +150,16 @@ export class MappingReviewService {
         const candidate = proposal.candidates[index];
         if (!candidate) throw new ReviewError('invalid');
         const value = normalizeTargetValue(proposal.target, choice?.value ?? candidate.value);
-        const hash = rawHash(kindOf(proposal.target), candidate.rawText);
-        const mapping: FieldMappingDocument = {
+        const { hash, mapping, cache } = confirmedMappingDocs({
           pantryId: item.pantryId!,
           target: proposal.target,
-          status: 'active',
-          reviewItemId: id,
-          url: candidate.url,
-          selector: candidate.selector,
-          ...(candidate.textAnchor ? { textAnchor: candidate.textAnchor } : {}),
-          lastRawHash: hash,
-          confirmedBy: adminEmail,
-          confirmedAt: now,
-          updatedAt: now,
-        };
-        tx.set(ref, mapping);
-        const cache: ExtractionCacheDocument = {
-          kind: kindOf(proposal.target),
+          candidate,
           value,
+          reviewItemId: id,
           confirmedBy: adminEmail,
-          confirmedAt: now,
-        };
+          now,
+        });
+        tx.set(ref, mapping);
         tx.set(this.cacheCol.doc(hash), cache);
         updates.push({
           target: proposal.target,

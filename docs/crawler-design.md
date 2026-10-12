@@ -396,3 +396,15 @@ CLI. Usage: [`tools/crawler/README.md`](../tools/crawler/README.md).
   polls. Admin dry runs are therefore recorded too (mode `dry-run`).
 - **Quota:** while a run is active the admin polls only that run's doc and new
   log chunks every 5 s, not the run list.
+
+## Auto-apply notes
+
+Opt-in run option (`--auto-apply`, or the checkbox on the admin's Crawler
+page) that confirms first-visit proposals without review.
+
+- **Rule** (`tools/crawler/auto-apply.ts`): address check `match`, phone check
+  not `mismatch`, and no top candidate trips a guardrail; otherwise the whole
+  pantry goes to review.
+- **Writes:** same as an admin confirming every top candidate. The
+  `new_mapping` item is filed already `approved`, `resolvedBy: 'crawler'`;
+  changes are revertible as usual.

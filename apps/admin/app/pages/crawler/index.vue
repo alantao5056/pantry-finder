@@ -53,12 +53,14 @@ const form = reactive<{
   settings: Record<LlmProvider, LlmSettings>
   limit: number
   pantryId: string
+  autoApply: boolean
 }>({
   mode: 'dry-run',
   llm: DEFAULT_LLM_PROVIDER,
   settings: { deepseek: {}, gemini: {} },
   limit: DEFAULT_CRAWL_LIMIT,
   pantryId: '',
+  autoApply: false,
 })
 const peak = isPeakHour()
 
@@ -73,10 +75,10 @@ const requestStart = () => {
 const start = async () => {
   starting.value = true
   try {
-    const llm = { llm: form.llm, settings: form.settings[form.llm] }
+    const common = { mode: form.mode, llm: form.llm, settings: form.settings[form.llm], autoApply: form.autoApply }
     const body: StartCrawlRunRequest = form.pantryId.trim()
-      ? { mode: form.mode, ...llm, pantryId: form.pantryId.trim() }
-      : { mode: form.mode, ...llm, limit: form.limit }
+      ? { ...common, pantryId: form.pantryId.trim() }
+      : { ...common, limit: form.limit }
     const run = await api<CrawlRunSummary>('/admin/crawl-runs', { method: 'POST', body })
     confirmOpen.value = false
     toast.add({ title: 'Crawl queued', description: 'The crawler worker picks it up in a moment.', color: 'success' })
@@ -168,6 +170,16 @@ onBeforeUnmount(() => clearInterval(timer))
               :ui="{ legend: 'sr-only', fieldset: 'grid gap-3 grid-cols-2', item: 'h-8 py-0 px-3 items-center' }"
             />
           </UFormField>
+          <UCheckbox
+            v-model="form.autoApply"
+            label="Auto-apply"
+            :description="
+              form.mode === 'apply'
+                ? 'New sites skip the review queue when the address matches and the phone doesn’t mismatch; the rest go to review.'
+                : 'Dry run: only logs which new sites would skip the review queue.'
+            "
+            class="md:col-span-4"
+          />
         </div>
 
         <USeparator />
@@ -258,7 +270,7 @@ onBeforeUnmount(() => clearInterval(timer))
         <dl class="grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
           <div>
             <dt class="text-xs text-(--ui-text-muted)">Mode</dt>
-            <dd>{{ latest.mode }} · {{ crawlRunScope(latest) }}</dd>
+            <dd>{{ crawlRunModeLabel(latest) }} · {{ crawlRunScope(latest) }}</dd>
           </div>
           <div>
             <dt class="text-xs text-(--ui-text-muted)">LLM</dt>
@@ -302,6 +314,10 @@ onBeforeUnmount(() => clearInterval(timer))
           with {{ LLM_PROVIDER_LABELS[form.llm] }} ({{ form.settings[form.llm].model ?? 'env model' }},
           {{ llmSettingsLabel(form.llm, form.settings[form.llm]) }}) and <strong>writes the results</strong>: confirmed mappings update live pantry data (revertible from the
           change log) and new findings go to the review queue.
+        </p>
+        <p v-if="form.autoApply" class="text-sm mt-3">
+          Auto-apply is on: new sites whose address matches (and whose phone doesn’t mismatch) are
+          <strong>applied without review</strong>, using each field’s top candidate.
         </p>
       </template>
       <template #footer>

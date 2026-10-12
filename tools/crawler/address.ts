@@ -5,7 +5,8 @@
  *
  * Deliberately loose — house number, first street-name word and ZIP — so
  * formatting differences ("N Main Street" vs "North Main St.") still match.
- * It only decides a badge on the review page, never a write.
+ * It decides a badge on the review page and, with auto-apply on, whether the
+ * proposal needs that review at all (auto-apply.ts).
  */
 import type { SiteCheck } from '@pantry-finder/shared';
 import type { StoredPantry } from './pipeline.js';

@@ -345,10 +345,18 @@ export class AdminController {
       return;
     }
     const settings = nonEmptySettings(body.settings as LlmSettings | undefined);
+    if (body.autoApply !== undefined && typeof body.autoApply !== 'boolean') {
+      res.status(400).json({ error: 'autoApply must be a boolean.' });
+      return;
+    }
+    // Stored only when on; kept for dry runs, which log what it would do.
+    const autoApply = body.autoApply || undefined;
     await this.handleCrawlRunErrors(res, async () => {
       // Firestore rejects undefined fields.
       const options = pruneUndefined(
-        pantryId ? { pantryId, limit: 1, llm, settings } : { limit: limit as number, llm, settings },
+        pantryId
+          ? { pantryId, limit: 1, llm, settings, autoApply }
+          : { limit: limit as number, llm, settings, autoApply },
       );
       res.json(await this.crawlRunService.startRun(mode, options, req.user!.sub));
     });

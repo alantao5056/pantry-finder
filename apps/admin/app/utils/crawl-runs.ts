@@ -19,6 +19,10 @@ export const isActiveRun = (run: CrawlRunSummary): boolean =>
 export const canStopRun = (run: CrawlRunSummary): boolean =>
   ACTIVE_CRAWL_RUN_STATUSES.includes(run.status) && !run.abortRequested
 
+/** "dry-run", "apply" or "apply · auto-apply". */
+export const crawlRunModeLabel = (run: CrawlRunSummary): string =>
+  run.options.autoApply ? `${run.mode} · auto-apply` : run.mode
+
 /** "pantry abc123" or "100 pantries". */
 export const crawlRunScope = (run: CrawlRunSummary): string =>
   run.options.pantryId ? `pantry ${run.options.pantryId}` : `${run.options.limit ?? DEFAULT_CRAWL_LIMIT} pantries`

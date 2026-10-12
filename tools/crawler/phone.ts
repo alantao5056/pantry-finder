@@ -1,7 +1,7 @@
 /**
  * Phone check for first-visit proposals: does the site list the pantry's
  * stored phone number? Like the address check (address.ts), a badge for the
- * admin deciding whether the site is this pantry's, never a write.
+ * admin deciding whether the site is this pantry's, and an input to auto-apply.
  */
 import type { SiteCheck } from '@pantry-finder/shared';
 import type { StoredPantry } from './pipeline.js';

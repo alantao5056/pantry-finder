@@ -240,6 +240,8 @@ export interface CrawlRunOptions {
   llm?: LlmProvider;
   /** Absent: env defaults (and DeepSeek thinking off). */
   settings?: LlmSettings;
+  /** Clear-cut first-visit proposals skip the review queue. */
+  autoApply?: boolean;
 }
 
 export interface ListCrawlRunsResponse {
@@ -256,6 +258,8 @@ export interface StartCrawlRunRequest {
   llm?: LlmProvider;
   /** For `llm`; default the env settings. */
   settings?: LlmSettings;
+  /** Default off. */
+  autoApply?: boolean;
 }
 
 export const DEFAULT_CRAWL_LIMIT = 100;

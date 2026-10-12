@@ -89,7 +89,7 @@ onBeforeUnmount(() => clearInterval(timer))
           {{ row.original.env || '—' }}
         </template>
         <template #mode-cell="{ row }">
-          <div>{{ row.original.mode }}</div>
+          <div>{{ crawlRunModeLabel(row.original) }}</div>
           <div class="text-xs text-(--ui-text-muted)">{{ crawlRunScope(row.original) }}</div>
           <div v-if="crawlRunLlmLine(row.original)" class="text-xs text-(--ui-text-muted)">
             {{ crawlRunLlmLine(row.original) }}

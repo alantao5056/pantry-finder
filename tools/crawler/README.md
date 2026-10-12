@@ -62,6 +62,7 @@ From `tools/crawler`:
 ```sh
 npm run crawl:dev01                          # dry run on the 100 least recently crawled pantries
 npm run crawl:dev01 -- --limit 5 --apply     # 5 of them, writing results
+npm run crawl:dev01 -- --limit 5 --apply --auto-apply   # …and confirming clear-cut new sites without review
 npm run crawl:dev01 -- --pantry <pantryId>   # one pantry (any site)
 npm run crawl:dev01 -- --llm gemini          # with Gemini instead of DeepSeek
 npm run crawl:dev01 -- --model deepseek-v4-pro --thinking high   # DeepSeek Pro with thinking
@@ -111,6 +112,13 @@ What a run does per pantry:
    The same call reports the addresses and phone numbers the site states; the
    item records whether one matches the pantry's (`address.ts`, `phone.ts`),
    shown as badges in the admin.
+   With `--auto-apply` (or the admin's Auto-apply checkbox) the crawler
+   confirms the proposal itself — each target's top candidate, exactly as an
+   admin confirming the review would — when the address check is `match`, the
+   phone check isn't `mismatch` (`not_found` or no stored phone pass) and no
+   top candidate trips a guardrail (`auto-apply.ts`). The review item is then
+   filed already approved, resolved by `crawler`; anything else goes to the
+   queue as usual. In a dry run it only logs which way each pantry would go.
 3. **Confirmed mappings**: re-reads the region (CSS selector, falling back to
    the heading text above it). Unchanged text is skipped outright; changed text
    is parsed from the extraction cache or by the LLM and applied to the pantry

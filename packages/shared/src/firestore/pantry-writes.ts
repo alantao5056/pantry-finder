@@ -23,8 +23,10 @@ import {
   type MappingTarget,
   type TargetValue,
 } from '../crawl.js';
+import type { MappingCandidate } from '../admin.js';
 import { pruneUndefined } from '../values.js';
 import type {
+  ExtractionCacheDocument,
   FieldMappingDocument,
   FieldSource,
   GeoHashField,
@@ -75,6 +77,38 @@ export function sourceId(url: string): string {
 
 export function mappingId(pantryId: string, target: MappingTarget): string {
   return `${pantryId}_${target}`;
+}
+
+/** The `active` mapping and extraction-cache entry (doc id `hash`) for a confirmed candidate. */
+export function confirmedMappingDocs(args: {
+  pantryId: string;
+  target: MappingTarget;
+  candidate: MappingCandidate;
+  value: TargetValue;
+  reviewItemId: string;
+  confirmedBy: string;
+  now: Timestamp;
+}): { hash: string; mapping: FieldMappingDocument; cache: ExtractionCacheDocument } {
+  const { pantryId, target, candidate, value, reviewItemId, confirmedBy, now } = args;
+  const kind = parseTarget(target)?.kind === 'schedules' ? 'schedules' : 'text';
+  const hash = rawHash(kind, candidate.rawText);
+  return {
+    hash,
+    mapping: {
+      pantryId,
+      target,
+      status: 'active',
+      reviewItemId,
+      url: candidate.url,
+      selector: candidate.selector,
+      ...(candidate.textAnchor ? { textAnchor: candidate.textAnchor } : {}),
+      lastRawHash: hash,
+      confirmedBy,
+      confirmedAt: now,
+      updatedAt: now,
+    },
+    cache: { kind, value, confirmedBy, confirmedAt: now },
+  };
 }
 
 type StoredPantry = Omit<PantryDocument, 'id'>;

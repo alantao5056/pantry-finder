@@ -1,7 +1,9 @@
 /**
  * Per-pantry crawl logic (docs/crawler-design.md, M2: single-pantry sites).
  *
- *   targets with no mapping  → LLM proposes regions → `new_mapping` review
+ *   targets with no mapping  → LLM proposes regions → `new_mapping` review,
+ *                              or with auto-apply confirmed at once when the
+ *                              site is clearly the pantry's (auto-apply.ts)
  *   active mappings          → re-read region → unchanged text is skipped;
  *                              otherwise parse (extraction cache, else LLM) and
  *                              apply automatically, unless a guardrail trips
@@ -9,7 +11,7 @@
  *
  * In dry-run mode nothing is written; decisions are printed instead.
  */
-import { Timestamp, type Firestore } from 'firebase-admin/firestore';
+import { Timestamp, type DocumentReference, type Firestore } from 'firebase-admin/firestore';
 import {
   parseTarget,
   pruneUndefined,
@@ -20,6 +22,7 @@ import {
 import {
   COLLECTIONS,
   PantryWriteError,
+  confirmedMappingDocs,
   mappingId,
   planFieldUpdates,
   rawHash,
@@ -28,10 +31,12 @@ import {
   type CrawlSourceDocument,
   type ExtractionCacheDocument,
   type FieldMappingDocument,
+  type FieldUpdate,
   type PantryDocument,
   type ReviewItemDocument,
 } from '@pantry-finder/shared/firestore';
 import { checkAddress } from './address.js';
+import { autoApplyBlockers } from './auto-apply.js';
 import { checkPhone } from './phone.js';
 import type { Fetcher } from './fetch/fetcher.js';
 import { errorMessage, hostOf, siteOf } from './fetch/fetcher.js';
@@ -113,6 +118,8 @@ export class PantryCrawler {
     private readonly extractor: Extractor,
     private readonly runId: string | null,
     private readonly apply: boolean,
+    /** Confirm first-visit proposals without review where auto-apply.ts allows it. */
+    private readonly autoApply: boolean,
     readonly stats: RunStats,
     private readonly siteCache: SiteCache,
     private readonly logger: Logger,
@@ -208,11 +215,15 @@ export class PantryCrawler {
     const addressCheck = checkAddress(pantry, addresses);
     const phoneCheck = checkPhone(pantry, phones);
     const checks = `address ${addressCheck.status}; phone ${phoneCheck?.status ?? 'none stored'}`;
+    // null = auto-apply is off (or there is nothing to apply); empty = confirm without review.
+    const blockers =
+      this.autoApply && proposals.length ? autoApplyBlockers(pantry, proposals, addressCheck, phoneCheck) : null;
+    const held = blockers?.length ? `; not auto-applied (${blockers.join('; ')})` : '';
 
     if (!this.apply) {
       const found = [...addresses, ...phones].map((v) => JSON.stringify(v)).join(', ');
       this.log(id, `${checks}${found ? ` — ${found}` : ''}`);
-      this.log(id, `would propose ${proposals.length} target(s):`);
+      this.log(id, `would ${blockers?.length === 0 ? 'auto-apply' : 'propose'} ${proposals.length} target(s)${held}:`);
       for (const p of proposals) {
         const c = p.candidates[0];
         this.logger.info(`    ${p.target} ← ${JSON.stringify(c.value).slice(0, 160)}${c.uncertain ? ' (uncertain)' : ''}\n      ${c.url} :: ${c.textAnchor ?? c.selector}`);
@@ -221,24 +232,28 @@ export class PantryCrawler {
     }
 
     const now = Timestamp.now();
+    const sourceRef = this.db.collection(COLLECTIONS.crawlSources).doc(sourceId(home.url));
+    const pending: ReviewItemDocument = {
+      type: 'new_mapping',
+      status: 'pending',
+      title: pantry.name,
+      subtitle: `${pantry.city}, ${pantry.state} · ${hostOf(website)}`,
+      pantryId: id,
+      ...(this.runId ? { runId: this.runId } : {}),
+      newMapping: { website, fetchedAt: now, proposals, addressCheck, phoneCheck },
+      createdAt: now,
+    };
+
+    if (blockers?.length === 0) {
+      const changed = await this.autoConfirm(id, pantry, pending, sourceRef, hash);
+      if (changed !== null) return this.log(id, `auto-applied ${proposals.length} target(s), ${changed} changed; ${checks}`);
+    }
+
     const batch = this.db.batch();
-    batch.set(
-      this.db.collection(COLLECTIONS.crawlSources).doc(sourceId(home.url)),
-      { proposalHash: hash },
-      { merge: true },
-    );
+    batch.set(sourceRef, { proposalHash: hash }, { merge: true });
     if (proposals.length) {
       const itemRef = this.db.collection(COLLECTIONS.reviewItems).doc();
-      const item: ReviewItemDocument = {
-        type: 'new_mapping',
-        status: 'pending',
-        title: pantry.name,
-        subtitle: `${pantry.city}, ${pantry.state} · ${hostOf(website)}`,
-        pantryId: id,
-        ...(this.runId ? { runId: this.runId } : {}),
-        newMapping: { website, fetchedAt: now, proposals, addressCheck, phoneCheck },
-        createdAt: now,
-      };
+      const item = pending;
       batch.create(itemRef, pruneUndefined(item));
       for (const p of proposals) {
         const mapping: FieldMappingDocument = {
@@ -253,7 +268,76 @@ export class PantryCrawler {
       this.stats.reviewItemsCreated++;
     }
     await batch.commit();
-    this.log(id, `proposed ${proposals.length} target(s); ${checks}`);
+    this.log(id, `proposed ${proposals.length} target(s); ${checks}${held}`);
+  }
+
+  /**
+   * Auto-apply: confirms each target's top candidate as an admin confirming
+   * the review would — active mappings, extraction cache, pantry update with
+   * change-log entries — and files the review item already approved, so the
+   * decision stays visible in the admin.
+   * @returns Number of pantry fields changed; null if the pantry is gone.
+   */
+  private async autoConfirm(
+    id: string,
+    pantry: StoredPantry,
+    pending: ReviewItemDocument,
+    sourceRef: DocumentReference,
+    proposalHash: string,
+  ): Promise<number | null> {
+    const { proposals } = pending.newMapping!;
+    const itemRef = this.db.collection(COLLECTIONS.reviewItems).doc();
+    // Re-read inside a transaction so a concurrent admin edit isn't overwritten blindly.
+    const changed = await this.db.runTransaction(async (tx) => {
+      const pantryRef = this.db.collection(COLLECTIONS.pantries).doc(id);
+      const snap = await tx.get(pantryRef);
+      if (!snap.exists) return null;
+      const fresh = snap.data() as StoredPantry;
+      const now = Timestamp.now();
+
+      const updates: FieldUpdate[] = [];
+      const confirmed: Partial<Record<MappingTarget, number | null>> = {};
+      for (const p of proposals) {
+        const candidate = p.candidates[0];
+        const ref = this.db.collection(COLLECTIONS.fieldMappings).doc(mappingId(id, p.target));
+        const { hash, mapping, cache } = confirmedMappingDocs({
+          pantryId: id,
+          target: p.target,
+          candidate,
+          value: candidate.value,
+          reviewItemId: itemRef.id,
+          confirmedBy: 'crawler',
+          now,
+        });
+        tx.set(ref, mapping);
+        tx.set(this.db.collection(COLLECTIONS.extractionCache).doc(hash), cache);
+        updates.push({ target: p.target, value: candidate.value, mappingId: ref.id });
+        confirmed[p.target] = 0;
+      }
+
+      const plan = planFieldUpdates(fresh, updates);
+      writeFieldUpdates(tx, this.db, pantryRef, fresh, plan, {
+        source: 'crawler',
+        actor: 'crawler',
+        now,
+        runId: this.runId ?? undefined,
+        reviewItemId: itemRef.id,
+      });
+      const item: ReviewItemDocument = {
+        ...pending,
+        status: 'approved',
+        newMapping: { ...pending.newMapping!, confirmed, confirmedAddress: null },
+        resolvedAt: now,
+        resolvedBy: 'crawler',
+      };
+      tx.create(itemRef, pruneUndefined(item));
+      tx.set(sourceRef, { proposalHash }, { merge: true });
+      return plan.length;
+    });
+    if (changed === null) return null;
+    this.stats.autoUpdated += changed;
+    if (changed) await this.siteCache.invalidate({ id, state: pantry.state, city: pantry.city });
+    return changed;
   }
 
   // ---- later visits: refresh confirmed mappings ----

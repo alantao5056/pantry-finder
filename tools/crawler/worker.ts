@@ -194,7 +194,8 @@ async function execute(ref: DocumentReference, run: CrawlRunDocument, extractor:
   );
 
   log.info(
-    `Run ${ref.id} by ${run.requestedBy ?? 'unknown'}: ${apply ? 'APPLYING' : 'DRY RUN (nothing is written)'} ` +
+    `Run ${ref.id} by ${run.requestedBy ?? 'unknown'}: ${apply ? 'APPLYING' : 'DRY RUN (nothing is written)'}` +
+      `${run.options?.autoApply ? ' with auto-apply' : ''} ` +
       `(env ${env}, project ${projectId}, model ${extractor.model}, ` +
       `${llmSettingsLabel(extractor.provider, extractor.settings)})`,
   );

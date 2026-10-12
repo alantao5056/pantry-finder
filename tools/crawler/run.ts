@@ -58,11 +58,14 @@ export class CrawlJob {
     try {
       const todo = await selectPantries(db, options.limit, options.pantryId);
       logger.info(`${todo.length} pantr${todo.length === 1 ? 'y' : 'ies'} to crawl (concurrency ${concurrency}).`);
+      if (options.autoApply) {
+        logger.info('Auto-apply: first-visit proposals are confirmed without review when the address matches.');
+      }
 
       // Clears the API's cached copies of updated pantries so the site shows changes at once.
       this.siteCache = apply ? SiteCache.fromEnv(logger) : SiteCache.disabled(logger);
       await this.siteCache.check();
-      const crawler = new PantryCrawler(db, fetcher, extractor, runRef?.id ?? null, apply, this.stats, this.siteCache, logger);
+      const crawler = new PantryCrawler(db, fetcher, extractor, runRef?.id ?? null, apply, options.autoApply ?? false, this.stats, this.siteCache, logger);
 
       let completed = 0;
       const queue = new PQueue({ concurrency });

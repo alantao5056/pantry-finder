@@ -3,10 +3,12 @@
  * default: fetches and calls the LLM, prints what it would do, writes nothing.
  *
  *   npm run crawl:dev01 -- [--limit N] [--pantry <id>] [--llm deepseek|gemini] [--concurrency N] [--apply]
- *                          [--model <id>] [--thinking low|high|max] [--effort minimal|low|medium|high]
+ *                          [--auto-apply] [--model <id>] [--thinking low|high|max] [--effort minimal|low|medium|high]
  *
  * `--model` overrides DEEPSEEK_MODEL / GEMINI_MODEL; `--thinking` turns DeepSeek
  * thinking on (off by default); `--effort` overrides GEMINI_REASONING_EFFORT.
+ * `--auto-apply` confirms first-visit proposals without review when the site
+ * states the pantry's address (auto-apply.ts); in a dry run it only says which.
  *
  * Each run takes the `--limit` (default 100) least recently crawled pantries,
  * so repeated runs rotate through all of them; an interrupted run's leftovers
@@ -44,7 +46,7 @@ const extractor = createExtractor(llm, settings);
 const fetcher = new Fetcher(requireEnvVar('CRAWLER_CONTACT'));
 
 console.log(
-  `${apply ? 'APPLYING' : 'DRY RUN'}: crawl (env ${env}, project ${projectId}, model ${extractor.model}, ` +
+  `${apply ? 'APPLYING' : 'DRY RUN'}${hasFlag('auto-apply') ? ' with auto-apply' : ''}: crawl (env ${env}, project ${projectId}, model ${extractor.model}, ` +
     `${llmSettingsLabel(llm, extractor.settings)})`,
 );
 peakHourWarning(extractor.provider);
@@ -54,6 +56,7 @@ const options = {
   pantryId: flag('pantry'),
   llm,
   settings: Object.keys(settings).length ? settings : undefined,
+  autoApply: hasFlag('auto-apply') || undefined,
 };
 let runRef: FirebaseFirestore.DocumentReference | null = null;
 
