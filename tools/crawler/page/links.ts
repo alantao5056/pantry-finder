@@ -6,13 +6,13 @@
 import * as cheerio from 'cheerio';
 import { siteOf } from '../fetch/fetcher.js';
 
-export const MAX_EXTRA_PAGES = 5;
+export const MAX_EXTRA_PAGES = 6;
 
 const KEYWORDS: [RegExp, number][] = [
   [/hours|schedule|calendar|when/i, 5],
-  [/pantry|distribution|food|get[-\s]?help|find[-\s]?food|assistance|visit/i, 4],
+  [/pantry|distribution|food|nutrition|meal|grocer|hunger|feeding|kitchen|cupboard|get[-\s]?help|find[-\s]?food|assistance|visit/i, 4],
   [/contact|location|directions|find[-\s]?us/i, 3],
-  [/about|who[-\s]?we|mission|services|programs?/i, 2],
+  [/about|who[-\s]?we|mission|services|programs?|ministr|outreach|resources/i, 2],
 ];
 
 const SKIP = /\.(pdf|jpe?g|png|gif|webp|svg|docx?|xlsx?|pptx?|zip|mp[34])(\?|$)|^mailto:|^tel:|^javascript:|donat|volunteer|login|sign[-\s]?in|cart|shop|blog\/|news\//i;

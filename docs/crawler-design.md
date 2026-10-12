@@ -257,7 +257,7 @@ Decisions made while building M2, on top of the design above. Usage:
 - **Scope of a run:** pantries whose website host (ignoring `www.`) is used by
   no other pantry, minus facebook.com / instagram.com. Pantries are read with
   `where('website', '>', '')`, not a full collection scan.
-- **Pages:** the homepage plus up to 5 same-site links whose URL or link text
+- **Pages:** the homepage plus up to 6 same-site links whose URL or link text
   suggests hours / pantry / contact / about. Playwright is not in M2: a page
   with under 200 characters of text and script bundles is flagged
   `needsBrowser` in `crawl_sources` and skipped.

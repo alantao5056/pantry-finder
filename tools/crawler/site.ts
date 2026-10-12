@@ -16,7 +16,7 @@ import { segmentPage, type SegmentedPage } from './page/segment.js';
 import type { PageForExtraction, RawProposal } from './extract/Extractor.js';
 
 // Keeps a first-visit prompt near the design's ~10k input tokens per pantry.
-const MAX_PROMPT_CHARS = 36_000;
+const MAX_PROMPT_CHARS = 42_000;
 
 export interface LoadedPage {
   url: string;
