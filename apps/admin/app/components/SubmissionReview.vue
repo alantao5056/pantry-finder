@@ -25,21 +25,6 @@ watch(detail, (d) => {
 
 const isPending = computed(() => detail.value?.item.status === 'pending')
 
-type TextField = 'name' | 'address1' | 'address2' | 'city' | 'state' | 'zipCode' | 'phone' | 'email' | 'website' | 'contactName'
-const textFields: { key: TextField; label: string; required?: boolean }[] = [
-  { key: 'name', label: 'Name', required: true },
-  { key: 'address1', label: 'Street address', required: true },
-  { key: 'address2', label: 'Address line 2' },
-  { key: 'city', label: 'City', required: true },
-  { key: 'state', label: 'State (2-letter)', required: true },
-  { key: 'zipCode', label: 'ZIP code', required: true },
-  { key: 'phone', label: 'Phone' },
-  { key: 'email', label: 'Email' },
-  { key: 'website', label: 'Website' },
-  { key: 'contactName', label: 'Contact name' },
-]
-
-
 const approving = ref(false)
 const approvedPantryId = ref<string | null>(null)
 
@@ -141,7 +126,7 @@ const rejectOpen = ref(false)
         <template #header><h2 class="font-semibold">Pantry</h2></template>
         <fieldset :disabled="!isPending" class="flex flex-col gap-4">
           <div class="grid md:grid-cols-3 gap-3">
-            <UFormField v-for="f in textFields" :key="f.key" :label="f.label" :required="f.required">
+            <UFormField v-for="f in PANTRY_TEXT_FIELDS" :key="f.key" :label="f.label" :required="f.required">
               <UInput v-model="draft[f.key]" class="w-full" />
             </UFormField>
           </div>

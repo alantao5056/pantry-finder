@@ -154,6 +154,14 @@ const revertRun = async () => {
             :to="{ path: '/changes', query: { pantryId: row.original.pantryId } }"
           />
           <UButton
+            label="Edit"
+            size="xs"
+            color="neutral"
+            variant="link"
+            class="px-0 ml-2"
+            :to="`/pantries/${row.original.pantryId}`"
+          />
+          <UButton
             label="Clear cache"
             size="xs"
             color="neutral"

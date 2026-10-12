@@ -45,6 +45,7 @@ const deleteOpen = ref(false)
         <h1 class="text-xl font-semibold">{{ detail.pantryName }}</h1>
         <UBadge :label="detail.item.status" :color="REVIEW_STATUS_COLORS[detail.item.status]" variant="subtle" />
         <ExternalLinkButton :to="pantryUrl(detail.pantryId)" label="View on pantryfinder.org" />
+        <UButton label="Edit pantry" icon="i-lucide-pencil" size="xs" color="neutral" variant="outline" :to="`/pantries/${detail.pantryId}`" />
         <span class="text-sm text-(--ui-text-muted)">{{ targetLabel(detail.target, detail.serviceNames) }}</span>
       </div>
       <div class="flex flex-wrap gap-2">

@@ -142,6 +142,7 @@ const deleteOpen = ref(false)
           variant="subtle"
         />
         <ExternalLinkButton :to="pantryUrl(detail.pantryId)" label="View on pantryfinder.org" />
+        <UButton label="Edit pantry" icon="i-lucide-pencil" size="xs" color="neutral" variant="outline" :to="`/pantries/${detail.pantryId}`" />
         <ExternalLinkButton :to="detail.website" :label="detail.website" />
         <span class="text-sm text-(--ui-text-muted)">Fetched {{ formatDateTime(detail.fetchedAt) }}</span>
       </div>

@@ -1,5 +1,5 @@
-import type { LlmCompareStatus, MappingTarget, ReviewItemStatus, ReviewItemType, SiteCheckStatus, SuspiciousReason, TextTarget } from '@pantry-finder/shared'
-import { parseTarget } from '@pantry-finder/shared'
+import type { EditTarget, LlmCompareStatus, ReviewItemStatus, ReviewItemType, ServiceTextField, SiteCheckStatus, SuspiciousReason, TextTarget } from '@pantry-finder/shared'
+import { parseEditTarget } from '@pantry-finder/shared'
 
 export const formatDateTime = (iso?: string): string =>
   iso ? new Date(iso).toLocaleString() : '—'
@@ -77,15 +77,43 @@ const TEXT_TARGET_LABELS: Record<TextTarget, string> = {
   website: 'Website',
 }
 
+const SERVICE_TEXT_LABELS: Record<ServiceTextField, string> = {
+  name: 'Service name',
+  categoryDescription: 'Category',
+  foodProgramTypeDescription: 'Program type',
+}
+
 /** "Phone", "Hours (pantry)", "Hours — Food Bank" / "Notes — Food Bank" for `services.<i>.*`. */
-export const targetLabel = (target: MappingTarget, serviceNames: string[] = []): string => {
-  const parsed = parseTarget(target)
+export const targetLabel = (target: EditTarget, serviceNames: string[] = []): string => {
+  const parsed = parseEditTarget(target)
   if (!parsed) return target
   if (parsed.kind === 'text') return TEXT_TARGET_LABELS[parsed.field]
-  if (parsed.serviceIndex === null) return 'Hours (pantry)'
-  const service = serviceNames[parsed.serviceIndex] ?? `service #${parsed.serviceIndex + 1}`
-  return `${parsed.kind === 'serviceNotes' ? 'Notes' : 'Hours'} — ${service}`
+  if (parsed.kind === 'name') return 'Name'
+  if (parsed.kind === 'schedules' && parsed.serviceIndex === null) return 'Hours (pantry)'
+  const index = parsed.serviceIndex!
+  const service = serviceNames[index] ?? `service #${index + 1}`
+  const label =
+    parsed.kind === 'schedules' ? 'Hours'
+    : parsed.kind === 'serviceNotes' ? 'Notes'
+    : parsed.kind === 'serviceOfferings' ? 'Food offerings'
+    : SERVICE_TEXT_LABELS[parsed.field]
+  return `${label} — ${service}`
 }
+
+/** The single-line text fields of a pantry form, in display order. */
+export type PantryTextField = 'name' | 'address1' | 'address2' | 'city' | 'state' | 'zipCode' | 'phone' | 'email' | 'website' | 'contactName'
+export const PANTRY_TEXT_FIELDS: { key: PantryTextField; label: string; required?: boolean }[] = [
+  { key: 'name', label: 'Name', required: true },
+  { key: 'address1', label: 'Street address', required: true },
+  { key: 'address2', label: 'Address line 2' },
+  { key: 'city', label: 'City', required: true },
+  { key: 'state', label: 'State (2-letter)', required: true },
+  { key: 'zipCode', label: 'ZIP code', required: true },
+  { key: 'phone', label: 'Phone' },
+  { key: 'email', label: 'Email' },
+  { key: 'website', label: 'Website' },
+  { key: 'contactName', label: 'Contact name' },
+]
 
 export const SUSPICIOUS_REASON_LABELS: Record<SuspiciousReason, string> = {
   emptied_schedules: 'Hours would be emptied',

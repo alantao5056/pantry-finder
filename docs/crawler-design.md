@@ -408,3 +408,18 @@ page) that confirms first-visit proposals without review.
 - **Writes:** same as an admin confirming every top candidate. The
   `new_mapping` item is filed already `approved`, `resolvedBy: 'crawler'`;
   changes are revertible as usual.
+
+## Manual edit notes
+
+The admin's Pantries page (`/pantries/<id>`) edits a live pantry by hand
+(`GET` / `PATCH /admin/pantries/:id`).
+
+- **Writes:** same write layer as the crawler, source `admin`; logged and
+  revertible as usual. A save is refused (409) if the pantry changed since it
+  was opened.
+- **Targets:** the mapping targets plus `name` and each service's text fields
+  and `foodOfferings` (`EditTarget` in `packages/shared/src/edit-targets.ts`).
+- **Services can't be added or removed:** mapping targets address them by
+  index.
+- **Mappings are left alone:** the crawler still overwrites an edited field
+  once its page region changes.

@@ -1,5 +1,4 @@
 import { FieldValue, GeoPoint, Timestamp, type DocumentReference } from 'firebase-admin/firestore';
-import { encodeGeoDocument } from 'geofirestore-core';
 import type {
   AddressFields,
   ConfirmMappingField,
@@ -22,7 +21,6 @@ import {
   type ExtractionCacheDocument,
   type FieldMappingDocument,
   type FieldUpdate,
-  type GeoHashField,
   type PantryLocation,
   type StoredLocation,
 } from '@pantry-finder/shared/firestore';
@@ -32,17 +30,9 @@ import { ReviewItemDocument } from '../models/review-item.schema';
 import { ReviewError, oneLineAddress, toSummary } from './review.service';
 import { GeoService } from './geo.service';
 import { invalidatePantryCaches } from '../cache/pantryCaches';
+import { addressFieldsOf, geoHashOf } from '../utils/location.util';
 
 type StoredPantry = Omit<PantryDocument, 'id'>;
-
-/** GeoFirestore's geohash index entry for a point, as its radius queries expect it. */
-function geoHashOf(point: GeoPoint): GeoHashField {
-  return encodeGeoDocument(point, {}).g as unknown as GeoHashField;
-}
-
-function addressFieldsOf(p: AddressFields): AddressFields {
-  return { address1: p.address1, address2: p.address2 ?? '', city: p.city, state: p.state, zipCode: p.zipCode };
-}
 
 function emptyValue(target: string): TargetValue {
   return parseTarget(target)?.kind === 'schedules' ? [] : '';

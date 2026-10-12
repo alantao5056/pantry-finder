@@ -2,6 +2,8 @@
 import type { ServiceDraft } from '@pantry-finder/shared'
 
 const services = defineModel<ServiceDraft[]>({ required: true })
+// `fixed`: no adding or removing services.
+defineProps<{ fixed?: boolean }>()
 
 const addService = () => {
   services.value.push({ name: '', categoryDescription: '', foodOfferings: [], schedules: [] })
@@ -37,6 +39,7 @@ const removeService = (i: number) => services.value.splice(i, 1)
         <ScheduleEditor v-model="service.schedules" />
       </UFormField>
       <UButton
+        v-if="!fixed"
         label="Remove service"
         icon="i-lucide-trash-2"
         color="error"
@@ -47,6 +50,7 @@ const removeService = (i: number) => services.value.splice(i, 1)
       />
     </div>
     <UButton
+      v-if="!fixed"
       label="Add service"
       icon="i-lucide-plus"
       color="neutral"

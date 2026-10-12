@@ -5,6 +5,8 @@ import type {
   CacheTtlMinutes,
   ConfirmMappingField,
   CrawlRunMode,
+  EditTarget,
+  EditValue,
   EvalGrade,
   EvalVariantKey,
   LlmProvider,
@@ -15,6 +17,7 @@ import type {
   ScheduleDraft,
   ServiceDraft,
   TargetValue,
+  UpdatePantryField,
 } from '@pantry-finder/shared';
 import {
   DEFAULT_CRAWL_LIMIT,
@@ -23,11 +26,13 @@ import {
   MAX_CACHE_TTL_MINUTES,
   MAX_CRAWL_LIMIT,
   MIN_CACHE_TTL_MINUTES,
+  isEditTarget,
   isLlmProvider,
   isMappingTarget,
   isValidStateSlug,
   llmSettingsError,
   normalizeEmail,
+  parseEditTarget,
   parseTarget,
   pruneUndefined,
 } from '@pantry-finder/shared';
@@ -45,6 +50,7 @@ import { ChangeLogService } from '../services/change-log.service';
 import { LlmCompareError, LlmCompareService, type LlmCompareErrorCode } from '../services/llm-compare.service';
 import { LlmEvalService } from '../services/llm-eval.service';
 import { PantryCacheService } from '../services/pantry-cache.service';
+import { PantryEditService } from '../services/pantry-edit.service';
 import { RedisStatusService } from '../services/redis-status.service';
 import { UserService } from '../services/user.service';
 import { isValidTtlMinutes, readAppConfig, updateAppConfig } from '../services/app-config.service';
@@ -120,6 +126,7 @@ function nonEmptySettings(settings: LlmSettings | undefined): LlmSettings | unde
 const PANTRY_WRITE_ERROR_STATUS:Record<PantryWriteErrorCode, number> = {
   not_found: 404,
   bad_target: 400,
+  invalid_value: 400,
   not_revertible: 400,
   already_reverted: 409,
   conflict: 409,
@@ -131,6 +138,33 @@ const EVAL_GRADES: EvalGrade[] = ['correct', 'partial', 'wrong'];
 function parseTargetValue(target: MappingTarget, raw: unknown): TargetValue | null {
   if (parseTarget(target)?.kind === 'schedules') return Array.isArray(raw) ? parseSchedules(raw) : null;
   return typeof raw === 'string' ? str(raw, MAX_ABOUT) : null;
+}
+
+/** An edit-target value from the admin: a schedule list, a food-offerings list or text, matching the target. */
+function parseEditValue(target: EditTarget, raw: unknown): EditValue | null {
+  const kind = parseEditTarget(target)?.kind;
+  if (kind === 'schedules') return Array.isArray(raw) ? parseSchedules(raw) : null;
+  if (kind === 'serviceOfferings') {
+    return Array.isArray(raw) ? raw.map((f) => str(f, 100)).filter(Boolean).slice(0, MAX_ARRAY) : null;
+  }
+  return typeof raw === 'string' ? str(raw, MAX_ABOUT) : null;
+}
+
+// The pantry-level targets plus every target of every service.
+const MAX_EDIT_FIELDS = 8 + MAX_ARRAY * 6;
+
+function parseUpdateFields(raw: unknown): UpdatePantryField[] | null {
+  if (!Array.isArray(raw) || raw.length > MAX_EDIT_FIELDS) return null;
+  const fields: UpdatePantryField[] = [];
+  for (const f of raw) {
+    const r = (f ?? {}) as Record<string, unknown>;
+    const target = r.target;
+    if (typeof target !== 'string' || !isEditTarget(target)) return null;
+    const value = parseEditValue(target, r.value);
+    if (value === null) return null;
+    fields.push({ target, value });
+  }
+  return fields;
 }
 
 function parseConfirmFields(raw: unknown): ConfirmMappingField[] | null {
@@ -239,6 +273,7 @@ export class AdminController {
   private readonly llmEvalService = new LlmEvalService();
   private readonly llmCompareService = new LlmCompareService();
   private readonly pantryCacheService = new PantryCacheService();
+  private readonly pantryEditService = new PantryEditService();
   private readonly redisStatusService = new RedisStatusService();
 
   public async me(req: AuthedRequest, res: Response): Promise<void> {
@@ -450,6 +485,38 @@ export class AdminController {
 
   public async revertRun(req: AuthedRequest, res: Response): Promise<void> {
     res.json(await this.changeLogService.revertRun(String(req.params.id), req.user!.sub));
+  }
+
+  public async getPantry(req: AuthedRequest, res: Response): Promise<void> {
+    await this.handlePantryWriteErrors(res, async () => {
+      res.json(await this.pantryEditService.getDetail(String(req.params.id)));
+    });
+  }
+
+  public async updatePantry(req: AuthedRequest, res: Response): Promise<void> {
+    const body = (req.body ?? {}) as Record<string, unknown>;
+    const fields = parseUpdateFields(body.fields);
+    if (!fields) {
+      res.status(400).json({ error: 'fields must be a list of { target, value }.' });
+      return;
+    }
+    let address: AddressFields | undefined;
+    if (body.address !== undefined && body.address !== null) {
+      address = parseAddressFields(body.address as Record<string, unknown>);
+      const missing = invalidAddressFields(address);
+      if (missing.length) {
+        res.status(400).json({ error: 'Missing or invalid required fields.', fields: missing });
+        return;
+      }
+    }
+    const baseUpdatedAt = str(body.baseUpdatedAt, 40) || undefined;
+    await this.handleReviewErrors(res, () =>
+      this.handlePantryWriteErrors(res, async () => {
+        res.json(
+          await this.pantryEditService.update(String(req.params.id), { baseUpdatedAt, fields, address }, req.user!.sub),
+        );
+      }),
+    );
   }
 
   public async evictPantryCache(req: AuthedRequest, res: Response): Promise<void> {

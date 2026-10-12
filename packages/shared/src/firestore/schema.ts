@@ -24,6 +24,7 @@ import type {
   TargetProposal,
 } from '../admin.js';
 import type { MappingTarget, TargetValue } from '../crawl.js';
+import type { EditTarget } from '../edit-targets.js';
 
 // Where a pantry field's current value came from. `import` is the original
 // bulk import; the rest are written by the admin/crawler pipeline
@@ -128,8 +129,9 @@ export interface PantryChangeDocument {
   pantryId: string;
   kind: PantryChangeKind;
   field?: TrackedPantryField;
-  // Set on crawler-pipeline updates; finer than `field` for service schedules.
-  target?: MappingTarget;
+  // Set on field updates (crawler pipeline and admin edits); finer than `field`
+  // for services.
+  target?: EditTarget;
   oldValue?: unknown;
   newValue?: unknown;
   source: FieldSource;

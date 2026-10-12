@@ -15,14 +15,16 @@ import {
   type Timestamp,
   type Transaction,
 } from 'firebase-admin/firestore';
+import { parseTarget, type MappingTarget, type TargetValue } from '../crawl.js';
 import {
-  normalizeTargetValue,
-  parseTarget,
-  sameTargetValue,
-  targetField,
-  type MappingTarget,
-  type TargetValue,
-} from '../crawl.js';
+  editTargetField,
+  emptyEditValue,
+  normalizeEditValue,
+  parseEditTarget,
+  sameEditValue,
+  type EditTarget,
+  type EditValue,
+} from '../edit-targets.js';
 import type { MappingCandidate } from '../admin.js';
 import { pruneUndefined } from '../values.js';
 import type {
@@ -57,7 +59,13 @@ export const CRAWL_RUN_LOG = 'log';
 export const CRAWL_HEARTBEAT_MS = 30_000;
 export const CRAWL_STALE_MS = 120_000;
 
-export type PantryWriteErrorCode = 'not_found' | 'bad_target' | 'not_revertible' | 'already_reverted' | 'conflict';
+export type PantryWriteErrorCode =
+  | 'not_found'
+  | 'bad_target'
+  | 'invalid_value'
+  | 'not_revertible'
+  | 'already_reverted'
+  | 'conflict';
 
 export class PantryWriteError extends Error {
   constructor(public readonly code: PantryWriteErrorCode, message?: string) {
@@ -114,50 +122,65 @@ export function confirmedMappingDocs(args: {
 type StoredPantry = Omit<PantryDocument, 'id'>;
 
 /** Current value of a target; undefined when the field (or the service) is absent. */
-export function getTargetValue(pantry: StoredPantry, target: MappingTarget): TargetValue | undefined {
-  const parsed = parseTarget(target);
+export function getTargetValue(pantry: StoredPantry, target: MappingTarget): TargetValue | undefined;
+export function getTargetValue(pantry: StoredPantry, target: EditTarget): EditValue | undefined;
+export function getTargetValue(pantry: StoredPantry, target: EditTarget): EditValue | undefined {
+  const parsed = parseEditTarget(target);
   if (!parsed) return undefined;
   if (parsed.kind === 'text') return pantry[parsed.field];
-  if (parsed.kind === 'serviceNotes') return pantry.services?.[parsed.serviceIndex]?.notes;
-  if (parsed.serviceIndex === null) return pantry.schedules ?? [];
-  return pantry.services?.[parsed.serviceIndex]?.schedules;
+  if (parsed.kind === 'name') return pantry.name;
+  if (parsed.kind === 'schedules') {
+    return parsed.serviceIndex === null ? pantry.schedules ?? [] : pantry.services?.[parsed.serviceIndex]?.schedules;
+  }
+  const service = pantry.services?.[parsed.serviceIndex];
+  if (parsed.kind === 'serviceNotes') return service?.notes;
+  if (parsed.kind === 'serviceOfferings') return service?.foodOfferings;
+  return service?.[parsed.field];
 }
 
-export interface FieldUpdate {
-  target: MappingTarget;
-  value: TargetValue;
+// `V` narrows to `TargetValue` for the crawler pipeline, whose targets are all
+// mapping targets.
+export interface FieldUpdate<V extends EditValue = EditValue> {
+  target: EditTarget;
+  value: V;
   mappingId?: string;
   source?: FieldSource;
 }
 
-export interface PlannedChange {
-  target: MappingTarget;
+export interface PlannedChange<V extends EditValue = EditValue> {
+  target: EditTarget;
   field: TrackedPantryField;
   /** null = the field was absent. */
-  oldValue: TargetValue | null;
-  newValue: TargetValue;
+  oldValue: V | null;
+  newValue: V;
   mappingId?: string;
   /** Overrides the context source, e.g. 'admin' for a value the admin edited. */
   source?: FieldSource;
 }
 
 /** Normalizes the updates and keeps only those that actually change the pantry. */
-export function planFieldUpdates(pantry: StoredPantry, updates: FieldUpdate[]): PlannedChange[] {
-  const plan: PlannedChange[] = [];
+export function planFieldUpdates<V extends EditValue = EditValue>(
+  pantry: StoredPantry,
+  updates: FieldUpdate<V>[],
+): PlannedChange<V>[] {
+  const plan: PlannedChange<V>[] = [];
   for (const u of updates) {
-    const parsed = parseTarget(u.target);
+    const parsed = parseEditTarget(u.target);
     if (!parsed) throw new PantryWriteError('bad_target', `Unknown target ${u.target}`);
-    if (parsed.kind !== 'text' && parsed.serviceIndex !== null && !pantry.services?.[parsed.serviceIndex]) {
+    if ('serviceIndex' in parsed && parsed.serviceIndex !== null && !pantry.services?.[parsed.serviceIndex]) {
       throw new PantryWriteError('bad_target', `Pantry has no service #${parsed.serviceIndex}`);
     }
     const oldValue = getTargetValue(pantry, u.target);
-    const newValue = normalizeTargetValue(u.target, u.value);
-    if (sameTargetValue(u.target, oldValue, newValue)) continue;
+    const newValue = normalizeEditValue(u.target, u.value);
+    if (newValue === '' && (parsed.kind === 'name' || (parsed.kind === 'serviceText' && parsed.field === 'name'))) {
+      throw new PantryWriteError('invalid_value', `${u.target} can't be empty.`);
+    }
+    if (sameEditValue(u.target, oldValue, newValue)) continue;
     plan.push({
       target: u.target,
-      field: targetField(u.target),
-      oldValue: oldValue ?? null,
-      newValue,
+      field: editTargetField(u.target),
+      oldValue: (oldValue ?? null) as V | null,
+      newValue: newValue as V,
       mappingId: u.mappingId,
       source: u.source,
     });
@@ -191,29 +214,33 @@ export function writeFieldUpdates(
   const changeIds: string[] = [];
 
   for (const c of plan) {
-    const parsed = parseTarget(c.target)!;
+    const parsed = parseEditTarget(c.target)!;
     if (parsed.kind === 'text') {
       // An emptied optional field is removed rather than stored as ''.
       update[parsed.field] = c.newValue === '' && parsed.field !== 'phone' ? FieldValue.delete() : c.newValue;
       // A new website goes to the front of the crawl queue; a cleared one
       // leaves it (tools/crawler/select.ts).
       if (parsed.field === 'website') update.lastCrawledAt = c.newValue === '' ? FieldValue.delete() : null;
-    } else if (parsed.kind === 'serviceNotes') {
-      // Emptied notes are dropped from the service rather than stored as ''.
-      services ??= (pantry.services ?? []).map((s) => ({ ...s }));
-      const { notes: _notes, ...rest } = services[parsed.serviceIndex];
-      services[parsed.serviceIndex] = c.newValue === '' ? rest : { ...rest, notes: c.newValue as string };
-      update.services = services;
-    } else if (parsed.serviceIndex === null) {
+    } else if (parsed.kind === 'name') {
+      update.name = c.newValue;
+    } else if (parsed.kind === 'schedules' && parsed.serviceIndex === null) {
       update.schedules = pruneUndefined(c.newValue);
     } else {
       // Services carry fields beyond ServiceSchema (serviceId, overview, ...);
-      // replace only the schedules of the one service.
+      // replace only the one field of the one service.
       services ??= (pantry.services ?? []).map((s) => ({ ...s }));
-      services[parsed.serviceIndex] = {
-        ...services[parsed.serviceIndex],
-        schedules: pruneUndefined(c.newValue) as ServiceSchema['schedules'],
-      };
+      const index = parsed.serviceIndex!;
+      const service = services[index];
+      if (parsed.kind === 'serviceNotes') {
+        // Emptied notes are dropped from the service rather than stored as ''.
+        const { notes: _notes, ...rest } = service;
+        services[index] = c.newValue === '' ? rest : { ...rest, notes: c.newValue as string };
+      } else if (parsed.kind === 'schedules') {
+        services[index] = { ...service, schedules: pruneUndefined(c.newValue) as ServiceSchema['schedules'] };
+      } else {
+        const key = parsed.kind === 'serviceText' ? parsed.field : 'foodOfferings';
+        services[index] = { ...service, [key]: c.newValue };
+      }
       update.services = services;
     }
     const source = c.source ?? ctx.source;
@@ -332,7 +359,7 @@ export async function revertChange(
   const change = changeSnap.data() as PantryChangeDocument;
   const revertible = change.kind === 'address' || (change.kind === 'update' && change.target);
   if (!revertible || change.revertOf) {
-    throw new PantryWriteError('not_revertible', 'Only crawler-pipeline field and address updates can be reverted.');
+    throw new PantryWriteError('not_revertible', 'Only field and address updates can be reverted.');
   }
   if (change.revertedAt) throw new PantryWriteError('already_reverted', 'Change was already reverted.');
 
@@ -360,16 +387,15 @@ export async function revertChange(
   const target = change.target!;
 
   const current = getTargetValue(pantry, target);
-  if (!sameTargetValue(target, current, change.newValue as TargetValue)) {
+  if (!sameEditValue(target, current, change.newValue as EditValue)) {
     throw new PantryWriteError('conflict', 'The field has changed since; revert the later change first.');
   }
 
-  const restore = (change.oldValue ??
-    (parseTarget(target)?.kind === 'schedules' ? [] : '')) as TargetValue;
+  const restore = (change.oldValue ?? emptyEditValue(target)) as EditValue;
   const plan: PlannedChange[] = [
     {
       target,
-      field: targetField(target),
+      field: editTargetField(target),
       oldValue: current ?? null,
       newValue: restore,
       mappingId: change.mappingId,

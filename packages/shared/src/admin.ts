@@ -6,6 +6,7 @@
 // Timestamps travel as ISO strings.
 
 import type { MappingTarget, TargetValue } from './crawl.js';
+import type { EditTarget, EditValue } from './edit-targets.js';
 
 export type ReviewItemType =
   | 'new_mapping'
@@ -520,7 +521,7 @@ export interface PantryChangeSummary {
   pantryId: string;
   kind: PantryChangeKind;
   field?: string;
-  target?: MappingTarget;
+  target?: EditTarget;
   oldValue?: unknown;
   newValue?: unknown;
   source: string;
@@ -548,6 +549,43 @@ export interface RevertConflict {
 export interface RevertRunResponse {
   reverted: number;
   conflicts: RevertConflict[];
+}
+
+// ---- Pantry editing (admin `/pantries/:id`) ----
+
+export interface PantryMappingSummary {
+  target: MappingTarget;
+  status: string;
+  url?: string;
+}
+
+export interface AdminPantryDetail {
+  id: string;
+  pantry: PantryDraft;
+  coordinates: { latitude: number; longitude: number };
+  fieldSources: Partial<Record<string, { source: string; at: string }>>;
+  mappings: PantryMappingSummary[];
+  source?: string;
+  /** Absent: not in the crawl queue; null: not crawled yet. */
+  lastCrawledAt?: string | null;
+  updatedAt?: string;
+}
+
+export interface UpdatePantryField {
+  target: EditTarget;
+  value: EditValue;
+}
+
+export interface UpdatePantryRequest {
+  /** The loaded detail's `updatedAt`; a stale one is refused. */
+  baseUpdatedAt?: string;
+  fields: UpdatePantryField[];
+  address?: AddressFields;
+}
+
+export interface UpdatePantryResponse {
+  applied: number;
+  addressChanged: boolean;
 }
 
 // ---- LLM tier comparison ----
