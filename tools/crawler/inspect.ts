@@ -6,6 +6,7 @@
 import { Fetcher } from './fetch/fetcher.js';
 import { pickLinks } from './page/links.js';
 import { segmentPage } from './page/segment.js';
+import { sitemapUrls } from './site.js';
 
 const url = process.argv[2];
 if (!url) throw new Error('Usage: npm run inspect -- <url>');
@@ -20,5 +21,7 @@ if (res.html) {
     const tag = s.headingLevel ? `H${s.headingLevel}` : '  ';
     console.log(`[${s.id}] ${tag} ${s.text.replace(/\n/g, ' ⏎ ')}\n        ${s.selector}${s.anchor ? `  ⟵ ${s.anchor}` : ''}`);
   }
-  console.log('\nExtra pages:', pickLinks(res.html, res.finalUrl));
+  const sitemap = await sitemapUrls(fetcher, res.finalUrl);
+  console.log(`\nSitemap: ${sitemap.length} URLs`);
+  console.log('Extra pages:', pickLinks(res.html, res.finalUrl, sitemap));
 }

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { MAX_EXTRA_PAGES, pickLinks } from './links.js';
+import { MAX_EXTRA_PAGES, pickLinks, sitemapLocs } from './links.js';
 
 const HOME = 'https://example.org/';
 
@@ -49,6 +49,32 @@ test('pages routed by query string are all kept when slots allow', () => {
     ['/?page_id=16', 'Contact'],
   ]);
   assert.equal(pickLinks(html, HOME).length, 3);
+});
+
+test('a sitemap-only pantry page is picked by its path', () => {
+  const html = anchors([
+    ['/contact', 'Contact'],
+    ['/about', 'About'],
+  ]);
+  const sitemap = [
+    'https://example.org/community/st-vincent-de-paul-ministry',
+    'https://example.org/community/photo-albums',
+    'https://other.org/food-pantry',
+    'https://example.org/',
+  ];
+  assert.deepEqual(pickLinks(html, HOME, sitemap), [
+    'https://example.org/community/st-vincent-de-paul-ministry',
+    'https://example.org/contact',
+    'https://example.org/about',
+  ]);
+});
+
+test('sitemapLocs reads urlset and index entries', () => {
+  const xml =
+    '<?xml version="1.0"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' +
+    '<url><loc>https://example.org/a?x=1&amp;y=2</loc></url><url><loc> https://example.org/b </loc></url></urlset>';
+  assert.deepEqual(sitemapLocs(xml), ['https://example.org/a?x=1&y=2', 'https://example.org/b']);
+  assert.deepEqual(sitemapLocs('<html><body>Not found</body></html>'), []);
 });
 
 test('links back to the homepage are dropped, fragment or not', () => {

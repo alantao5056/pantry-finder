@@ -106,7 +106,7 @@ What a run does per pantry:
    (almost no text) is flagged `needsBrowser` in `crawl_sources` and skipped.
 2. **Targets without a mapping** (phone, email, contact name, about, notes,
    pantry hours, each service's hours and notes): fetches up to 6 likely same-site pages
-   (hours/contact/about…), asks the LLM where each value is, and files one
+   (hours/contact/about…, linked from the homepage or listed in `/sitemap.xml`), asks the LLM where each value is, and files one
    `new_mapping` review item with up to 3 candidate regions per target. Not
    repeated while that review is pending, nor while the pages are unchanged.
    The same call reports the addresses and phone numbers the site states; the

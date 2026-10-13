@@ -76,6 +76,28 @@ export class Fetcher {
     });
   }
 
+  /** Body of a non-HTML resource (a sitemap), or null when it can't be had. */
+  async fetchText(url: string): Promise<string | null> {
+    const robots = await this.robotsFor(url);
+    if (robots && robots.isAllowed(url, BOT_NAME) === false) return null;
+    return this.enqueue(url, async () => {
+      try {
+        const res = await fetch(url, {
+          redirect: 'follow',
+          signal: AbortSignal.timeout(TIMEOUT_MS),
+          headers: { 'User-Agent': this.userAgent },
+        });
+        if (!res.ok) {
+          await res.body?.cancel();
+          return null;
+        }
+        return await readCapped(res);
+      } catch {
+        return null;
+      }
+    });
+  }
+
   private enqueue<T>(url: string, task: () => Promise<T>): Promise<T> {
     return this.queueFor(hostOf(url)).add(task) as Promise<T>;
   }

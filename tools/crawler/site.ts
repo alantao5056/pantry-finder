@@ -10,13 +10,14 @@ import {
   type TargetProposal,
 } from '@pantry-finder/shared';
 import type { FetchResult, Fetcher } from './fetch/fetcher.js';
-import { pickLinks } from './page/links.js';
+import { pickLinks, sitemapLocs } from './page/links.js';
 import { locateRegion } from './page/locate.js';
 import { segmentPage, type SegmentedPage } from './page/segment.js';
 import type { PageForExtraction, RawProposal } from './extract/Extractor.js';
 
 // Keeps a first-visit prompt near the design's ~10k input tokens per pantry.
 const MAX_PROMPT_CHARS = 42_000;
+const MAX_CHILD_SITEMAPS = 3;
 
 export interface LoadedPage {
   url: string;
@@ -44,9 +45,22 @@ export async function loadPage(fetcher: Fetcher, url: string): Promise<LoadedPag
 /** The homepage plus the likeliest hours/contact pages. */
 export async function loadSite(fetcher: Fetcher, home: LoadedPage): Promise<LoadedPage[]> {
   if (!home.fetch.html) return [home];
-  const links = pickLinks(home.fetch.html, home.fetch.finalUrl);
+  const links = pickLinks(home.fetch.html, home.fetch.finalUrl, await sitemapUrls(fetcher, home.fetch.finalUrl));
   const extra = await Promise.all(links.map((url) => loadPage(fetcher, url)));
   return [home, ...extra.filter((p) => p.page && !p.page.looksJsRendered)];
+}
+
+/** URLs in the site's `/sitemap.xml`; one level of sitemap index is followed. */
+export async function sitemapUrls(fetcher: Fetcher, homeUrl: string): Promise<string[]> {
+  const root = await fetcher.fetchText(new URL('/sitemap.xml', homeUrl).href);
+  if (!root) return [];
+  const locs = sitemapLocs(root);
+  if (!/<sitemapindex/i.test(root)) return locs;
+  const children = [...locs]
+    .sort((a, b) => Number(/page/i.test(b)) - Number(/page/i.test(a)))
+    .slice(0, MAX_CHILD_SITEMAPS);
+  const xmls = await Promise.all(children.map((url) => fetcher.fetchText(url)));
+  return xmls.flatMap((xml) => (xml ? sitemapLocs(xml) : []));
 }
 
 /**
