@@ -404,7 +404,8 @@ page) that confirms first-visit proposals without review.
 
 - **Rule** (`tools/crawler/auto-apply.ts`): address check `match`, phone check
   not `mismatch`, and no top candidate trips a guardrail; otherwise the whole
-  pantry goes to review.
+  pantry goes to review. An uncertain parse only blocks when it would
+  overwrite a stored phone, email, website or hours.
 - **Writes:** same as an admin confirming every top candidate. The
   `new_mapping` item is filed already `approved`, `resolvedBy: 'crawler'`;
   changes are revertible as usual.

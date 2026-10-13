@@ -123,7 +123,8 @@ What a run does per pantry:
    the heading text above it). Unchanged text is skipped outright; changed text
    is parsed from the extraction cache or by the LLM and applied to the pantry
    with a `pantry_changes` entry — unless a guardrail trips (hours emptied,
-   closure wording, LLM unsure, mapping reverted before), which files a
+   closure wording, LLM unsure about a stored non-free-text value, mapping
+   reverted before), which files a
    `suspicious_value` review item instead. A region that can't be found marks
    the mapping `broken` (handled in M3).
 4. A homepage that redirects to another site files a `suspicious_value` item

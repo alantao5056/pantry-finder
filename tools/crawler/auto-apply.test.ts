@@ -31,10 +31,50 @@ test('a phone mismatch blocks', () => {
 });
 
 test('one target tripping a guardrail blocks the whole proposal', () => {
-  const uncertain = [...clean, proposal('notes', 'Bring ID', 'Bring ID', true)];
-  assert.deepEqual(autoApplyBlockers(pantry, uncertain, check('match'), check('match')), ['notes: uncertain']);
+  const uncertain = [proposal('phone', '555-987-6543', 'Call 555-987-6543', true), proposal('aboutUs', 'We feed people.')];
+  assert.deepEqual(autoApplyBlockers(pantry, uncertain, check('match'), check('match')), ['phone: uncertain']);
 
   const closure = [...clean, proposal('notes', 'Closed', 'Temporarily closed until spring')];
+  assert.deepEqual(autoApplyBlockers(pantry, closure, check('match'), check('match')), ['notes: closure_words']);
+});
+
+test('an unsure parse of a free-text field passes, even over a stored value', () => {
+  const stored = {
+    ...pantry,
+    notes: 'Old notes',
+    contactName: 'Old Name',
+    aboutUs: 'Old about',
+    services: [{ notes: 'Old service notes', schedules: [] }],
+  } as unknown as StoredPantry;
+  const unsure = [
+    proposal('notes', 'Bring ID', 'Bring ID', true),
+    proposal('contactName', 'Jane Doe', 'Jane Doe', true),
+    proposal('aboutUs', 'We feed people.', 'We feed people.', true),
+    proposal('services.0.notes', 'Walk-ins welcome', 'Walk-ins welcome', true),
+  ];
+  assert.deepEqual(autoApplyBlockers(stored, unsure, check('match'), check('match')), []);
+});
+
+test('an unsure parse passes for a field the pantry has no value for', () => {
+  const empty = { schedules: [], services: [{ schedules: [] }] } as unknown as StoredPantry;
+  const hours = [{ day: 'Monday' }] as unknown as TargetValue;
+  const unsure = [
+    proposal('schedules', hours, 'Mon 9-5?', true),
+    proposal('services.0.schedules', hours, 'Mon 9-5?', true),
+    proposal('email', 'info@example.org', 'info@example.org', true),
+    proposal('phone', '555-987-6543', '555-987-6543', true),
+  ];
+  assert.deepEqual(autoApplyBlockers(empty, unsure, check('match'), undefined), []);
+});
+
+test('an unsure parse over stored hours blocks', () => {
+  const withHours = { ...pantry, schedules: [{ day: 'Monday' }] } as unknown as StoredPantry;
+  const unsure = [proposal('schedules', [{ day: 'Tuesday' }] as unknown as TargetValue, 'Tue 9-5?', true)];
+  assert.deepEqual(autoApplyBlockers(withHours, unsure, check('match'), check('match')), ['schedules: uncertain']);
+});
+
+test('closure wording still blocks an unsure free-text field', () => {
+  const closure = [proposal('notes', 'Closed', 'Temporarily closed until spring', true)];
   assert.deepEqual(autoApplyBlockers(pantry, closure, check('match'), check('match')), ['notes: closure_words']);
 });
 
