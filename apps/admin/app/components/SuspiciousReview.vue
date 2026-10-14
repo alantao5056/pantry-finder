@@ -7,8 +7,9 @@ const props = defineProps<{ id: string }>()
 const api = useApi()
 const toast = useToast()
 const pantryUrl = usePantryUrl()
+const goNext = useNextReview()
 
-const { data: detail, error, refresh } = await useAsyncData(
+const { data: detail, error } = await useAsyncData(
   `suspicious-review-${props.id}`,
   () => api<SuspiciousReviewDetail>(`/admin/review-items/${props.id}/suspicious`),
 )
@@ -24,7 +25,7 @@ const approve = async () => {
   try {
     await api(`/admin/review-items/${props.id}/approve-value`, { method: 'POST', body: { value: value.value } })
     toast.add({ title: 'Value applied', color: 'success' })
-    await refresh()
+    await goNext(props.id)
   } catch (err) {
     toast.add({ title: 'Approve failed', description: apiErrorMessage(err), color: 'error' })
   } finally {
@@ -94,7 +95,7 @@ const deleteOpen = ref(false)
       </div>
     </template>
 
-    <RejectItemModal v-model:open="rejectOpen" :item-id="id" title="Reject crawled value" @rejected="refresh()" />
+    <RejectItemModal v-model:open="rejectOpen" :item-id="id" title="Reject crawled value" @rejected="goNext(id)" />
     <DeleteReviewItemModal v-model:open="deleteOpen" :item-id="id" />
   </div>
 </template>

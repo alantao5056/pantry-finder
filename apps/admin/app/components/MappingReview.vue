@@ -16,8 +16,9 @@ const props = defineProps<{ id: string }>()
 const api = useApi()
 const toast = useToast()
 const pantryUrl = usePantryUrl()
+const goNext = useNextReview()
 
-const { data: detail, error, refresh } = await useAsyncData(
+const { data: detail, error } = await useAsyncData(
   `mapping-review-${props.id}`,
   () => api<MappingReviewDetail>(`/admin/review-items/${props.id}/mapping`),
 )
@@ -113,7 +114,7 @@ const confirm = async () => {
       body: { fields, ...(addressDraft.value ? { address: addressDraft.value } : {}) },
     })
     toast.add({ title: `Mapping confirmed · ${res.applied} change(s) applied`, color: 'success' })
-    await refresh()
+    await goNext(props.id)
   } catch (err) {
     toast.add({ title: 'Confirm failed', description: apiErrorMessage(err), color: 'error' })
   } finally {
@@ -289,7 +290,7 @@ const deleteOpen = ref(false)
       </div>
     </template>
 
-    <RejectItemModal v-model:open="rejectOpen" :item-id="id" title="Reject mapping proposal" @rejected="refresh()" />
+    <RejectItemModal v-model:open="rejectOpen" :item-id="id" title="Reject mapping proposal" @rejected="goNext(id)" />
     <DeleteReviewItemModal v-model:open="deleteOpen" :item-id="id" />
   </div>
 </template>
