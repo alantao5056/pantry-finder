@@ -9,7 +9,7 @@ import { siteOf } from '../fetch/fetcher.js';
 export const MAX_EXTRA_PAGES = 6;
 
 const KEYWORDS: [RegExp, number][] = [
-  [/pantry|distribution|food|nutrition|meal|grocer|hunger|feeding|kitchen|cupboard|get[-\s]?help|find[-\s]?food|assistance|visit|vincent|svdp/i, 6],
+  [/pantry|distribution|food|nutrition|meal|grocer|hunger|feeding|kitchen|cupboard|(?:get|find|need)[-\s]?help|find[-\s]?food|assistance|visit|vincent|svdp/i, 6],
   [/hours|schedule|calendar|when/i, 5],
   [/contact|location|directions|find[-\s]?us/i, 3],
   [/about|who[-\s]?we|mission|services|programs?|ministr|outreach|resources/i, 2],

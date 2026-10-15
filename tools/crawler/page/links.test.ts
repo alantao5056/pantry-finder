@@ -86,3 +86,13 @@ test('links back to the homepage are dropped, fragment or not', () => {
   ]);
   assert.deepEqual(pickLinks(html, HOME), []);
 });
+
+test('find-help and need-help pages are picked like get-help', () => {
+  const html = anchors([
+    ['/find-help/', 'Find Help'],
+    ['/need-help', 'Need Help?'],
+    ['/history', 'History'],
+  ]);
+  const picked = pickLinks(html, HOME);
+  assert.deepEqual(picked.slice(0, 2).sort(), ['https://example.org/find-help', 'https://example.org/need-help']);
+});
