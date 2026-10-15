@@ -18,7 +18,10 @@ const columns: TableColumn<CrawlRunSummary>[] = [
   { accessorKey: 'env', header: 'Env' },
   { accessorKey: 'mode', header: 'Mode' },
   { accessorKey: 'status', header: 'Status' },
-  { accessorKey: 'counts', header: 'Fetched / failed / auto-updated / to review' },
+  { id: 'fetched', header: 'Fetched', accessorFn: (r) => r.counts.fetched },
+  { id: 'failed', header: 'Failed', accessorFn: (r) => r.counts.failed },
+  { id: 'autoUpdated', header: 'Auto-updated', accessorFn: (r) => r.counts.autoUpdated },
+  { id: 'toReview', header: 'To review', accessorFn: (r) => r.counts.reviewItemsCreated },
   { accessorKey: 'errors', header: 'Errors' },
   { id: 'actions', header: '' },
 ]
@@ -97,10 +100,6 @@ onBeforeUnmount(() => clearInterval(timer))
         </template>
         <template #status-cell="{ row }">
           <CrawlRunStatus :run="row.original" />
-        </template>
-        <template #counts-cell="{ row }">
-          {{ row.original.counts.fetched }} / {{ row.original.counts.failed }} /
-          {{ row.original.counts.autoUpdated }} / {{ row.original.counts.reviewItemsCreated }}
         </template>
         <template #errors-cell="{ row }">
           <span v-if="row.original.errors.length === 0" class="text-(--ui-text-dimmed)">—</span>

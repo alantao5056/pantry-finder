@@ -267,21 +267,26 @@ onBeforeUnmount(() => clearInterval(timer))
       </template>
 
       <div class="flex flex-col gap-4">
-        <dl class="grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
+        <dl class="flex flex-wrap gap-x-8 gap-y-3 text-sm">
           <div>
             <dt class="text-xs text-(--ui-text-muted)">Mode</dt>
-            <dd>{{ crawlRunModeLabel(latest) }} · {{ crawlRunScope(latest) }}</dd>
+            <dd class="whitespace-nowrap">{{ crawlRunModeLabel(latest) }} · {{ crawlRunScope(latest) }}</dd>
           </div>
           <div>
             <dt class="text-xs text-(--ui-text-muted)">LLM</dt>
-            <dd>{{ crawlRunLlmLine(latest) || '—' }}</dd>
+            <dd class="whitespace-nowrap">{{ crawlRunLlmLine(latest) || '—' }}</dd>
           </div>
-          <div>
-            <dt class="text-xs text-(--ui-text-muted)">Fetched / failed / auto-updated / to review</dt>
-            <dd>
-              {{ latest.counts.fetched }} / {{ latest.counts.failed }} /
-              {{ latest.counts.autoUpdated }} / {{ latest.counts.reviewItemsCreated }}
-            </dd>
+          <div
+            v-for="c in [
+              { label: 'Fetched', value: latest.counts.fetched },
+              { label: 'Failed', value: latest.counts.failed },
+              { label: 'Auto-updated', value: latest.counts.autoUpdated },
+              { label: 'To review', value: latest.counts.reviewItemsCreated },
+            ]"
+            :key="c.label"
+          >
+            <dt class="text-xs text-(--ui-text-muted)">{{ c.label }}</dt>
+            <dd>{{ c.value }}</dd>
           </div>
           <div>
             <dt class="text-xs text-(--ui-text-muted)">Errors</dt>
