@@ -10,6 +10,8 @@ export const CACHE_PREFIX = {
   pantryById: 'pf:pantry:id:',
   /** Full pantry list of one browse-index city, keyed by `cityIndexKey`. */
   cityPantries: 'pf:city:pantries:',
+  /** Search results (ids + distances). */
+  searchResults: 'pf:search:',
 } as const;
 
 /**

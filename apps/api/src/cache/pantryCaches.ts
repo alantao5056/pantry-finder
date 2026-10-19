@@ -9,8 +9,12 @@ import { cacheTtl } from '../services/app-config.service';
 // instance (with the in-memory fallback, separate instances never see each
 // other's deletes). Created on first use, after env has loaded.
 
+/** Distance in miles. */
+export type SearchHit = { id: string; distance?: number };
+
 let byId: Cache<Pantry> | null = null;
 let byCity: Cache<Pantry[]> | null = null;
+let bySearch: Cache<SearchHit[]> | null = null;
 
 /** Pantry detail by doc id (`GET /pantries/:id`). */
 export function pantryByIdCache(): Cache<Pantry> {
@@ -28,6 +32,15 @@ export function cityPantriesCache(): Cache<Pantry[]> {
     max: 4000,
   });
   return byCity;
+}
+
+/** Search results by geocoded point + radius. */
+export function searchResultsCache(): Cache<SearchHit[]> {
+  bySearch ??= createCache<SearchHit[]>(CACHE_PREFIX.searchResults, {
+    ttlMs: cacheTtl.search,
+    max: 5000,
+  });
+  return bySearch;
 }
 
 /**

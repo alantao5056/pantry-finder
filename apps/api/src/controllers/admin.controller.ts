@@ -239,7 +239,7 @@ function parseDraft(raw: unknown): { draft: PantryDraft } | { missing: string[] 
 function parseAppConfig(raw: unknown): { config: AppConfig } | { invalid: string[] } {
   const r = (raw ?? {}) as Record<string, unknown>;
   const { anonymousSearchEnabled } = r;
-  const { geocode, pantry, cityState, user } = (r.cacheTtlMinutes ?? {}) as Partial<
+  const { geocode, pantry, cityState, user, search } = (r.cacheTtlMinutes ?? {}) as Partial<
     Record<keyof CacheTtlMinutes, unknown>
   >;
 
@@ -248,9 +248,10 @@ function parseAppConfig(raw: unknown): { config: AppConfig } | { invalid: string
     isValidTtlMinutes(geocode) &&
     isValidTtlMinutes(pantry) &&
     isValidTtlMinutes(cityState) &&
-    isValidTtlMinutes(user)
+    isValidTtlMinutes(user) &&
+    isValidTtlMinutes(search)
   ) {
-    return { config: { anonymousSearchEnabled, cacheTtlMinutes: { geocode, pantry, cityState, user } } };
+    return { config: { anonymousSearchEnabled, cacheTtlMinutes: { geocode, pantry, cityState, user, search } } };
   }
 
   return {
@@ -260,6 +261,7 @@ function parseAppConfig(raw: unknown): { config: AppConfig } | { invalid: string
       ...(isValidTtlMinutes(pantry) ? [] : ['pantry']),
       ...(isValidTtlMinutes(cityState) ? [] : ['cityState']),
       ...(isValidTtlMinutes(user) ? [] : ['user']),
+      ...(isValidTtlMinutes(search) ? [] : ['search']),
     ],
   };
 }

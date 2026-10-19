@@ -7,7 +7,7 @@ import { APP_CONFIG_TTL_MS } from '../config/constants';
 // Runtime settings, edited from the admin's Settings page or by hand in the
 // Firebase console (no deploy needed):
 //   appConfig/search → { anonymousSearchEnabled: boolean }
-//   appConfig/cache  → { ttlMinutes: { geocode, pantry, cityState, user } }
+//   appConfig/cache  → { ttlMinutes: { geocode, pantry, cityState, user, search } }
 // A missing doc/field means its default (DEFAULT_APP_CONFIG). Changes take
 // effect within APP_CONFIG_TTL_MS.
 const APP_CONFIG_COLLECTION = 'appConfig';
@@ -40,6 +40,7 @@ function toCacheTtlMinutes(raw: Partial<Record<keyof CacheTtlMinutes, unknown>> 
     pantry: valid(raw?.pantry, defaults.pantry),
     cityState: valid(raw?.cityState, defaults.cityState),
     user: valid(raw?.user, defaults.user),
+    search: valid(raw?.search, defaults.search),
   };
 }
 
@@ -95,6 +96,7 @@ export const cacheTtl = {
   pantry: ttlMs((ttl) => ttl.pantry),
   cityState: ttlMs((ttl) => ttl.cityState),
   user: ttlMs((ttl) => ttl.user),
+  search: ttlMs((ttl) => ttl.search),
 };
 
 /** The stored settings, read straight from Firestore (admin Settings page). */

@@ -43,30 +43,18 @@ function selectBucket(req: AuthedRequest): Bucket | null {
   };
 }
 
-function isFirstPage(req: AuthedRequest): boolean {
-  const raw = req.query?.page;
-  if (raw === undefined || raw === null || raw === '') return true;
-  return String(raw) === '1';
-}
-
 export async function rateLimitSearch(
   req: AuthedRequest,
   res: Response,
   next: NextFunction
 ): Promise<void> {
-  // Runtime switch (Firestore appConfig/search). Checked on every page so
-  // pagination can't bypass it.
+  // Runtime switch (Firestore appConfig/search).
   if (!req.user?.sub && !(await isAnonymousSearchEnabled())) {
     res.status(401).json({
       error: 'auth_required',
       message: 'Please sign in or create a free account to search for pantries.',
       requiresAuth: true,
     });
-    return;
-  }
-
-  if (!isFirstPage(req)) {
-    next();
     return;
   }
 

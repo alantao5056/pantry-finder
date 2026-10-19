@@ -92,6 +92,12 @@ const save = async () => {
               description="User profiles."
               :default-minutes="defaults.user"
             />
+            <TtlField
+              v-model="form.cacheTtlMinutes.search"
+              label="Search results"
+              description="Pantry search results."
+              :default-minutes="defaults.search"
+            />
           </div>
           <p class="text-xs text-(--ui-text-muted)">
             A new TTL applies to entries cached from now on; entries already in the cache keep the expiry they were

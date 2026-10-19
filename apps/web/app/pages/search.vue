@@ -9,12 +9,6 @@ import {
 
 interface PantriesResponse {
   pantries: Pantry[]
-  pagination: {
-    page: number
-    pageSize: number
-    hasNextPage: boolean
-    nextPage?: number
-  }
 }
 
 interface ApiError {
@@ -33,9 +27,6 @@ interface RateLimitState {
   retryAfter: number
 }
 
-// Auto-load more pages while filtered results stay below this threshold.
-const MIN_FILTERED_RESULTS = 10
-
 const route = useRoute()
 const router = useRouter()
 const api = useApi()
@@ -53,8 +44,6 @@ const initialLocation = String(route.query.location ?? '')
 const initialRadius = String(route.query.radius ?? '5')
 
 const loadedPantries = ref<Pantry[]>([])
-const currentPage = ref(0)
-const hasMorePages = ref(false)
 const pending = ref(false)
 const error = ref<unknown>(null)
 const locationNotFound = ref(false)
@@ -107,7 +96,7 @@ const filteredPantries = computed(() =>
 )
 const activeFilterCount = computed(() => countActiveFilters(filters.value))
 
-// Derive available food types from loaded pages so the filter list always
+// Derive available food types from the results so the filter list always
 // reflects real data. Keep the active selection visible even if no loaded
 // pantry currently includes it (so the user can still unselect it).
 const allFoodTypes = computed(() => {
@@ -121,10 +110,7 @@ const showFilters = ref(true)
 
 const radiusValue = computed(() => String(route.query.radius ?? initialRadius))
 
-const fetchPage = async (
-  page: number,
-  token: number,
-): Promise<PantriesResponse | null> => {
+const fetchPantries = async (token: number): Promise<PantriesResponse | null> => {
   const location = String(route.query.location ?? '')
   if (!location) return null
   try {
@@ -132,7 +118,6 @@ const fetchPage = async (
       query: {
         location,
         radius: String(route.query.radius ?? '5'),
-        page: String(page),
       },
     })
     if (token !== searchToken) return null
@@ -162,8 +147,6 @@ const runSearch = async () => {
   loadedPantries.value = []
   selectedPantry.value = null
   mapSelectedId.value = null
-  currentPage.value = 0
-  hasMorePages.value = false
   error.value = null
   locationNotFound.value = false
   rateLimited.value = null
@@ -173,29 +156,14 @@ const runSearch = async () => {
   if (!route.query.location) return
 
   pending.value = true
-  const first = await fetchPage(1, token)
+  const res = await fetchPantries(token)
   if (token !== searchToken) return
 
-  if (first) {
-    loadedPantries.value = first.pantries
-    currentPage.value = first.pagination.page
-    hasMorePages.value = first.pagination.hasNextPage
+  if (res) {
+    loadedPantries.value = res.pantries
     lastSearchSucceeded.value = true
-
-    while (
-      token === searchToken
-      && hasMorePages.value
-      && filteredPantries.value.length < MIN_FILTERED_RESULTS
-    ) {
-      const next = await fetchPage(currentPage.value + 1, token)
-      if (token !== searchToken) return
-      if (!next) break
-      loadedPantries.value = [...loadedPantries.value, ...next.pantries]
-      currentPage.value = next.pagination.page
-      hasMorePages.value = next.pagination.hasNextPage
-    }
   }
-  if (token === searchToken) pending.value = false
+  pending.value = false
 }
 
 onMounted(() => {

@@ -1,6 +1,5 @@
-export const PAGE_SIZE = 20;
 export const DEFAULT_RADIUS = 5;
-export const MAX_PAGE = 10;
+export const MAX_RADIUS = 50; // miles
 
 export const CITY_PAGE_SIZE = 24;
 export const MAX_CITIES_LIMIT = 50;

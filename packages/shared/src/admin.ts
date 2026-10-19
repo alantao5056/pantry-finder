@@ -368,6 +368,8 @@ export interface CacheTtlMinutes {
   cityState: number;
   /** User profiles. */
   user: number;
+  /** Search results. */
+  search: number;
 }
 
 export const MIN_CACHE_TTL_MINUTES = 1;
@@ -388,6 +390,7 @@ export const DEFAULT_APP_CONFIG: AppConfig = {
     pantry: 24 * 60,
     cityState: 48 * 60,
     user: 60,
+    search: 60,
   },
 };
 

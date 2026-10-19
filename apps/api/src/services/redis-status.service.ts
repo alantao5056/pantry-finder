@@ -19,6 +19,7 @@ const geocode: TtlPick = (ttl) => ttl.geocode;
 const pantry: TtlPick = (ttl) => ttl.pantry;
 const cityState: TtlPick = (ttl) => ttl.cityState;
 const user: TtlPick = (ttl) => ttl.user;
+const search: TtlPick = (ttl) => ttl.search;
 
 const KEY_GROUPS: { label: string; prefix: string; ttlMinutes: TtlPick | null }[] = [
   { label: 'Geocode: address', prefix: 'pf:geo:addr:v2:', ttlMinutes: geocode },
@@ -26,6 +27,7 @@ const KEY_GROUPS: { label: string; prefix: string; ttlMinutes: TtlPick | null }[
   { label: 'Geocode: location', prefix: 'pf:geo:loc:', ttlMinutes: geocode },
   { label: 'Pantry detail', prefix: CACHE_PREFIX.pantryById, ttlMinutes: pantry },
   { label: 'City pantries', prefix: CACHE_PREFIX.cityPantries, ttlMinutes: cityState },
+  { label: 'Search results', prefix: CACHE_PREFIX.searchResults, ttlMinutes: search },
   { label: 'State list', prefix: 'pf:city:states:', ttlMinutes: cityState },
   { label: 'Cities by state', prefix: 'pf:city:list:', ttlMinutes: cityState },
   { label: 'City entry', prefix: 'pf:city:entry:', ttlMinutes: cityState },
