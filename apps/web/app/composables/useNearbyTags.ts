@@ -251,7 +251,7 @@ const fetchFromOverpass = async (
       method: 'POST',
       body,
       headers: { 'Content-Type': 'text/plain' },
-      timeout: 20000,
+      timeout: 8000,
       retry: 0,
     })
     if (!data.elements) return null
@@ -318,23 +318,16 @@ export const useNearbyTags = () => {
       return
     }
 
-    let neighbors = await fetchFromOverpass(
-      resolved.lat,
-      resolved.lon,
-      resolved.regionCode,
-      resolved.city,
-      slotsLeft,
-    )
-    if (!neighbors || neighbors.length === 0) {
-      const username = String(config.public.geonamesUser ?? '')
-      neighbors = await fetchFromGeoNames(
-        resolved.lat,
-        resolved.lon,
-        resolved.regionCode,
-        resolved.city,
-        username,
-        slotsLeft,
-      )
+    const { lat, lon, regionCode, city } = resolved
+    const username = String(config.public.geonamesUser ?? '')
+    const sources = [
+      () => fetchFromGeoNames(lat, lon, regionCode, city, username, slotsLeft),
+      () => fetchFromOverpass(lat, lon, regionCode, city, slotsLeft),
+    ]
+    let neighbors: string[] | null = null
+    for (const source of sources) {
+      neighbors = await source()
+      if (neighbors?.length) break
     }
     if (neighbors && neighbors.length > 0) {
       tags.value = [...resolved.tags, ...neighbors]
