@@ -2,7 +2,7 @@ import { Timestamp } from 'firebase-admin/firestore';
 import { DEFAULT_APP_CONFIG, MAX_CACHE_TTL_MINUTES, MIN_CACHE_TTL_MINUTES } from '@pantry-finder/shared';
 import type { AppConfig, AppConfigResponse, CacheTtlMinutes } from '@pantry-finder/shared';
 import { db } from '../config/firebase';
-import { APP_CONFIG_TTL_MS } from '../config/constants';
+import { APP_CONFIG_READ_TIMEOUT_MS, APP_CONFIG_TTL_MS } from '../config/constants';
 
 // Runtime settings, edited from the admin's Settings page or by hand in the
 // Firebase console (no deploy needed):
@@ -61,12 +61,24 @@ let cached: { value: AppConfig; fetchedAt: number } | null = null;
 // Coalesces the reads of concurrent requests that all find the snapshot expired.
 let pending: Promise<AppConfig> | null = null;
 
+// A hung read must not hold `pending` forever.
+function fetchAppConfigWithTimeout(): Promise<AppConfigResponse> {
+  let timer: NodeJS.Timeout;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(
+      () => reject(new Error(`appConfig read timed out after ${APP_CONFIG_READ_TIMEOUT_MS}ms.`)),
+      APP_CONFIG_READ_TIMEOUT_MS
+    );
+  });
+  return Promise.race([fetchAppConfig(), timeout]).finally(() => clearTimeout(timer));
+}
+
 export function getAppConfig(): Promise<AppConfig> {
   if (cached && Date.now() - cached.fetchedAt < APP_CONFIG_TTL_MS) {
     return Promise.resolve(cached.value);
   }
 
-  pending ??= fetchAppConfig()
+  pending ??= fetchAppConfigWithTimeout()
     .then((res) => res.config)
     .catch((err) => {
       // Fail open to the defaults. Cached below too, so an outage costs one

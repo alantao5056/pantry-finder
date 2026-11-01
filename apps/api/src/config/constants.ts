@@ -19,6 +19,7 @@ export const BROWSE_HOURLY_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 
 // How long the API caches the Firestore appConfig docs (runtime switches).
 export const APP_CONFIG_TTL_MS = 5 * 60 * 1000; // 5 minutes
+export const APP_CONFIG_READ_TIMEOUT_MS = 3000; // 3 seconds
 
 // Pantry submissions ("Add a Pantry"). Public + unauthenticated, so throttle
 // per IP (or per user when logged in) to curb spam into the moderation queue.

@@ -43,6 +43,7 @@ export class GeocodioGeocoder implements LocationGeocoder, AddressGeocoder {
         baseDelayMs: 250,
       });
     } catch (err: any) {
+      if (err?.status === 422) return null;
       if (err?.status === 401 || err?.status === 403) {
         throw new Error(
           `Geocodio auth failed (${err.status}): check GEOCODIO_API_KEY.`
