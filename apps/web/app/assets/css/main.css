@@ -1062,6 +1062,22 @@ button:not(:disabled),
     max-width: 280px;
   }
 
+  /* About page section heading and body text. */
+  .about-h2 {
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.3;
+    color: var(--text-dark);
+    margin: 36px 0 12px;
+  }
+  .about-h2:first-child { margin-top: 0; }
+  .about-p {
+    font-size: 16px;
+    line-height: 1.75;
+    color: var(--text-mid);
+    margin-bottom: 16px;
+  }
+
   /* ──────────────────────────────────────────────────────────
      Location directory pages (/food-pantries, /food-pantries/{state}/{city?})
      ────────────────────────────────────────────────────────── */
