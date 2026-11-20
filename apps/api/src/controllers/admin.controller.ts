@@ -52,6 +52,7 @@ import { LlmEvalService } from '../services/llm-eval.service';
 import { PantryCacheService } from '../services/pantry-cache.service';
 import { PantryEditService } from '../services/pantry-edit.service';
 import { RedisStatusService } from '../services/redis-status.service';
+import { ContactMessageService } from '../services/contact-message.service';
 import { UserService } from '../services/user.service';
 import { isValidTtlMinutes, readAppConfig, updateAppConfig } from '../services/app-config.service';
 import { MAX_ABOUT, MAX_ARRAY, MAX_STR, str } from '../utils/validation.util';
@@ -277,6 +278,7 @@ export class AdminController {
   private readonly pantryCacheService = new PantryCacheService();
   private readonly pantryEditService = new PantryEditService();
   private readonly redisStatusService = new RedisStatusService();
+  private readonly contactMessageService = new ContactMessageService();
 
   public async me(req: AuthedRequest, res: Response): Promise<void> {
     const profile = await this.userService.getUserProfile(req.user!.sub);
@@ -559,6 +561,40 @@ export class AdminController {
       res.status(400).json({ error: 'Unknown prefix or empty key.' });
     }
     return key;
+  }
+
+  public async listContactMessages(req: AuthedRequest, res: Response): Promise<void> {
+    const rawStatus = str(req.query.status, 10);
+    if (rawStatus && rawStatus !== 'new' && rawStatus !== 'read') {
+      res.status(400).json({ error: 'status must be "new" or "read".' });
+      return;
+    }
+    const status = rawStatus === 'new' || rawStatus === 'read' ? rawStatus : undefined;
+    res.json(
+      await this.contactMessageService.list({
+        status,
+        cursor: str(req.query.cursor, 100) || undefined,
+      }),
+    );
+  }
+
+  public async updateContactMessage(req: AuthedRequest, res: Response): Promise<void> {
+    const status = (req.body ?? {}).status;
+    if (status !== 'new' && status !== 'read') {
+      res.status(400).json({ error: 'status must be "new" or "read".' });
+      return;
+    }
+    const found = await this.contactMessageService.setStatus(String(req.params.id), status, req.user!.sub);
+    if (!found) {
+      res.status(404).json({ error: 'Message not found.' });
+      return;
+    }
+    res.json({ ok: true });
+  }
+
+  public async deleteContactMessage(req: AuthedRequest, res: Response): Promise<void> {
+    await this.contactMessageService.delete(String(req.params.id));
+    res.json({ ok: true });
   }
 
   public async getAppConfig(_req: AuthedRequest, res: Response): Promise<void> {

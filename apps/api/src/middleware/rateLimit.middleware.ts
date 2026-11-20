@@ -9,6 +9,8 @@ import {
   USER_SEARCH_WINDOW_MS,
   SUBMISSION_LIMIT,
   SUBMISSION_WINDOW_MS,
+  CONTACT_LIMIT,
+  CONTACT_WINDOW_MS,
   BROWSE_BURST_LIMIT,
   BROWSE_BURST_WINDOW_MS,
   BROWSE_HOURLY_LIMIT,
@@ -131,6 +133,42 @@ export async function rateLimitSubmission(
       message: `You've reached the limit of ${SUBMISSION_LIMIT} pantry submissions per day. Please try again later.`,
       limit: SUBMISSION_LIMIT,
       windowSeconds: Math.round(SUBMISSION_WINDOW_MS / 1000),
+      retryAfter: retryAfterSec,
+    });
+    return;
+  }
+
+  next();
+}
+
+/** Throttles Contact Us messages per user. Runs after requireAuth. Fails open. */
+export async function rateLimitContact(
+  req: AuthedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  if (!req.user?.sub) {
+    next();
+    return;
+  }
+
+  let result;
+  try {
+    result = await limiter.consume(`contact:user:${req.user.sub}`, CONTACT_LIMIT, CONTACT_WINDOW_MS);
+  } catch (err) {
+    console.error('Contact rate limit check failed, allowing request:', err);
+    next();
+    return;
+  }
+
+  if (!result.allowed) {
+    const retryAfterSec = Math.ceil(result.retryAfterMs / 1000);
+    res.setHeader('Retry-After', String(retryAfterSec));
+    res.status(429).json({
+      error: 'rate_limited',
+      message: `You've reached the limit of ${CONTACT_LIMIT} messages per day. Please try again later.`,
+      limit: CONTACT_LIMIT,
+      windowSeconds: Math.round(CONTACT_WINDOW_MS / 1000),
       retryAfter: retryAfterSec,
     });
     return;

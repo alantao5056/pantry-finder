@@ -25,3 +25,7 @@ export const APP_CONFIG_READ_TIMEOUT_MS = 3000; // 3 seconds
 // per IP (or per user when logged in) to curb spam into the moderation queue.
 export const SUBMISSION_LIMIT = 10;
 export const SUBMISSION_WINDOW_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+// Contact Us messages, per signed-in user.
+export const CONTACT_LIMIT = 5;
+export const CONTACT_WINDOW_MS = 24 * 60 * 60 * 1000; // 24 hours

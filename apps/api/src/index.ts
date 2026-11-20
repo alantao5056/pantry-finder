@@ -7,6 +7,7 @@ import { statesRouter } from './routes/city.routes';
 import authRoutes from './routes/auth.routes';
 import heartsRoutes from './routes/hearts.routes';
 import adminRoutes from './routes/admin.routes';
+import contactRoutes from './routes/contact.routes';
 import { trackApiUsage } from './middleware/analytics.middleware';
 import { requestLog } from './middleware/requestLog.middleware';
 import { closeRedis } from './cache/redisClient';
@@ -34,6 +35,7 @@ app.use('/auth', authRoutes);
 app.use('/pantries', pantryRoutes);
 app.use('/states', statesRouter);
 app.use('/hearts', heartsRoutes);
+app.use('/contact', contactRoutes);
 app.use('/admin', adminRoutes);
 
 const server = app.listen(port, () => {

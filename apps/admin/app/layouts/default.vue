@@ -8,6 +8,7 @@ const links = [
   { label: 'Change log', to: '/changes', icon: 'i-lucide-history' },
   { label: 'LLM eval', to: '/llm-evals', icon: 'i-lucide-scale' },
   { label: 'Redis', to: '/redis', icon: 'i-lucide-database' },
+  { label: 'Messages', to: '/messages', icon: 'i-lucide-mail' },
   { label: 'Settings', to: '/settings', icon: 'i-lucide-settings' },
 ]
 </script>

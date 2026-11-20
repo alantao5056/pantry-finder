@@ -28,7 +28,7 @@ const columns = computed(() => [
     heading: 'Organization',
     links: [
       { label: 'About Us',        to: '/about', type: 'route' as const },
-      { label: 'Contact',         to: '#', type: 'anchor' as const },
+      { label: 'Contact',         to: '/contact', type: 'route' as const },
       { label: 'Privacy Policy',  to: '#', type: 'anchor' as const },
     ],
   },
