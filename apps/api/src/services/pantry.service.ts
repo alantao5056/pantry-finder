@@ -28,8 +28,8 @@ export class PantryService {
    * Returns every match, sorted by distance.
    * @param dto The request DTO containing location and radius.
    * @param searcher Who is searching: the account email when logged in (null
-   *   otherwise) plus the anonymous client id. Every search is recorded in the
-   *   `search_logs` collection.
+   *   otherwise) plus the anonymous client id. Every search, including ones
+   *   whose location can't be geocoded, is recorded in `search_logs`.
    * @returns A response DTO with pantries, or null if location is not found.
    */
   public async getPantriesByLocation(
@@ -40,6 +40,7 @@ export class PantryService {
     const coordinates = await this.geoService.geocodeLocation(input);
 
     if (!coordinates) {
+      this.logSearch(searcher, input, dto.radius, false, 0);
       return null;
     }
 
@@ -49,20 +50,30 @@ export class PantryService {
       ? await this.loadSearchHits(hits)
       : await this.searchNear(coordinates.latitude, coordinates.longitude, dto.radius, cacheKey);
 
-    // Logged whenever we know who is asking — which, thanks to the client-id
-    // cookie, is every search, signed in or not.
-    if (searcher?.clientId) {
-      searchLogService.logSearch({
-        userEmail: searcher.userEmail,
-        clientId: searcher.clientId,
-        location: input,
-        radiusMiles: dto.radius,
-        totalResults: pantries.length,
-        searchedAt: Timestamp.now(),
-      });
-    }
+    this.logSearch(searcher, input, dto.radius, true, pantries.length);
 
     return { pantries };
+  }
+
+  // Logged whenever we know who is asking — which, thanks to the client-id
+  // cookie, is every search, signed in or not.
+  private logSearch(
+    searcher: SearchLogContext | undefined,
+    location: string,
+    radiusMiles: number,
+    geocoded: boolean,
+    totalResults: number
+  ): void {
+    if (!searcher?.clientId) return;
+    searchLogService.logSearch({
+      userEmail: searcher.userEmail,
+      clientId: searcher.clientId,
+      location,
+      radiusMiles,
+      geocoded,
+      totalResults,
+      searchedAt: Timestamp.now(),
+    });
   }
 
   /** Radius query; caches the results and each pantry. */

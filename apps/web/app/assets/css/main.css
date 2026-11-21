@@ -1077,6 +1077,15 @@ button:not(:disabled),
     color: var(--text-mid);
     margin-bottom: 16px;
   }
+  .about-list {
+    list-style: disc;
+    padding-left: 22px;
+    font-size: 16px;
+    line-height: 1.75;
+    color: var(--text-mid);
+    margin-bottom: 16px;
+  }
+  .about-list li { margin-bottom: 6px; }
 
   /* ──────────────────────────────────────────────────────────
      Location directory pages (/food-pantries, /food-pantries/{state}/{city?})

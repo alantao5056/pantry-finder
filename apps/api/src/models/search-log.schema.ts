@@ -18,6 +18,10 @@ export interface SearchLogDocument {
   location: string;
   radiusMiles: number;
 
+  // False when the location couldn't be geocoded (totalResults is then 0).
+  // Absent on entries written before this field existed; treat as true.
+  geocoded: boolean;
+
   // What came back: total pantries matched within the radius.
   totalResults: number;
 

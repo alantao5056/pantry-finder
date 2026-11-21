@@ -1,3 +1,5 @@
+import { createHmac } from 'crypto';
+import { JWT_SECRET } from '../config/auth';
 import {
   ANALYTICS_ENABLED,
   GA_API_SECRET,
@@ -7,11 +9,17 @@ import {
 
 export interface TrackEvent {
   clientId: string;
+  // Raw user key (email); hashed before sending, never sent to GA as-is.
   userId?: string;
   // GA4 event name rules: ^[a-zA-Z][a-zA-Z0-9_]{0,39}$
   name: string;
   // GA caps param names at 40 chars and string values at 100 chars.
   params: Record<string, string | number | boolean>;
+}
+
+// Stable pseudonymous GA user_id; GA forbids sending PII such as email.
+function gaUserId(userId: string): string {
+  return createHmac('sha256', JWT_SECRET).update(`ga-user:${userId}`).digest('hex');
 }
 
 export class AnalyticsService {
@@ -27,7 +35,7 @@ export class AnalyticsService {
 
     const body = {
       client_id: event.clientId,
-      ...(event.userId ? { user_id: event.userId } : {}),
+      ...(event.userId ? { user_id: gaUserId(event.userId) } : {}),
       events: [
         {
           name: event.name,

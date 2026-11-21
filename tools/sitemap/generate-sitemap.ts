@@ -57,7 +57,7 @@ const STATS_PATH = path.resolve(here, '../../apps/web/app/data/site-stats.json')
 
 // Static, indexable routes. Dev-only routes (e.g. /test-geo) are intentionally
 // omitted; auth is modal-based so there are no standalone auth pages to list.
-const STATIC_PATHS = ['/', '/search', '/food-pantries', '/about', '/contact'];
+const STATIC_PATHS = ['/', '/search', '/food-pantries', '/about', '/contact', '/privacy'];
 
 // Google's sitemap limit is 50,000 URLs per file. Pantries + city/state landing
 // pages together stay well under it, so a single file is correct. If the dataset
