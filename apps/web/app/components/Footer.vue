@@ -12,24 +12,24 @@ const columns = computed(() => [
   {
     heading: 'For Visitors',
     links: [
-      { label: 'Find Pantries', to: '/search', type: 'route' as const },
-      { label: 'Browse by City', to: '/food-pantries', type: 'route' as const },
-      { label: 'Map View',       to: mapViewTo.value, type: 'route' as const },
+      { label: 'Find Pantries', to: '/search' },
+      { label: 'Browse by City', to: '/food-pantries' },
+      { label: 'Map View',       to: mapViewTo.value },
     ],
   },
   {
     heading: 'For Pantries',
     links: [
-      { label: 'Add Your Pantry',   to: '/add-pantry', type: 'route' as const },
-      { label: 'Partner With Us',   to: '#', type: 'anchor' as const },
+      { label: 'Add Your Pantry',   to: '/add-pantry' },
+      { label: 'Partner With Us',   to: { path: '/contact', query: { topic: 'partnership' } } },
     ],
   },
   {
     heading: 'Organization',
     links: [
-      { label: 'About Us',        to: '/about', type: 'route' as const },
-      { label: 'Contact',         to: '/contact', type: 'route' as const },
-      { label: 'Privacy Policy',  to: '/privacy', type: 'route' as const },
+      { label: 'About Us',        to: '/about' },
+      { label: 'Contact',         to: '/contact' },
+      { label: 'Privacy Policy',  to: '/privacy' },
     ],
   },
 ])
@@ -54,16 +54,7 @@ const columns = computed(() => [
           </h4>
           <ul class="list-none flex flex-col gap-2.5 p-0 m-0">
             <li v-for="link in col.links" :key="link.label">
-              <NuxtLink
-                v-if="link.type === 'route'"
-                :to="link.to"
-                class="footer-link"
-              >{{ link.label }}</NuxtLink>
-              <a
-                v-else
-                :href="link.to"
-                class="footer-link"
-              >{{ link.label }}</a>
+              <NuxtLink :to="link.to" class="footer-link">{{ link.label }}</NuxtLink>
             </li>
           </ul>
         </div>

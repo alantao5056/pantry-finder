@@ -1,12 +1,13 @@
 // ---- Contact Us messages ----
 
-export const CONTACT_CATEGORIES = ['pantry_info', 'pantry_owner', 'website', 'other'] as const;
+export const CONTACT_CATEGORIES = ['pantry_info', 'pantry_owner', 'website', 'partnership', 'other'] as const;
 export type ContactCategory = (typeof CONTACT_CATEGORIES)[number];
 
 export const CONTACT_CATEGORY_LABELS: Record<ContactCategory, string> = {
   pantry_info: 'Wrong or outdated pantry info',
   pantry_owner: "I run a pantry and want to update it",
   website: 'Website problem or suggestion',
+  partnership: 'Partnership inquiry',
   other: 'Something else',
 };
 

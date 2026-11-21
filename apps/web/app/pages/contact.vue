@@ -4,6 +4,7 @@ import {
   CONTACT_CATEGORY_LABELS,
   CONTACT_MESSAGE_MAX,
   CONTACT_SUBJECT_MAX,
+  isContactCategory,
   type ContactCategory,
 } from '@pantry-finder/shared'
 
@@ -31,11 +32,16 @@ const api = useApi()
 const { isLoggedIn } = useAuth()
 const { show: showAuthModal } = useAuthModal()
 
+const route = useRoute()
+const initialTopic = (): ContactCategory | '' =>
+  isContactCategory(route.query.topic) ? route.query.topic : ''
+
 const form = reactive({
-  category: '' as ContactCategory | '',
+  category: initialTopic(),
   subject: '',
   message: '',
 })
+watch(() => route.query.topic, () => { form.category = initialTopic() })
 const errors = reactive({ category: false, subject: false, message: false })
 const submitting = ref(false)
 const submitted = ref(false)
